@@ -1,0 +1,40 @@
+services:
+  # Postgres local — SOLO para dev sin Supabase. Si usas Supabase real (DATABASE_URL
+  # en .env apunta a supabase.co), no levantes este servicio: `docker compose up backend frontend`.
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: bitacora
+      POSTGRES_PASSWORD: bitacora
+      POSTGRES_DB: bitacora
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bitacora"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    profiles: ["local-db"]
+
+  backend:
+    build: ./backend
+    env_file: .env
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    env_file: .env
+    environment:
+      BACKEND_URL: http://backend:8000
+      ORIGIN: http://localhost:3000
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:

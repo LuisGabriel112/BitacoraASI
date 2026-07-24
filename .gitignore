@@ -1,0 +1,15 @@
+.env
+.env.local
+
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/uvicorn.log
+backend/_*.py
+
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/build/
+frontend/dev.log
+
+.claude/settings.local.json

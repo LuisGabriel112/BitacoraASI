@@ -1,0 +1,120 @@
+:root {
+	/* superficies */
+	--bg: #0f1b2d;
+	--surface: #16273d;
+	--surface-raised: #1c3149;
+	--border: #2a3f58;
+	--border-strong: #3c5573;
+
+	/* texto */
+	--text: #e8edf2;
+	--text-muted: #8fa3b8;
+	--text-faint: #5b7086;
+
+	/* acentos deliberados */
+	--accent: #2e7d9a;
+	--accent-strong: #3f9bbd;
+	--success: #3b9b6f;
+	--warning: #d97706;
+	--danger: #c1443c;
+
+	/* chips por sistema — fijos, consistentes en toda la app.
+	   Trío validado (dataviz skill: CVD deutan/protan >= 8, normal-vision >= 15,
+	   all-pairs, contraste >= 3:1 sobre --surface) — no reordenar ni sustituir
+	   sin volver a correr validate_palette.js */
+	--sistema-mediport: #3987e5;
+	--sistema-pis: #199e70;
+	--sistema-proactivanet: #d95926;
+
+	/* tipografía */
+	--font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+	--font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+
+	/* espaciado / radios */
+	--radius: 6px;
+	--radius-lg: 10px;
+	--nav-width: 232px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--font-mono);
+	font-size: 14px;
+	line-height: 1.5;
+	font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+	font-family: var(--font-display);
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+a {
+	color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+	font-family: inherit;
+	font-size: inherit;
+	color: inherit;
+}
+
+::selection {
+	background: var(--accent);
+	color: var(--bg);
+}
+
+.skeleton {
+	display: inline-block;
+	background: linear-gradient(
+		90deg,
+		var(--surface-raised) 25%,
+		var(--border-strong) 50%,
+		var(--surface-raised) 75%
+	);
+	background-size: 200% 100%;
+	animation: skeleton-barrido 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-barrido {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.skeleton {
+		animation: none;
+		background: var(--surface-raised);
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
+}
