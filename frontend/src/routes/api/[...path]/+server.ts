@@ -15,6 +15,9 @@ async function reenviar(evento: Parameters<RequestHandler>[0]) {
 	}
 
 	const respuesta = await fetch(destino, init);
+	if (respuesta.status === 204) {
+		return new Response(null, { status: 204 });
+	}
 	const cuerpo = await respuesta.arrayBuffer();
 
 	return new Response(cuerpo, {
@@ -28,3 +31,4 @@ async function reenviar(evento: Parameters<RequestHandler>[0]) {
 
 export const GET: RequestHandler = reenviar;
 export const POST: RequestHandler = reenviar;
+export const DELETE: RequestHandler = reenviar;

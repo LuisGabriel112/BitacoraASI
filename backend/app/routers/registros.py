@@ -88,6 +88,15 @@ async def reintentar_trello(registro_id: int, session: AsyncSession = Depends(ge
     return RegistroCreadoOut(registro=RegistroOut.model_validate(registro), trello_ok=trello_ok, trello_error=trello_error)
 
 
+@router.delete("/{registro_id}", status_code=204)
+async def eliminar_registro(registro_id: int, session: AsyncSession = Depends(get_session)):
+    registro = await session.get(Registro, registro_id)
+    if registro is None:
+        raise HTTPException(404, "Registro no encontrado")
+    await session.delete(registro)
+    await session.commit()
+
+
 def _aplicar_filtros(stmt, *, empresa_id, sistema_id, medio_id, modulo_id, atendio_id, semana, fecha_desde, fecha_hasta, buscar):
     if empresa_id:
         stmt = stmt.where(Registro.empresa_id == empresa_id)

@@ -18,6 +18,25 @@
 	let cargando = $state(true);
 	let timer: ReturnType<typeof setTimeout>;
 
+	let confirmandoId = $state<number | null>(null);
+	let eliminandoId = $state<number | null>(null);
+	let errorEliminar = $state<string | null>(null);
+
+	async function confirmarEliminar(id: number) {
+		eliminandoId = id;
+		errorEliminar = null;
+		try {
+			await api.eliminarRegistro(id);
+			items = items.filter((r) => r.id !== id);
+			total -= 1;
+			confirmandoId = null;
+		} catch (e) {
+			errorEliminar = e instanceof Error ? e.message : 'No se pudo eliminar el registro';
+		} finally {
+			eliminandoId = null;
+		}
+	}
+
 	async function cargar() {
 		cargando = true;
 		try {
@@ -100,19 +119,20 @@
 				<th>Atendió</th>
 				<th>Descripción</th>
 				<th>Trello</th>
+				<th class="col-acciones">Acciones</th>
 			</tr>
 		</thead>
 		<tbody>
 			{#if cargando}
 				{#each Array(10) as _}
 					<tr>
-						{#each Array(9) as _}
+						{#each Array(10) as _}
 							<td><span class="skeleton skeleton-celda" aria-hidden="true"></span></td>
 						{/each}
 					</tr>
 				{/each}
 			{:else if items.length === 0}
-				<tr><td colspan="9" class="vacio">Ningún registro con estos filtros. Ajusta empresa o rango de fecha.</td></tr>
+				<tr><td colspan="10" class="vacio">Ningún registro con estos filtros. Ajusta empresa o rango de fecha.</td></tr>
 			{:else}
 				{#each items as r}
 					<tr tabindex="0">
@@ -125,12 +145,40 @@
 						<td>{r.atendio.nombre}</td>
 						<td class="descripcion">{r.descripcion}</td>
 						<td>{r.trello_card_id ? '✓' : '—'}</td>
+						<td class="col-acciones">
+							{#if confirmandoId === r.id}
+								<div class="confirmar-eliminar">
+									<span>¿Eliminar?</span>
+									<button
+										class="btn-confirmar"
+										disabled={eliminandoId === r.id}
+										onclick={() => confirmarEliminar(r.id)}
+									>
+										{eliminandoId === r.id ? 'Eliminando…' : 'Sí'}
+									</button>
+									<button class="btn-cancelar" onclick={() => (confirmandoId = null)}>No</button>
+								</div>
+							{:else}
+								<button
+									class="btn-eliminar"
+									title="Eliminar registro"
+									aria-label="Eliminar registro"
+									onclick={() => (confirmandoId = r.id)}
+								>
+									🗑
+								</button>
+							{/if}
+						</td>
 					</tr>
 				{/each}
 			{/if}
 		</tbody>
 	</table>
 </div>
+
+{#if errorEliminar}
+	<p class="error-eliminar">No se pudo eliminar: {errorEliminar}</p>
+{/if}
 
 <div class="paginacion">
 	<span>{total} registros</span>
@@ -249,6 +297,72 @@
 		color: var(--text-muted);
 		text-align: center;
 		padding: 24px;
+	}
+
+	.col-acciones {
+		width: 1%;
+		white-space: nowrap;
+		text-align: right;
+	}
+
+	.btn-eliminar {
+		background: none;
+		border: 1px solid transparent;
+		border-radius: var(--radius);
+		padding: 4px 8px;
+		color: var(--text-faint);
+		cursor: pointer;
+		font-size: 14px;
+		line-height: 1;
+	}
+
+	.btn-eliminar:hover {
+		border-color: var(--danger);
+		color: var(--danger);
+		background: color-mix(in srgb, var(--danger) 12%, transparent);
+	}
+
+	.confirmar-eliminar {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: var(--text-muted);
+		white-space: nowrap;
+	}
+
+	.btn-confirmar {
+		background: var(--danger);
+		color: var(--bg);
+		border: none;
+		border-radius: var(--radius);
+		padding: 4px 10px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.btn-confirmar:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
+	.btn-cancelar {
+		background: none;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 4px 10px;
+		color: var(--text);
+		cursor: pointer;
+	}
+
+	.btn-cancelar:hover {
+		border-color: var(--accent);
+	}
+
+	.error-eliminar {
+		margin-top: 10px;
+		color: var(--danger);
+		font-size: 13px;
 	}
 
 	.skeleton-celda {

@@ -72,6 +72,20 @@ export const api = {
 
 	reintentarTrello: (id: number) => json<RegistroCreado>(`/registros/${id}/reintentar-trello`, { method: 'POST' }),
 
+	eliminarRegistro: async (id: number) => {
+		const resp = await fetch(`${BASE}/registros/${id}`, { method: 'DELETE' });
+		if (!resp.ok) {
+			let detail = resp.statusText;
+			try {
+				const body = await resp.json();
+				detail = body.detail ?? detail;
+			} catch {
+				/* respuesta sin cuerpo JSON */
+			}
+			throw new Error(detail);
+		}
+	},
+
 	panel: () => json<PanelKPIs>('/registros/panel'),
 
 	listado: (params: Record<string, string | number | undefined>) => {
