@@ -1,6 +1,6 @@
 services:
   # Postgres local — SOLO para dev sin Supabase. Si usas Supabase real (DATABASE_URL
-  # en .env apunta a supabase.co), no levantes este servicio: `docker compose up backend frontend`.
+  # en .env apunta a supabase.co), no levantes este servicio: `docker compose up backend`.
   db:
     image: postgres:16
     environment:
@@ -24,17 +24,6 @@ services:
     env_file: .env
     ports:
       - "8000:8000"
-
-  frontend:
-    build: ./frontend
-    env_file: .env
-    environment:
-      BACKEND_URL: http://backend:8000
-      ORIGIN: http://localhost:3000
-    depends_on:
-      - backend
-    ports:
-      - "3000:3000"
 
 volumes:
   db_data:
