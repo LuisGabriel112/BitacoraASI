@@ -1,13 +1,27 @@
 import base64
+import io
 import json
 
 import httpx
+from PIL import Image, UnidentifiedImageError
 
 from app.config import settings
 
 
 class GeminiError(Exception):
     pass
+
+
+def _normalizar_imagen(imagen: bytes) -> bytes:
+    try:
+        with Image.open(io.BytesIO(imagen)) as img:
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGBA" if "A" in img.getbands() else "RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            return buf.getvalue()
+    except UnidentifiedImageError as exc:
+        raise GeminiError("El archivo no se pudo leer como imagen") from exc
 
 
 def gemini_configurado() -> bool:
@@ -50,16 +64,18 @@ def _prompt(catalogos: dict[str, list]) -> str:
     )
 
 
-async def extraer_registro(imagen: bytes, mime_type: str, catalogos: dict[str, list]) -> dict:
+async def extraer_registro(imagen: bytes, catalogos: dict[str, list]) -> dict:
     if not gemini_configurado():
         raise GeminiError("Gemini no está configurado (falta GEMINI_API_KEY)")
+
+    imagen_png = _normalizar_imagen(imagen)
 
     body = {
         "contents": [
             {
                 "parts": [
                     {"text": _prompt(catalogos)},
-                    {"inline_data": {"mime_type": mime_type, "data": base64.b64encode(imagen).decode()}},
+                    {"inline_data": {"mime_type": "image/png", "data": base64.b64encode(imagen_png).decode()}},
                 ]
             }
         ],

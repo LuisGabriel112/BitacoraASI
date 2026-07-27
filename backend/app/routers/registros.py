@@ -99,7 +99,7 @@ async def extraer_imagen(imagen: UploadFile = File(...), session: AsyncSession =
         catalogos[clave] = (await session.execute(select(modelo).order_by(modelo.nombre))).scalars().all()
 
     try:
-        extraido = await extraer_registro(contenido, imagen.content_type, catalogos)
+        extraido = await extraer_registro(contenido, catalogos)
     except GeminiError as exc:
         raise HTTPException(502, str(exc)) from exc
 
