@@ -11,7 +11,7 @@ async function reenviar(evento: Parameters<RequestHandler>[0]) {
 		headers: { 'Content-Type': request.headers.get('content-type') ?? 'application/json' }
 	};
 	if (request.method !== 'GET' && request.method !== 'HEAD') {
-		init.body = await request.text();
+		init.body = await request.arrayBuffer();
 	}
 
 	const respuesta = await fetch(destino, init);
