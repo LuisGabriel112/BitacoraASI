@@ -1,11 +1,16 @@
 <script lang="ts">
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import SelectCatalogo from '$lib/components/SelectCatalogo.svelte';
+	import ChipSistema from '$lib/components/ChipSistema.svelte';
 	import Toast from '$lib/components/Toast.svelte';
-	import { api, type RegistroCreado } from '$lib/api/client';
+	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
 
 	function hoy() {
 		return new Date().toISOString().slice(0, 10);
+	}
+
+	function hora(iso: string) {
+		return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 	}
 
 	let fecha = $state(hoy());
@@ -25,6 +30,27 @@
 	let reintentando = $state(false);
 	let extrayendo = $state(false);
 	let errorExtraccion = $state<string | null>(null);
+
+	let capturadosHoy = $state<Registro[]>([]);
+	let cargandoCapturados = $state(true);
+
+	async function cargarCapturadosHoy() {
+		cargandoCapturados = true;
+		try {
+			const pagina = await api.listado({
+				fecha_desde: hoy(),
+				fecha_hasta: hoy(),
+				page_size: 20
+			});
+			capturadosHoy = pagina.items;
+		} finally {
+			cargandoCapturados = false;
+		}
+	}
+
+	$effect(() => {
+		cargarCapturadosHoy();
+	});
 
 	function limpiar() {
 		fecha = hoy();
@@ -98,6 +124,7 @@
 				atendio_id: atendioId,
 				descripcion: descripcion.trim()
 			});
+			cargarCapturadosHoy();
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar el registro';
 		} finally {
@@ -140,6 +167,8 @@
 	<Toast tipo="error">{errorExtraccion}</Toast>
 {/if}
 
+<div class="columnas">
+<div class="columna-izquierda">
 <form class="formulario" onsubmit={(e) => (e.preventDefault(), guardar())}>
 	<div class="fila">
 		<div class="campo">
@@ -213,6 +242,36 @@
 		{/if}
 	</div>
 {/if}
+</div>
+
+	<aside class="sidebar">
+		<h2 class="font-display">Capturados hoy</h2>
+		{#if cargandoCapturados}
+			<ul class="lista-capturados">
+				{#each Array(4) as _}
+					<li class="item-capturado">
+						<span class="skeleton skeleton-item" aria-hidden="true"></span>
+					</li>
+				{/each}
+			</ul>
+		{:else if capturadosHoy.length === 0}
+			<p class="sin-capturas">Ningún registro capturado todavía hoy.</p>
+		{:else}
+			<ul class="lista-capturados">
+				{#each capturadosHoy as r}
+					<li class="item-capturado">
+						<div class="item-cabecera">
+							<span class="item-hora">{hora(r.created_at)}</span>
+							<ChipSistema nombre={r.sistema.nombre} />
+						</div>
+						<span class="item-empresa">{r.empresa.nombre}</span>
+						<span class="item-modulo">{r.modulo.nombre}</span>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</aside>
+</div>
 
 <style>
 	.subtitulo {
@@ -253,11 +312,95 @@
 		font-size: 12px;
 	}
 
+	.columnas {
+		display: flex;
+		gap: 32px;
+		align-items: flex-start;
+	}
+
+	.columna-izquierda {
+		flex: 1 1 640px;
+		max-width: 720px;
+		min-width: 0;
+	}
+
 	.formulario {
 		display: flex;
 		flex-direction: column;
 		gap: 18px;
-		max-width: 720px;
+	}
+
+	.sidebar {
+		flex: 1 1 260px;
+		max-width: 320px;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 18px;
+		position: sticky;
+		top: 24px;
+	}
+
+	.sidebar h2 {
+		font-size: 14px;
+		margin: 0 0 14px;
+		color: var(--text-muted);
+	}
+
+	.sin-capturas {
+		color: var(--text-muted);
+		font-size: 13px;
+	}
+
+	.lista-capturados {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.item-capturado {
+		padding-bottom: 12px;
+		border-bottom: 1px solid var(--border);
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.item-capturado:last-child {
+		border-bottom: none;
+		padding-bottom: 0;
+	}
+
+	.item-cabecera {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.item-hora {
+		font-size: 12px;
+		color: var(--text-faint);
+	}
+
+	.item-empresa {
+		font-size: 13px;
+		color: var(--text);
+	}
+
+	.item-modulo {
+		font-size: 12px;
+		color: var(--text-muted);
+	}
+
+	.skeleton-item {
+		display: block;
+		height: 34px;
+		width: 100%;
+		border-radius: 4px;
 	}
 
 	.fila {

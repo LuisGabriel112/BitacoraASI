@@ -154,6 +154,10 @@
 		margin-bottom: 20px;
 	}
 
+	.kpis :global(.tile) {
+		flex: 1 1 140px;
+	}
+
 	.graficas {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
