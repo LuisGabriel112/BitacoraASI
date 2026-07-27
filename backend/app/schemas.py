@@ -38,6 +38,16 @@ class RegistroOut(BaseModel):
     atendio: CatalogoOut
 
 
+class ExtraccionRegistro(BaseModel):
+    fecha: date | None = None
+    descripcion: str | None = None
+    empresa: CatalogoOut | None = None
+    sistema: CatalogoOut | None = None
+    medio: CatalogoOut | None = None
+    modulo: CatalogoOut | None = None
+    atendio: CatalogoOut | None = None
+
+
 class RegistroCreadoOut(BaseModel):
     registro: RegistroOut
     trello_ok: bool

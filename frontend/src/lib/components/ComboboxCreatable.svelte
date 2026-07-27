@@ -6,13 +6,15 @@
 		label,
 		selectedId = $bindable(null),
 		autofocus = false,
-		id
+		id,
+		nombreSeleccionado = ''
 	}: {
 		catalogo: 'empresas' | 'modulos';
 		label: string;
 		selectedId: number | null;
 		autofocus?: boolean;
 		id: string;
+		nombreSeleccionado?: string;
 	} = $props();
 
 	let texto = $state('');
@@ -89,6 +91,10 @@
 
 	$effect(() => {
 		if (autofocus) inputEl?.focus();
+	});
+
+	$effect(() => {
+		if (nombreSeleccionado) texto = nombreSeleccionado;
 	});
 </script>
 

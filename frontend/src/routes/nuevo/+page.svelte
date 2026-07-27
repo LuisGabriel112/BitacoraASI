@@ -15,12 +15,16 @@
 	let moduloId = $state<number | null>(null);
 	let atendioId = $state<number | null>(null);
 	let descripcion = $state('');
+	let empresaNombre = $state('');
+	let moduloNombre = $state('');
 
 	let guardando = $state(false);
 	let errorValidacion = $state<string | null>(null);
 	let resultado = $state<RegistroCreado | null>(null);
 	let errorGuardado = $state<string | null>(null);
 	let reintentando = $state(false);
+	let extrayendo = $state(false);
+	let errorExtraccion = $state<string | null>(null);
 
 	function limpiar() {
 		fecha = hoy();
@@ -30,7 +34,46 @@
 		moduloId = null;
 		atendioId = null;
 		descripcion = '';
+		empresaNombre = '';
+		moduloNombre = '';
 		resultado = null;
+	}
+
+	async function extraerDeImagen(archivo: File) {
+		errorExtraccion = null;
+		extrayendo = true;
+		try {
+			const r = await api.extraerImagen(archivo);
+			if (r.fecha) fecha = r.fecha;
+			if (r.empresa) {
+				empresaId = r.empresa.id;
+				empresaNombre = r.empresa.nombre;
+			}
+			if (r.sistema) sistemaId = r.sistema.id;
+			if (r.medio) medioId = r.medio.id;
+			if (r.modulo) {
+				moduloId = r.modulo.id;
+				moduloNombre = r.modulo.nombre;
+			}
+			if (r.atendio) atendioId = r.atendio.id;
+			if (r.descripcion) descripcion = r.descripcion;
+		} catch (e) {
+			errorExtraccion = e instanceof Error ? e.message : 'No se pudo extraer información de la imagen';
+		} finally {
+			extrayendo = false;
+		}
+	}
+
+	function alSeleccionarArchivo(e: Event) {
+		const archivo = (e.target as HTMLInputElement).files?.[0];
+		if (archivo) extraerDeImagen(archivo);
+		(e.target as HTMLInputElement).value = '';
+	}
+
+	function alPegar(e: ClipboardEvent) {
+		const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'));
+		const archivo = item?.getAsFile();
+		if (archivo) extraerDeImagen(archivo);
 	}
 
 	async function guardar() {
@@ -80,10 +123,22 @@
 	}
 </script>
 
-<svelte:window onkeydown={alTeclado} />
+<svelte:window onkeydown={alTeclado} onpaste={alPegar} />
 
 <h1 class="font-display">Nuevo registro</h1>
 <p class="subtitulo">Captura rápida — Ctrl+Enter para guardar sin usar el mouse.</p>
+
+<div class="captura">
+	<label class="boton-captura" class:deshabilitado={extrayendo}>
+		{extrayendo ? 'Analizando imagen…' : 'Adjuntar captura'}
+		<input type="file" accept="image/*" onchange={alSeleccionarArchivo} disabled={extrayendo} hidden />
+	</label>
+	<span class="ayuda-captura">o pega una captura con Ctrl+V para autocompletar el formulario</span>
+</div>
+
+{#if errorExtraccion}
+	<Toast tipo="error">{errorExtraccion}</Toast>
+{/if}
 
 <form class="formulario" onsubmit={(e) => (e.preventDefault(), guardar())}>
 	<div class="fila">
@@ -91,13 +146,26 @@
 			<label for="fecha">Fecha</label>
 			<input id="fecha" type="date" bind:value={fecha} />
 		</div>
-		<ComboboxCreatable id="empresa" catalogo="empresas" label="Empresa" bind:selectedId={empresaId} autofocus />
+		<ComboboxCreatable
+			id="empresa"
+			catalogo="empresas"
+			label="Empresa"
+			bind:selectedId={empresaId}
+			nombreSeleccionado={empresaNombre}
+			autofocus
+		/>
 	</div>
 
 	<div class="fila tres">
 		<SelectCatalogo id="sistema" catalogo="sistemas" label="Sistema" bind:selectedId={sistemaId} />
 		<SelectCatalogo id="medio" catalogo="medios" label="Medio" bind:selectedId={medioId} />
-		<ComboboxCreatable id="modulo" catalogo="modulos" label="Módulo" bind:selectedId={moduloId} />
+		<ComboboxCreatable
+			id="modulo"
+			catalogo="modulos"
+			label="Módulo"
+			bind:selectedId={moduloId}
+			nombreSeleccionado={moduloNombre}
+		/>
 	</div>
 
 	<div class="fila">
@@ -152,6 +220,37 @@
 		margin-top: -8px;
 		margin-bottom: 24px;
 		font-size: 13px;
+	}
+
+	.captura {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 18px;
+	}
+
+	.boton-captura {
+		background: none;
+		border: 1px dashed var(--border-strong);
+		border-radius: var(--radius);
+		padding: 9px 16px;
+		color: var(--text);
+		cursor: pointer;
+		font-size: 13px;
+	}
+
+	.boton-captura:hover {
+		border-color: var(--accent);
+	}
+
+	.boton-captura.deshabilitado {
+		opacity: 0.6;
+		cursor: default;
+	}
+
+	.ayuda-captura {
+		color: var(--text-muted);
+		font-size: 12px;
 	}
 
 	.formulario {

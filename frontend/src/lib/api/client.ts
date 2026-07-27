@@ -15,6 +15,15 @@ export type Registro = {
 };
 
 export type RegistroCreado = { registro: Registro; trello_ok: boolean; trello_error: string | null };
+export type ExtraccionRegistro = {
+	fecha: string | null;
+	descripcion: string | null;
+	empresa: Catalogo | null;
+	sistema: Catalogo | null;
+	medio: Catalogo | null;
+	modulo: Catalogo | null;
+	atendio: Catalogo | null;
+};
 export type PaginaRegistros = { total: number; items: Registro[] };
 export type PanelKPIs = {
 	semana: string;
@@ -71,6 +80,23 @@ export const api = {
 	}) => json<RegistroCreado>('/registros', { method: 'POST', body: JSON.stringify(payload) }),
 
 	reintentarTrello: (id: number) => json<RegistroCreado>(`/registros/${id}/reintentar-trello`, { method: 'POST' }),
+
+	extraerImagen: async (archivo: File) => {
+		const form = new FormData();
+		form.append('imagen', archivo);
+		const resp = await fetch(`${BASE}/registros/extraer-imagen`, { method: 'POST', body: form });
+		if (!resp.ok) {
+			let detail = resp.statusText;
+			try {
+				const body = await resp.json();
+				detail = body.detail ?? detail;
+			} catch {
+				/* respuesta sin cuerpo JSON */
+			}
+			throw new Error(detail);
+		}
+		return resp.json() as Promise<ExtraccionRegistro>;
+	},
 
 	eliminarRegistro: async (id: number) => {
 		const resp = await fetch(`${BASE}/registros/${id}`, { method: 'DELETE' });

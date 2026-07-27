@@ -2,7 +2,7 @@ import csv
 import io
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -13,7 +13,16 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_session
 from app.models import Agente, Empresa, Medio, Modulo, Registro, Sistema
-from app.schemas import PanelKPIs, PaginaRegistros, RegistroCreadoOut, RegistroCreate, RegistroOut, ReporteSemanal
+from app.schemas import (
+    ExtraccionRegistro,
+    PanelKPIs,
+    PaginaRegistros,
+    RegistroCreadoOut,
+    RegistroCreate,
+    RegistroOut,
+    ReporteSemanal,
+)
+from app.services.gemini import GeminiError, extraer_registro, gemini_configurado
 from app.services.trello import TrelloError, crear_tarjeta, trello_configurado
 
 router = APIRouter(prefix="/registros", tags=["registros"])
@@ -69,6 +78,53 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
             trello_error = str(exc)
 
     return RegistroCreadoOut(registro=RegistroOut.model_validate(registro), trello_ok=trello_ok, trello_error=trello_error)
+
+
+@router.post("/extraer-imagen", response_model=ExtraccionRegistro)
+async def extraer_imagen(imagen: UploadFile = File(...), session: AsyncSession = Depends(get_session)):
+    if not gemini_configurado():
+        raise HTTPException(400, "Gemini no está configurado (falta GEMINI_API_KEY en el backend)")
+    if not imagen.content_type or not imagen.content_type.startswith("image/"):
+        raise HTTPException(400, "El archivo debe ser una imagen")
+
+    contenido = await imagen.read()
+    if len(contenido) > 10_000_000:
+        raise HTTPException(400, "Imagen demasiado grande (máx 10MB)")
+
+    catalogos = {}
+    for clave, modelo in (
+        ("empresas", Empresa), ("sistemas", Sistema), ("medios", Medio),
+        ("modulos", Modulo), ("agentes", Agente),
+    ):
+        catalogos[clave] = (await session.execute(select(modelo).order_by(modelo.nombre))).scalars().all()
+
+    try:
+        extraido = await extraer_registro(contenido, imagen.content_type, catalogos)
+    except GeminiError as exc:
+        raise HTTPException(502, str(exc)) from exc
+
+    def _match(clave: str, campo: str):
+        id_elegido = extraido.get(campo)
+        if not id_elegido:
+            return None
+        return next((c for c in catalogos[clave] if c.id == id_elegido), None)
+
+    fecha = None
+    if extraido.get("fecha"):
+        try:
+            fecha = date.fromisoformat(extraido["fecha"])
+        except ValueError:
+            fecha = None
+
+    return ExtraccionRegistro(
+        fecha=fecha,
+        descripcion=extraido.get("descripcion"),
+        empresa=_match("empresas", "empresa_id"),
+        sistema=_match("sistemas", "sistema_id"),
+        medio=_match("medios", "medio_id"),
+        modulo=_match("modulos", "modulo_id"),
+        atendio=_match("agentes", "atendio_id"),
+    )
 
 
 @router.post("/{registro_id}/reintentar-trello", response_model=RegistroCreadoOut)
