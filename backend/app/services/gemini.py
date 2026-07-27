@@ -21,7 +21,8 @@ def _normalizar_imagen(imagen: bytes) -> bytes:
             img.save(buf, format="PNG")
             return buf.getvalue()
     except UnidentifiedImageError as exc:
-        raise GeminiError("El archivo no se pudo leer como imagen") from exc
+        cabecera = imagen[:12].hex()
+        raise GeminiError(f"El archivo no se pudo leer como imagen ({len(imagen)} bytes, cabecera {cabecera})") from exc
 
 
 def gemini_configurado() -> bool:
