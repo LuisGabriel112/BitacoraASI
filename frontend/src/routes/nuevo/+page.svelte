@@ -83,6 +83,16 @@
 			}
 			if (r.atendio) atendioId = r.atendio.id;
 			if (r.descripcion) descripcion = r.descripcion;
+
+			const faltantes: string[] = [];
+			if (!r.empresa) faltantes.push('Empresa');
+			if (!r.sistema) faltantes.push('Sistema');
+			if (!r.medio) faltantes.push('Medio');
+			if (!r.modulo) faltantes.push('Módulo');
+			if (!r.atendio) faltantes.push('Atendió');
+			if (faltantes.length > 0) {
+				errorExtraccion = `No se pudo identificar: ${faltantes.join(', ')}. Selecciónalo manualmente antes de guardar.`;
+			}
 		} catch (e) {
 			errorExtraccion = e instanceof Error ? e.message : 'No se pudo extraer información de la imagen';
 		} finally {
