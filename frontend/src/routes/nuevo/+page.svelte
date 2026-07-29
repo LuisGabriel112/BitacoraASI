@@ -30,6 +30,7 @@
 	let reintentando = $state(false);
 	let extrayendo = $state(false);
 	let errorExtraccion = $state<string | null>(null);
+	let avisoExtraccion = $state<string | null>(null);
 
 	let capturadosHoy = $state<Registro[]>([]);
 	let cargandoCapturados = $state(true);
@@ -63,10 +64,13 @@
 		empresaNombre = '';
 		moduloNombre = '';
 		resultado = null;
+		errorExtraccion = null;
+		avisoExtraccion = null;
 	}
 
 	async function extraerDeImagen(archivo: File) {
 		errorExtraccion = null;
+		avisoExtraccion = null;
 		extrayendo = true;
 		try {
 			const r = await api.extraerImagen(archivo);
@@ -93,6 +97,7 @@
 			if (faltantes.length > 0) {
 				errorExtraccion = `No se pudo identificar: ${faltantes.join(', ')}. Selecciónalo manualmente antes de guardar.`;
 			}
+			avisoExtraccion = 'Revisa todos los campos antes de guardar — la extracción automática puede equivocarse.';
 		} catch (e) {
 			errorExtraccion = e instanceof Error ? e.message : 'No se pudo extraer información de la imagen';
 		} finally {
@@ -175,6 +180,10 @@
 
 {#if errorExtraccion}
 	<Toast tipo="error">{errorExtraccion}</Toast>
+{/if}
+
+{#if avisoExtraccion}
+	<Toast tipo="pendiente">{avisoExtraccion}</Toast>
 {/if}
 
 <div class="columnas">
