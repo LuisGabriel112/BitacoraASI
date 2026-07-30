@@ -75,3 +75,8 @@ class ReporteSemanal(BaseModel):
     por_empresa: dict[str, int]
     por_medio: dict[str, int]
     registros: list[RegistroOut]
+
+
+class GrupoSoporte(BaseModel):
+    tema: str
+    cantidad: int

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import BarChartHorizontal from '$lib/components/BarChartHorizontal.svelte';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
-	import { api, type ReporteSemanal } from '$lib/api/client';
+	import { api, type GrupoSoporte, type ReporteSemanal } from '$lib/api/client';
 
 	function semanaISOActual() {
 		const hoy = new Date();
@@ -34,6 +34,9 @@
 	let semanaInput = $state(semanaISOActual());
 	let reporte = $state<ReporteSemanal | null>(null);
 	let cargando = $state(true);
+	let grupos = $state<GrupoSoporte[] | null>(null);
+	let gruposCargando = $state(false);
+	let gruposError = $state<string | null>(null);
 
 	const semanaEtiqueta = $derived(semanaInputAEtiqueta(semanaInput));
 
@@ -46,9 +49,23 @@
 		}
 	}
 
+	async function cargarGrupos() {
+		gruposCargando = true;
+		gruposError = null;
+		try {
+			grupos = await api.soportesFrecuentes(semanaEtiqueta);
+		} catch (e) {
+			gruposError = e instanceof Error ? e.message : 'No se pudo analizar la similitud de descripciones.';
+			grupos = null;
+		} finally {
+			gruposCargando = false;
+		}
+	}
+
 	$effect(() => {
 		semanaEtiqueta;
 		cargar();
+		cargarGrupos();
 	});
 
 	const empresaItems = $derived(
@@ -102,6 +119,26 @@
 			<BarChartHorizontal items={medioItems} />
 		</section>
 	</div>
+
+	<section class="tarjeta">
+		<h2 class="font-display">Soportes más frecuentes</h2>
+		{#if gruposCargando}
+			<p class="cargando">Analizando similitud de descripciones…</p>
+		{:else if gruposError}
+			<p class="grupos-error">{gruposError}</p>
+		{:else if !grupos || grupos.length === 0}
+			<p class="cargando">No se detectaron soportes que se repitan esta semana.</p>
+		{:else}
+			<ul class="lista-grupos">
+				{#each grupos as g}
+					<li class="grupo">
+						<span class="grupo-cantidad">{g.cantidad}×</span>
+						<span class="grupo-descripcion">{g.tema}</span>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</section>
 
 	<section class="tarjeta">
 		<h2 class="font-display">Detalle completo — {semanaEtiqueta}</h2>
@@ -252,5 +289,42 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.grupos-error {
+		color: var(--text-muted);
+	}
+
+	.lista-grupos {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.grupo {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+		padding: 8px 0;
+		border-bottom: 1px solid var(--border);
+		font-size: 13px;
+	}
+
+	.grupo:last-child {
+		border-bottom: none;
+	}
+
+	.grupo-cantidad {
+		font-weight: 700;
+		font-family: var(--font-display);
+		color: var(--accent);
+		min-width: 32px;
+	}
+
+	.grupo-descripcion {
+		flex: 1;
 	}
 </style>

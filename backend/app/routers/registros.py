@@ -1,5 +1,6 @@
 import csv
 import io
+from collections import Counter
 from datetime import date
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -15,6 +16,7 @@ from app.database import get_session
 from app.models import Agente, Empresa, Medio, Modulo, Registro, Sistema
 from app.schemas import (
     ExtraccionRegistro,
+    GrupoSoporte,
     PanelKPIs,
     PaginaRegistros,
     RegistroCreadoOut,
@@ -22,6 +24,8 @@ from app.schemas import (
     RegistroOut,
     ReporteSemanal,
 )
+from app.services.clustering import agrupar_por_similitud
+from app.services.embeddings import asegurar_embeddings
 from app.services.gemini import GeminiError, extraer_registro, gemini_configurado
 from app.services.trello import TrelloError, crear_tarjeta, trello_configurado
 
@@ -285,6 +289,41 @@ async def reporte_semanal(semana: str = Query(...), session: AsyncSession = Depe
         por_sistema=por_sistema, por_empresa=por_empresa, por_medio=por_medio,
         registros=[RegistroOut.model_validate(r) for r in registros],
     )
+
+
+def _tema(descripciones: list[str]) -> str:
+    """Descripción más representativa del grupo: la más repetida; empates, la más corta."""
+    conteos = Counter(descripciones)
+    max_freq = max(conteos.values())
+    candidatas = [d for d, c in conteos.items() if c == max_freq]
+    return min(candidatas, key=len)
+
+
+@router.get("/soportes-frecuentes", response_model=list[GrupoSoporte])
+async def soportes_frecuentes(
+    semana: str = Query(...),
+    umbral: float = Query(0.86, ge=0.5, le=0.99),
+    top: int = Query(10, ge=1, le=50),
+    session: AsyncSession = Depends(get_session),
+):
+    if not gemini_configurado():
+        raise HTTPException(400, "Gemini no está configurado (falta GEMINI_API_KEY en el backend)")
+
+    registros = await _registros_de_semana(session, semana)
+    if not registros:
+        return []
+
+    try:
+        embeddings = await asegurar_embeddings(session, registros)
+    except GeminiError as exc:
+        raise HTTPException(502, str(exc)) from exc
+
+    grupos = [
+        GrupoSoporte(tema=_tema([registros[i].descripcion for i in idx]), cantidad=len(idx))
+        for idx in agrupar_por_similitud(embeddings, umbral)
+        if len(idx) >= 2
+    ]
+    return grupos[:top]
 
 
 @router.get("/export")

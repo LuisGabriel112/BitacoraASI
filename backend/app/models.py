@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Computed, Date, DateTime, ForeignKey, Text, func
+from sqlalchemy import ARRAY, Computed, Date, DateTime, Float, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -55,6 +55,7 @@ class Registro(Base):
     modulo_id: Mapped[int] = mapped_column(ForeignKey("modulos.id"))
     atendio_id: Mapped[int] = mapped_column(ForeignKey("agentes.id"))
     descripcion: Mapped[str] = mapped_column(Text)
+    embedding: Mapped[list[float] | None] = mapped_column(ARRAY(Float), nullable=True)
     trello_card_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

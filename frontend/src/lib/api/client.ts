@@ -41,6 +41,7 @@ export type ReporteSemanal = {
 	por_medio: Record<string, number>;
 	registros: Registro[];
 };
+export type GrupoSoporte = { tema: string; cantidad: number };
 
 const BASE = '/api';
 
@@ -121,6 +122,9 @@ export const api = {
 	},
 
 	reporte: (semana: string) => json<ReporteSemanal>(`/registros/reporte?semana=${encodeURIComponent(semana)}`),
+
+	soportesFrecuentes: (semana: string, top = 10) =>
+		json<GrupoSoporte[]>(`/registros/soportes-frecuentes?semana=${encodeURIComponent(semana)}&top=${top}`),
 
 	exportUrl: (formato: 'csv' | 'xlsx', params: Record<string, string | number | undefined> = {}) => {
 		const qs = new URLSearchParams({ formato });
