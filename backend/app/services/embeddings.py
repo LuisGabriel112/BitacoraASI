@@ -1,4 +1,5 @@
 import asyncio
+from typing import Protocol
 
 import httpx
 from sqlalchemy import update
@@ -10,6 +11,41 @@ from app.services.gemini import GeminiError
 
 _CONCURRENCIA = 3
 _REINTENTOS_429 = 5
+_ESPERA_BASE_SEGUNDOS = 20
+
+
+class RegistroConDescripcion(Protocol):
+    """Lo mínimo que necesita este módulo: no depende del ORM completo (DIP)."""
+
+    id: int
+    descripcion: str
+    embedding: list[float] | None
+
+
+def _url_embed_content() -> str:
+    return f"https://generativelanguage.googleapis.com/v1beta/{settings.gemini_embed_model}:embedContent"
+
+
+async def _pedir_embedding(client: httpx.AsyncClient, texto: str) -> httpx.Response:
+    body = {"content": {"parts": [{"text": texto}]}}
+    try:
+        return await client.post(_url_embed_content(), params={"key": settings.gemini_api_key}, json=body)
+    except httpx.RequestError as exc:
+        raise GeminiError(f"No se pudo conectar con Gemini: {exc}") from exc
+
+
+async def _con_reintento_en_cuota(client: httpx.AsyncClient, texto: str) -> list[float]:
+    intento = 0
+    while True:
+        resp = await _pedir_embedding(client, texto)
+        if resp.status_code != 429 or intento >= _REINTENTOS_429:
+            break
+        await asyncio.sleep(_ESPERA_BASE_SEGUNDOS * (intento + 1))
+        intento += 1
+
+    if resp.status_code >= 400:
+        raise GeminiError(f"Gemini respondió {resp.status_code}: {resp.text[:300]}")
+    return resp.json()["embedding"]["values"]
 
 
 async def obtener_embeddings(textos: list[str]) -> list[list[float]]:
@@ -17,41 +53,34 @@ async def obtener_embeddings(textos: list[str]) -> list[list[float]]:
     if not settings.gemini_api_key:
         raise GeminiError("Gemini no está configurado (falta GEMINI_API_KEY)")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/{settings.gemini_embed_model}:embedContent"
     semaforo = asyncio.Semaphore(_CONCURRENCIA)
 
-    async def _uno(client: httpx.AsyncClient, texto: str) -> list[float]:
-        body = {"content": {"parts": [{"text": texto}]}}
-        for intento in range(_REINTENTOS_429 + 1):
-            async with semaforo:
-                try:
-                    resp = await client.post(url, params={"key": settings.gemini_api_key}, json=body)
-                except httpx.RequestError as exc:
-                    raise GeminiError(f"No se pudo conectar con Gemini: {exc}") from exc
-            if resp.status_code == 429 and intento < _REINTENTOS_429:
-                await asyncio.sleep(20 * (intento + 1))
-                continue
-            if resp.status_code >= 400:
-                raise GeminiError(f"Gemini respondió {resp.status_code}: {resp.text[:300]}")
-            return resp.json()["embedding"]["values"]
-        raise GeminiError("Gemini: cuota excedida tras varios reintentos")
+    async def _uno_limitado(client: httpx.AsyncClient, texto: str) -> list[float]:
+        async with semaforo:
+            return await _con_reintento_en_cuota(client, texto)
 
     async with httpx.AsyncClient(timeout=30) as client:
-        return await asyncio.gather(*(_uno(client, t) for t in textos))
+        return await asyncio.gather(*(_uno_limitado(client, t) for t in textos))
 
 
-async def asegurar_embeddings(session: AsyncSession, registros: list[Registro]) -> list[list[float]]:
+def _mapeo_actualizacion(faltantes: list[RegistroConDescripcion], nuevos: list[list[float]]) -> list[dict]:
+    return [{"id": r.id, "embedding": emb} for r, emb in zip(faltantes, nuevos)]
+
+
+async def asegurar_embeddings(session: AsyncSession, registros: list[RegistroConDescripcion]) -> list[list[float]]:
     """Devuelve el embedding de cada registro, calculando y cacheando en BD los que falten.
 
-    Actualiza vía UPDATE de Core (no mutando los objetos ORM ya cargados) para
-    no disparar la expiración de `semana`, columna generada en servidor.
+    El cacheo hace un único UPDATE en bloque (executemany), no uno por
+    registro, y no muta los objetos ya cargados: usar `Registro.embedding = x`
+    + commit expiraría `semana` (columna generada en servidor de Postgres).
     """
     por_id = {r.id: r.embedding for r in registros}
     faltantes = [r for r in registros if r.embedding is None]
     if faltantes:
         nuevos = await obtener_embeddings([r.descripcion for r in faltantes])
-        for r, emb in zip(faltantes, nuevos):
-            await session.execute(update(Registro).where(Registro.id == r.id).values(embedding=emb))
-            por_id[r.id] = emb
+        mapeo = _mapeo_actualizacion(faltantes, nuevos)
+        await session.execute(update(Registro), mapeo)
         await session.commit()
+        por_id.update({fila["id"]: fila["embedding"] for fila in mapeo})
+
     return [por_id[r.id] for r in registros]

@@ -6,6 +6,8 @@ backend/__pycache__/
 backend/**/__pycache__/
 backend/uvicorn.log
 backend/_*.py
+backend/.pytest_cache/
+backend/.coverage
 
 frontend/node_modules/
 frontend/.svelte-kit/

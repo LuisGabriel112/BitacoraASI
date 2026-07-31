@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-from sqlalchemy import func, select
+from sqlalchemy import Row, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -299,6 +299,12 @@ def _tema(descripciones: list[str]) -> str:
     return min(candidatas, key=len)
 
 
+async def _descripciones_de_semana(session: AsyncSession, semana: str) -> list[Row]:
+    """Solo id/descripcion/embedding: este endpoint no necesita empresa/sistema/medio/módulo/agente."""
+    stmt = select(Registro.id, Registro.descripcion, Registro.embedding).where(Registro.semana == semana)
+    return list((await session.execute(stmt)).all())
+
+
 @router.get("/soportes-frecuentes", response_model=list[GrupoSoporte])
 async def soportes_frecuentes(
     semana: str = Query(...),
@@ -309,7 +315,7 @@ async def soportes_frecuentes(
     if not gemini_configurado():
         raise HTTPException(400, "Gemini no está configurado (falta GEMINI_API_KEY en el backend)")
 
-    registros = await _registros_de_semana(session, semana)
+    registros = await _descripciones_de_semana(session, semana)
     if not registros:
         return []
 
