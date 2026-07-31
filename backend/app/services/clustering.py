@@ -1,4 +1,5 @@
 import math
+from collections import Counter
 from dataclasses import dataclass, field
 
 
@@ -48,3 +49,11 @@ def agrupar_por_similitud(embeddings: list[list[float]], umbral: float = 0.86) -
 
     clusters.sort(key=lambda c: len(c.indices), reverse=True)
     return [c.indices for c in clusters]
+
+
+def tema_representativo(descripciones: list[str]) -> str:
+    """Descripción más representativa de un grupo: la más repetida; empates, la más corta."""
+    conteos = Counter(descripciones)
+    max_frecuencia = max(conteos.values())
+    candidatas = [d for d, c in conteos.items() if c == max_frecuencia]
+    return min(candidatas, key=len)

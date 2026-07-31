@@ -1,6 +1,5 @@
 import csv
 import io
-from collections import Counter
 from datetime import date
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -24,8 +23,9 @@ from app.schemas import (
     RegistroOut,
     ReporteSemanal,
 )
-from app.services.clustering import agrupar_por_similitud
+from app.services.clustering import agrupar_por_similitud, tema_representativo
 from app.services.embeddings import asegurar_embeddings
+from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.gemini import GeminiError, extraer_registro, gemini_configurado
 from app.services.trello import TrelloError, crear_tarjeta, trello_configurado
 
@@ -291,14 +291,6 @@ async def reporte_semanal(semana: str = Query(...), session: AsyncSession = Depe
     )
 
 
-def _tema(descripciones: list[str]) -> str:
-    """Descripción más representativa del grupo: la más repetida; empates, la más corta."""
-    conteos = Counter(descripciones)
-    max_freq = max(conteos.values())
-    candidatas = [d for d, c in conteos.items() if c == max_freq]
-    return min(candidatas, key=len)
-
-
 async def _descripciones_de_semana(session: AsyncSession, semana: str) -> list[Row]:
     """Solo id/descripcion/embedding: este endpoint no necesita empresa/sistema/medio/módulo/agente."""
     stmt = select(Registro.id, Registro.descripcion, Registro.embedding).where(Registro.semana == semana)
@@ -325,7 +317,7 @@ async def soportes_frecuentes(
         raise HTTPException(502, str(exc)) from exc
 
     grupos = [
-        GrupoSoporte(tema=_tema([registros[i].descripcion for i in idx]), cantidad=len(idx))
+        GrupoSoporte(tema=tema_representativo([registros[i].descripcion for i in idx]), cantidad=len(idx))
         for idx in agrupar_por_similitud(embeddings, umbral)
         if len(idx) >= 2
     ]
@@ -432,6 +424,8 @@ def _generar_xlsx(encabezados: list[str], registros: list[Registro]) -> io.Bytes
 
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = f"A1:{get_column_letter(len(encabezados))}{max(len(registros) + 1, 1)}"
+
+    agregar_hoja_resumen(wb, registros)
 
     out = io.BytesIO()
     wb.save(out)

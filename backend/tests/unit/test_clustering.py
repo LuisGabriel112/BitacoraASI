@@ -1,4 +1,4 @@
-from app.services.clustering import agrupar_por_similitud
+from app.services.clustering import agrupar_por_similitud, tema_representativo
 
 
 def _vector(*, primer_componente: float) -> list[float]:
@@ -53,3 +53,19 @@ def test_vector_cero_no_se_agrupa_con_nada_incluso_con_umbral_bajo():
 
     assert [0] in grupos
     assert [1] in grupos
+
+
+def test_tema_es_la_descripcion_mas_repetida():
+    descripciones = ["Cambio contraseña", "Cambio contraseña", "Cambiar contraseña"]
+
+    assert tema_representativo(descripciones) == "Cambio contraseña"
+
+
+def test_tema_desempata_por_longitud_cuando_hay_empate():
+    descripciones = ["Usuario bloqueado", "Bloqueo"]
+
+    assert tema_representativo(descripciones) == "Bloqueo"
+
+
+def test_tema_de_una_sola_descripcion_es_ella_misma():
+    assert tema_representativo(["Acceso a facturación"]) == "Acceso a facturación"
