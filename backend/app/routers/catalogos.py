@@ -4,7 +4,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
-from app.models import Agente, Empresa, Medio, Modulo, Sistema
+from app.models import (
+    Agente,
+    CategoriaMesa,
+    Empresa,
+    Medio,
+    Modulo,
+    ResolutorMesa,
+    Sistema,
+    SolicitanteMesa,
+    VentanaMesa,
+)
 from app.schemas import CatalogoCreate, CatalogoOut
 
 router = APIRouter(tags=["catalogos"])
@@ -49,3 +59,7 @@ router.include_router(_catalogo_router("/modulos", Modulo, creatable=True))
 router.include_router(_catalogo_router("/sistemas", Sistema, creatable=False))
 router.include_router(_catalogo_router("/medios", Medio, creatable=False))
 router.include_router(_catalogo_router("/agentes", Agente, creatable=False))
+router.include_router(_catalogo_router("/categorias-mesa", CategoriaMesa, creatable=True))
+router.include_router(_catalogo_router("/solicitantes-mesa", SolicitanteMesa, creatable=True))
+router.include_router(_catalogo_router("/resolutores-mesa", ResolutorMesa, creatable=True))
+router.include_router(_catalogo_router("/ventanas-mesa", VentanaMesa, creatable=True))

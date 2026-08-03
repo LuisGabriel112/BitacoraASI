@@ -10,6 +10,13 @@
 		{ href: '/listado', label: 'Listado', icon: '☰' },
 		{ href: '/reporte', label: 'Reporte semanal', icon: '▥' }
 	];
+
+	const itemsAdministrativa = [
+		{ href: '/mesas', label: 'Panel mesas', icon: '▤' },
+		{ href: '/mesas/nueva', label: 'Nueva mesa', icon: '＋' },
+		{ href: '/mesas/listado', label: 'Listado mesas', icon: '☰' },
+		{ href: '/mesas/reporte', label: 'Reporte mesas', icon: '▥' }
+	];
 </script>
 
 <aside class="nav">
@@ -27,6 +34,16 @@
 
 	<nav>
 		{#each items as item}
+			<a href={item.href} class:activo={$page.url.pathname === item.href}>
+				<span class="icono" aria-hidden="true">{item.icon}</span>
+				{item.label}
+			</a>
+		{/each}
+	</nav>
+
+	<div class="seccion-titulo">Bitácora administrativa</div>
+	<nav>
+		{#each itemsAdministrativa as item}
 			<a href={item.href} class:activo={$page.url.pathname === item.href}>
 				<span class="icono" aria-hidden="true">{item.icon}</span>
 				{item.label}
@@ -93,6 +110,16 @@
 		flex-direction: column;
 		padding: 12px 8px;
 		gap: 2px;
+	}
+
+	.seccion-titulo {
+		padding: 10px 18px 4px;
+		font-size: 11px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-faint);
+		border-top: 1px solid var(--border);
+		margin-top: 4px;
 	}
 
 	nav a {

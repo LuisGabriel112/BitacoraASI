@@ -4,9 +4,9 @@ from typing import Protocol
 import httpx
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
-from app.models import Registro
 from app.services.gemini import GeminiError
 
 _CONCURRENCIA = 3
@@ -67,11 +67,18 @@ def _mapeo_actualizacion(faltantes: list[RegistroConDescripcion], nuevos: list[l
     return [{"id": r.id, "embedding": emb} for r, emb in zip(faltantes, nuevos)]
 
 
-async def asegurar_embeddings(session: AsyncSession, registros: list[RegistroConDescripcion]) -> list[list[float]]:
+async def asegurar_embeddings(
+    session: AsyncSession, registros: list[RegistroConDescripcion], modelo: type[DeclarativeBase]
+) -> list[list[float]]:
     """Devuelve el embedding de cada registro, calculando y cacheando en BD los que falten.
 
+    `modelo` es la clase ORM real de `registros` (p.ej. `Registro` o `Mesa`):
+    el UPDATE en bloque debe apuntar a esa tabla, nunca a una fija — de lo
+    contrario reusar esta función para otro dominio corrompería silenciosamente
+    filas de una tabla distinta cuyos ids coincidan por casualidad.
+
     El cacheo hace un único UPDATE en bloque (executemany), no uno por
-    registro, y no muta los objetos ya cargados: usar `Registro.embedding = x`
+    registro, y no muta los objetos ya cargados: usar `modelo.embedding = x`
     + commit expiraría `semana` (columna generada en servidor de Postgres).
     """
     por_id = {r.id: r.embedding for r in registros}
@@ -79,7 +86,7 @@ async def asegurar_embeddings(session: AsyncSession, registros: list[RegistroCon
     if faltantes:
         nuevos = await obtener_embeddings([r.descripcion for r in faltantes])
         mapeo = _mapeo_actualizacion(faltantes, nuevos)
-        await session.execute(update(Registro), mapeo)
+        await session.execute(update(modelo), mapeo)
         await session.commit()
         por_id.update({fila["id"]: fila["embedding"] for fila in mapeo})
 

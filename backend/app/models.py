@@ -64,3 +64,61 @@ class Registro(Base):
     medio: Mapped[Medio] = relationship(lazy="joined")
     modulo: Mapped[Modulo] = relationship(lazy="joined")
     atendio: Mapped[Agente] = relationship(lazy="joined")
+
+
+class CategoriaMesa(Base):
+    __tablename__ = "categorias_mesa"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(Text, unique=True)
+
+
+class SolicitanteMesa(Base):
+    __tablename__ = "solicitantes_mesa"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(Text, unique=True)
+
+
+class ResolutorMesa(Base):
+    __tablename__ = "resolutores_mesa"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(Text, unique=True)
+
+
+class VentanaMesa(Base):
+    __tablename__ = "ventanas_mesa"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(Text, unique=True)
+
+
+class Mesa(Base):
+    __tablename__ = "mesas"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    enlace: Mapped[str | None] = mapped_column(Text, nullable=True)
+    codigo: Mapped[str] = mapped_column(Text, unique=True)
+    titulo: Mapped[str] = mapped_column(Text)
+    fecha_carga: Mapped[date] = mapped_column(Date)
+    semana: Mapped[str] = mapped_column(
+        Text,
+        Computed(
+            "'SEM ' || lpad(extract(week from fecha_carga)::text, 2, '0') "
+            "|| ' - ' || extract(isoyear from fecha_carga)::text",
+            persisted=True,
+        ),
+    )
+    descripcion: Mapped[str] = mapped_column(Text)
+    ventana_id: Mapped[int] = mapped_column(ForeignKey("ventanas_mesa.id"))
+    categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias_mesa.id"))
+    solicitante_id: Mapped[int] = mapped_column(ForeignKey("solicitantes_mesa.id"))
+    resolutor_id: Mapped[int] = mapped_column(ForeignKey("resolutores_mesa.id"))
+    fecha_estimada_resolucion: Mapped[date] = mapped_column(Date)
+    solucion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tipo_solucion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fecha_cierre_real: Mapped[date | None] = mapped_column(Date, nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(ARRAY(Float), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    ventana: Mapped[VentanaMesa] = relationship(lazy="joined")
+    categoria: Mapped[CategoriaMesa] = relationship(lazy="joined")
+    solicitante: Mapped[SolicitanteMesa] = relationship(lazy="joined")
+    resolutor: Mapped[ResolutorMesa] = relationship(lazy="joined")

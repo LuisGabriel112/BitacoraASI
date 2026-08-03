@@ -1,9 +1,10 @@
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
 
+from app.models import Mesa, Registro
 from app.services import embeddings as embeddings_module
 from app.services.gemini import GeminiError
 
@@ -112,7 +113,7 @@ async def test_asegurar_embeddings_solo_pide_los_faltantes(monkeypatch):
     monkeypatch.setattr(embeddings_module, "obtener_embeddings", obtener_mock)
     session = AsyncMock()
 
-    resultado = await embeddings_module.asegurar_embeddings(session, registros)
+    resultado = await embeddings_module.asegurar_embeddings(session, registros, Registro)
 
     obtener_mock.assert_awaited_once_with(["b"])
     assert resultado == [[0.1], [0.2], [0.3]]
@@ -126,7 +127,7 @@ async def test_asegurar_embeddings_cachea_varios_faltantes_en_una_sola_sentencia
     monkeypatch.setattr(embeddings_module, "obtener_embeddings", obtener_mock)
     session = AsyncMock()
 
-    resultado = await embeddings_module.asegurar_embeddings(session, registros)
+    resultado = await embeddings_module.asegurar_embeddings(session, registros, Registro)
 
     assert resultado == [[0.1], [0.2], [0.3]]
     session.execute.assert_awaited_once()
@@ -140,9 +141,25 @@ async def test_asegurar_embeddings_no_llama_a_gemini_si_todo_esta_cacheado(monke
     monkeypatch.setattr(embeddings_module, "obtener_embeddings", obtener_mock)
     session = AsyncMock()
 
-    resultado = await embeddings_module.asegurar_embeddings(session, registros)
+    resultado = await embeddings_module.asegurar_embeddings(session, registros, Registro)
 
     obtener_mock.assert_not_awaited()
     session.execute.assert_not_awaited()
     session.commit.assert_not_awaited()
     assert resultado == [[0.1], [0.2]]
+
+
+@pytest.mark.asyncio
+async def test_asegurar_embeddings_actualiza_la_tabla_del_modelo_recibido_no_una_fija(monkeypatch):
+    """Regresión: el UPDATE debe apuntar a la tabla del `modelo` pasado explícitamente,
+    nunca a una tabla fija — de lo contrario reusar esta función para otro dominio
+    (ej. Mesa) corrompería silenciosamente filas de Registro con ids coincidentes."""
+    registros = [_registro(1, "a", None)]
+    monkeypatch.setattr(embeddings_module, "obtener_embeddings", AsyncMock(return_value=[[0.1]]))
+    session = AsyncMock()
+    session.add = MagicMock()
+
+    await embeddings_module.asegurar_embeddings(session, registros, Mesa)
+
+    stmt_ejecutado = session.execute.call_args[0][0]
+    assert stmt_ejecutado.table.name == "mesas"

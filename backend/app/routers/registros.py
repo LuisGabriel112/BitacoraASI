@@ -27,14 +27,10 @@ from app.services.clustering import agrupar_por_similitud, tema_representativo
 from app.services.embeddings import asegurar_embeddings
 from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.gemini import GeminiError, extraer_registro, gemini_configurado
+from app.services.semanas import semana_de
 from app.services.trello import TrelloError, crear_tarjeta, trello_configurado
 
 router = APIRouter(prefix="/registros", tags=["registros"])
-
-
-def _semana_de(fecha: date) -> str:
-    iso_year, iso_week, _ = fecha.isocalendar()
-    return f"SEM {iso_week:02d} - {iso_year}"
 
 
 async def _get_registro(session: AsyncSession, registro_id: int) -> Registro:
@@ -245,7 +241,7 @@ async def _registros_de_semana(session: AsyncSession, semana: str) -> list[Regis
 
 @router.get("/panel", response_model=PanelKPIs)
 async def panel(session: AsyncSession = Depends(get_session)):
-    semana = _semana_de(date.today())
+    semana = semana_de(date.today())
     registros = await _registros_de_semana(session, semana)
 
     por_sistema: dict[str, int] = {}
@@ -312,7 +308,7 @@ async def soportes_frecuentes(
         return []
 
     try:
-        embeddings = await asegurar_embeddings(session, registros)
+        embeddings = await asegurar_embeddings(session, registros, Registro)
     except GeminiError as exc:
         raise HTTPException(502, str(exc)) from exc
 

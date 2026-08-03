@@ -9,7 +9,7 @@
 		id,
 		nombreSeleccionado = ''
 	}: {
-		catalogo: 'empresas' | 'modulos';
+		catalogo: 'empresas' | 'modulos' | 'categorias-mesa' | 'solicitantes-mesa' | 'resolutores-mesa' | 'ventanas-mesa';
 		label: string;
 		selectedId: number | null;
 		autofocus?: boolean;

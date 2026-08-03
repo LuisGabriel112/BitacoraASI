@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -80,3 +81,76 @@ class ReporteSemanal(BaseModel):
 class GrupoSoporte(BaseModel):
     tema: str
     cantidad: int
+
+
+TipoSolucion = Literal["Modificación en BD", "Seguimiento de proceso"]
+
+
+class MesaCreate(BaseModel):
+    enlace: str | None = None
+    codigo: str
+    titulo: str
+    fecha_carga: date
+    descripcion: str
+    ventana_id: int
+    categoria_id: int
+    solicitante_id: int
+    resolutor_id: int
+    fecha_estimada_resolucion: date
+
+
+class MesaCerrar(BaseModel):
+    solucion: str
+    tipo_solucion: TipoSolucion
+    fecha_cierre_real: date
+
+
+class MesaOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    enlace: str | None
+    codigo: str
+    titulo: str
+    fecha_carga: date
+    semana: str
+    descripcion: str
+    fecha_estimada_resolucion: date
+    solucion: str | None
+    tipo_solucion: str | None
+    fecha_cierre_real: date | None
+    created_at: datetime
+    ventana: CatalogoOut
+    categoria: CatalogoOut
+    solicitante: CatalogoOut
+    resolutor: CatalogoOut
+
+
+class PaginaMesas(BaseModel):
+    total: int
+    items: list[MesaOut]
+
+
+class ExtraccionMesa(BaseModel):
+    codigo: str | None = None
+    titulo: str | None = None
+    fecha_carga: date | None = None
+    descripcion: str | None = None
+    solicitante: CatalogoOut | None = None
+
+
+class PanelMesasKPIs(BaseModel):
+    semana: str
+    total_semana: int
+    por_categoria: dict[str, int]
+    volumen_diario: list[dict]
+    distribucion_resolutor: list[dict]
+    recientes: list[MesaOut]
+
+
+class ReporteMesasSemanal(BaseModel):
+    semana: str
+    total: int
+    por_categoria: dict[str, int]
+    por_solicitante: dict[str, int]
+    por_resolutor: dict[str, int]
+    mesas: list[MesaOut]
