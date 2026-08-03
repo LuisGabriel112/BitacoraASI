@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class CatalogoOut(BaseModel):
@@ -90,13 +90,26 @@ class MesaCreate(BaseModel):
     enlace: str | None = None
     codigo: str
     titulo: str
-    fecha_carga: date
+    fecha_carga: datetime
     descripcion: str
     ventana_id: int
     categoria_id: int
     solicitante_id: int
     resolutor_id: int
-    fecha_estimada_resolucion: date
+    fecha_estimada_resolucion: datetime
+    solucion: str | None = None
+    tipo_solucion: TipoSolucion | None = None
+    fecha_cierre_real: date | None = None
+
+    @model_validator(mode="after")
+    def _cierre_todo_o_nada(self) -> "MesaCreate":
+        campos_cierre = (self.solucion, self.tipo_solucion, self.fecha_cierre_real)
+        if any(campos_cierre) and not all(campos_cierre):
+            raise ValueError(
+                "Para colocar la información de cierre al crear, se deben dar solución, "
+                "tipo de solución y fecha real de cierre juntos"
+            )
+        return self
 
 
 class MesaCerrar(BaseModel):
@@ -111,10 +124,10 @@ class MesaOut(BaseModel):
     enlace: str | None
     codigo: str
     titulo: str
-    fecha_carga: date
+    fecha_carga: datetime
     semana: str
     descripcion: str
-    fecha_estimada_resolucion: date
+    fecha_estimada_resolucion: datetime
     solucion: str | None
     tipo_solucion: str | None
     fecha_cierre_real: date | None
@@ -133,7 +146,7 @@ class PaginaMesas(BaseModel):
 class ExtraccionMesa(BaseModel):
     codigo: str | None = None
     titulo: str | None = None
-    fecha_carga: date | None = None
+    fecha_carga: datetime | None = None
     descripcion: str | None = None
     solicitante: CatalogoOut | None = None
 

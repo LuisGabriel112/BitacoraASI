@@ -97,7 +97,7 @@ class Mesa(Base):
     enlace: Mapped[str | None] = mapped_column(Text, nullable=True)
     codigo: Mapped[str] = mapped_column(Text, unique=True)
     titulo: Mapped[str] = mapped_column(Text)
-    fecha_carga: Mapped[date] = mapped_column(Date)
+    fecha_carga: Mapped[datetime] = mapped_column(DateTime)
     semana: Mapped[str] = mapped_column(
         Text,
         Computed(
@@ -111,7 +111,7 @@ class Mesa(Base):
     categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias_mesa.id"))
     solicitante_id: Mapped[int] = mapped_column(ForeignKey("solicitantes_mesa.id"))
     resolutor_id: Mapped[int] = mapped_column(ForeignKey("resolutores_mesa.id"))
-    fecha_estimada_resolucion: Mapped[date] = mapped_column(Date)
+    fecha_estimada_resolucion: Mapped[datetime] = mapped_column(DateTime)
     solucion: Mapped[str | None] = mapped_column(Text, nullable=True)
     tipo_solucion: Mapped[str | None] = mapped_column(Text, nullable=True)
     fecha_cierre_real: Mapped[date | None] = mapped_column(Date, nullable=True)

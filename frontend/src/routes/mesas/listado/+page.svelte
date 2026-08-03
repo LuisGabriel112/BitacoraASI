@@ -2,6 +2,12 @@
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import { api, type Mesa } from '$lib/api/client';
 
+	function formatearFechaHora(iso: string) {
+		const [fecha, hora] = iso.split('T');
+		const [anio, mes, dia] = fecha.split('-');
+		return `${dia}/${mes}/${anio} ${hora?.slice(0, 5) ?? ''}`;
+	}
+
 	let buscar = $state('');
 	let categoriaId = $state<number | null>(null);
 	let solicitanteId = $state<number | null>(null);
@@ -175,7 +181,7 @@
 					<tr>
 						<td class="codigo">{m.codigo}</td>
 						<td class="titulo-col">{m.titulo}</td>
-						<td>{m.fecha_carga}</td>
+						<td>{formatearFechaHora(m.fecha_carga)}</td>
 						<td>{m.categoria.nombre}</td>
 						<td>{m.solicitante.nombre}</td>
 						<td>{m.resolutor.nombre}</td>

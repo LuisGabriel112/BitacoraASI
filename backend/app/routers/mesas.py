@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import date
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -90,7 +90,7 @@ async def extraer_imagen_mesa(imagen: UploadFile = File(...), session: AsyncSess
     fecha_carga = None
     if extraido.get("fecha_carga"):
         try:
-            fecha_carga = date.fromisoformat(extraido["fecha_carga"])
+            fecha_carga = datetime.fromisoformat(extraido["fecha_carga"])
         except ValueError:
             fecha_carga = None
 
@@ -142,7 +142,10 @@ def _aplicar_filtros(stmt, *, categoria_id, solicitante_id, resolutor_id, ventan
     if fecha_desde:
         stmt = stmt.where(Mesa.fecha_carga >= fecha_desde)
     if fecha_hasta:
-        stmt = stmt.where(Mesa.fecha_carga <= fecha_hasta)
+        # fecha_carga ahora incluye hora: <= fecha_hasta excluiría cualquier mesa
+        # cargada después de medianoche de ese mismo día. Se compara contra el
+        # inicio del día siguiente para incluir el día completo.
+        stmt = stmt.where(Mesa.fecha_carga < fecha_hasta + timedelta(days=1))
     if estado == "abierta":
         stmt = stmt.where(Mesa.fecha_cierre_real.is_(None))
     elif estado == "cerrada":
@@ -206,7 +209,7 @@ async def panel_mesas(session: AsyncSession = Depends(get_session)):
     por_resolutor: dict[str, int] = {}
     for m in mesas_semana:
         por_categoria[m.categoria.nombre] = por_categoria.get(m.categoria.nombre, 0) + 1
-        dia = m.fecha_carga.isoformat()
+        dia = m.fecha_carga.date().isoformat()
         por_dia[dia] = por_dia.get(dia, 0) + 1
         por_resolutor[m.resolutor.nombre] = por_resolutor.get(m.resolutor.nombre, 0) + 1
 
@@ -306,7 +309,7 @@ def _generar_xlsx_mesas(encabezados: list[str], mesas_filtradas: list[Mesa]) -> 
     for i, m in enumerate(mesas_filtradas, start=2):
         ws.cell(i, 1, m.codigo)
         ws.cell(i, 2, m.titulo)
-        ws.cell(i, 3, m.fecha_carga).number_format = "yyyy-mm-dd"
+        ws.cell(i, 3, m.fecha_carga).number_format = "yyyy-mm-dd hh:mm"
         ws.cell(i, 4, m.categoria.nombre)
         ws.cell(i, 5, m.solicitante.nombre)
         ws.cell(i, 6, m.resolutor.nombre)
@@ -330,7 +333,7 @@ def _generar_xlsx_mesas(encabezados: list[str], mesas_filtradas: list[Mesa]) -> 
     ws.auto_filter.ref = f"A1:{get_column_letter(len(encabezados))}{max(len(mesas_filtradas) + 1, 1)}"
 
     filas_resumen = [
-        SimpleNamespace(fecha=m.fecha_carga, descripcion=m.descripcion, embedding=m.embedding)
+        SimpleNamespace(fecha=m.fecha_carga.date(), descripcion=m.descripcion, embedding=m.embedding)
         for m in mesas_filtradas
     ]
     agregar_hoja_resumen(wb, filas_resumen)
@@ -368,7 +371,7 @@ async def exportar_mesas(
     if formato == "csv":
         filas = [
             [
-                m.codigo, m.titulo, m.fecha_carga.isoformat(), m.categoria.nombre, m.solicitante.nombre,
+                m.codigo, m.titulo, m.fecha_carga.strftime("%Y-%m-%d %H:%M"), m.categoria.nombre, m.solicitante.nombre,
                 m.resolutor.nombre, m.ventana.nombre, m.descripcion,
                 "Cerrada" if m.fecha_cierre_real else "Abierta", m.solucion or "",
             ]

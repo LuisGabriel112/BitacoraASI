@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
+	import FechaHoraInput from '$lib/components/FechaHoraInput.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import { api, type Mesa } from '$lib/api/client';
 
@@ -7,10 +8,16 @@
 		return new Date().toISOString().slice(0, 10);
 	}
 
+	function ahora() {
+		const d = new Date();
+		const pad = (n: number) => String(n).padStart(2, '0');
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+	}
+
 	let enlace = $state('');
 	let codigo = $state('');
 	let titulo = $state('');
-	let fechaCarga = $state(hoy());
+	let fechaCarga = $state(ahora());
 	let descripcion = $state('');
 	let ventanaId = $state<number | null>(null);
 	let ventanaNombre = $state('');
@@ -21,6 +28,11 @@
 	let resolutorId = $state<number | null>(null);
 	let resolutorNombre = $state('');
 	let fechaEstimadaResolucion = $state('');
+
+	let yaResuelta = $state(false);
+	let solucionTexto = $state('');
+	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>('Modificación en BD');
+	let fechaCierreReal = $state(hoy());
 
 	let guardando = $state(false);
 	let errorValidacion = $state<string | null>(null);
@@ -51,7 +63,7 @@
 		enlace = '';
 		codigo = '';
 		titulo = '';
-		fechaCarga = hoy();
+		fechaCarga = ahora();
 		descripcion = '';
 		ventanaId = null;
 		ventanaNombre = '';
@@ -62,6 +74,10 @@
 		resolutorId = null;
 		resolutorNombre = '';
 		fechaEstimadaResolucion = '';
+		yaResuelta = false;
+		solucionTexto = '';
+		tipoSolucion = 'Modificación en BD';
+		fechaCierreReal = hoy();
 		resultado = null;
 		errorExtraccion = null;
 		avisoExtraccion = null;
@@ -75,7 +91,7 @@
 			const r = await api.extraerImagenMesa(archivo);
 			if (r.codigo) codigo = r.codigo;
 			if (r.titulo) titulo = r.titulo;
-			if (r.fecha_carga) fechaCarga = r.fecha_carga;
+			if (r.fecha_carga) fechaCarga = r.fecha_carga.slice(0, 16);
 			if (r.descripcion) descripcion = r.descripcion;
 			if (r.solicitante) {
 				solicitanteId = r.solicitante.id;
@@ -124,6 +140,8 @@
 		if (!solicitanteId) return (errorValidacion = 'Falta seleccionar solicitante');
 		if (!resolutorId) return (errorValidacion = 'Falta seleccionar resolutor');
 		if (!fechaEstimadaResolucion) return (errorValidacion = 'Falta fecha estimada de resolución');
+		if (yaResuelta && !solucionTexto.trim()) return (errorValidacion = 'Falta describir la solución');
+		if (yaResuelta && !fechaCierreReal) return (errorValidacion = 'Falta la fecha real de cierre');
 
 		guardando = true;
 		try {
@@ -137,7 +155,10 @@
 				categoria_id: categoriaId,
 				solicitante_id: solicitanteId,
 				resolutor_id: resolutorId,
-				fecha_estimada_resolucion: fechaEstimadaResolucion
+				fecha_estimada_resolucion: fechaEstimadaResolucion,
+				...(yaResuelta
+					? { solucion: solucionTexto.trim(), tipo_solucion: tipoSolucion, fecha_cierre_real: fechaCierreReal }
+					: {})
 			});
 			cargarCapturadasHoy();
 		} catch (e) {
@@ -191,10 +212,7 @@
 	</div>
 
 	<div class="fila">
-		<div class="campo">
-			<label for="fecha_carga">Fecha de carga</label>
-			<input id="fecha_carga" type="date" bind:value={fechaCarga} />
-		</div>
+		<FechaHoraInput id="fecha_carga" label="Fecha y hora de carga" bind:value={fechaCarga} />
 		<div class="campo">
 			<label for="enlace">Enlace en Proactivanet</label>
 			<input id="enlace" type="text" bind:value={enlace} placeholder="https://…" />
@@ -214,11 +232,35 @@
 
 	<div class="fila">
 		<ComboboxCreatable id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
-		<div class="campo">
-			<label for="fecha_estimada">Fecha estimada de resolución</label>
-			<input id="fecha_estimada" type="date" bind:value={fechaEstimadaResolucion} />
-		</div>
+		<FechaHoraInput id="fecha_estimada" label="Fecha y hora estimada de resolución" bind:value={fechaEstimadaResolucion} />
 	</div>
+
+	<label class="check-resuelta">
+		<input type="checkbox" bind:checked={yaResuelta} />
+		Ya se resolvió — capturar la solución de una vez
+	</label>
+
+	{#if yaResuelta}
+		<div class="bloque-cierre">
+			<div class="campo">
+				<label for="solucion">Solución</label>
+				<textarea id="solucion" rows="3" bind:value={solucionTexto} placeholder="Qué se hizo para resolverlo…"></textarea>
+			</div>
+			<div class="fila">
+				<div class="campo">
+					<label for="tipo_solucion">Tipo de solución</label>
+					<select id="tipo_solucion" bind:value={tipoSolucion}>
+						<option value="Modificación en BD">Modificación en BD</option>
+						<option value="Seguimiento de proceso">Seguimiento de proceso</option>
+					</select>
+				</div>
+				<div class="campo">
+					<label for="fecha_cierre">Fecha real de cierre</label>
+					<input id="fecha_cierre" type="date" bind:value={fechaCierreReal} />
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	{#if errorValidacion}
 		<Toast tipo="error">{errorValidacion}</Toast>
@@ -263,7 +305,10 @@
 			<ul class="lista-capturados">
 				{#each capturadasHoy as m}
 					<li class="item-capturado">
-						<span class="item-codigo">{m.codigo}</span>
+						<div class="item-cabecera">
+							<span class="item-codigo">{m.codigo}</span>
+							<span class="item-hora">{m.fecha_carga.slice(11, 16)}</span>
+						</div>
 						<span class="item-titulo">{m.titulo}</span>
 						<span class="item-solicitante">{m.solicitante.nombre}</span>
 					</li>
@@ -374,9 +419,21 @@
 		padding-bottom: 0;
 	}
 
+	.item-cabecera {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
 	.item-codigo {
 		font-size: 12px;
 		font-family: var(--font-mono);
+		color: var(--text-faint);
+	}
+
+	.item-hora {
+		font-size: 11px;
 		color: var(--text-faint);
 	}
 
@@ -433,6 +490,32 @@
 	textarea:focus-visible {
 		outline: 2px solid var(--accent);
 		outline-offset: 1px;
+	}
+
+	.check-resuelta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+
+	.bloque-cierre {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+		padding: 14px;
+		border: 1px dashed var(--border-strong);
+		border-radius: var(--radius);
+	}
+
+	select {
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 9px 10px;
+		color: var(--text);
 	}
 
 	.acciones {

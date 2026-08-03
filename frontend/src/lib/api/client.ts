@@ -199,6 +199,9 @@ export const api = {
 		solicitante_id: number;
 		resolutor_id: number;
 		fecha_estimada_resolucion: string;
+		solucion?: string | null;
+		tipo_solucion?: string | null;
+		fecha_cierre_real?: string | null;
 	}) => json<Mesa>('/mesas', { method: 'POST', body: JSON.stringify(payload) }),
 
 	extraerImagenMesa: async (archivo: File) => {

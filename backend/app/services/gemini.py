@@ -129,7 +129,8 @@ def _prompt_mesa(catalogos: dict[str, list]) -> str:
         "en la lista.\n\n"
         "codigo: el código o folio de la mesa tal como aparece.\n"
         "titulo: el título de la mesa.\n"
-        "fecha_carga: formato YYYY-MM-DD si aparece en la imagen, si no null.\n"
+        "fecha_carga: formato YYYY-MM-DD HH:MM (24 horas) si aparece fecha y hora en la imagen; "
+        "si solo aparece la fecha, usa HH:MM = 00:00; si no aparece nada, usa null.\n"
         "descripcion: resume en español, en 1-3 frases, qué se reportó.\n\n"
         + _lista("Solicitantes", catalogos["solicitantes"])
     )

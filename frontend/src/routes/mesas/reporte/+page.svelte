@@ -2,6 +2,12 @@
 	import BarChartHorizontal from '$lib/components/BarChartHorizontal.svelte';
 	import { api, type GrupoSoporte, type ReporteMesasSemanal } from '$lib/api/client';
 
+	function formatearFechaHora(iso: string) {
+		const [fecha, hora] = iso.split('T');
+		const [anio, mes, dia] = fecha.split('-');
+		return `${dia}/${mes}/${anio} ${hora?.slice(0, 5) ?? ''}`;
+	}
+
 	function semanaISOActual() {
 		const hoy = new Date();
 		const d = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
@@ -153,7 +159,7 @@
 						<tr>
 							<td class="codigo">{m.codigo}</td>
 							<td>{m.titulo}</td>
-							<td>{m.fecha_carga}</td>
+							<td>{formatearFechaHora(m.fecha_carga)}</td>
 							<td>{m.categoria.nombre}</td>
 							<td>{m.solicitante.nombre}</td>
 							<td>{m.resolutor.nombre}</td>
