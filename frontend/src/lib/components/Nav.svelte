@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { semanaActual } from '$lib/semana';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	const semana = semanaActual();
 
@@ -22,7 +23,8 @@
 <aside class="nav">
 	<div class="marca">
 		<span class="marca-icono">⚓</span>
-		<span class="font-display">Bitácora ASIPONA</span>
+		<span class="font-display marca-texto">Bitácora ASIPONA</span>
+		<ThemeToggle />
 	</div>
 
 	<div class="semana-actual" title="Semana ISO en curso">
@@ -76,6 +78,11 @@
 
 	.marca-icono {
 		color: var(--accent-strong);
+	}
+
+	.marca-texto {
+		flex: 1;
+		min-width: 0;
 	}
 
 	.semana-actual {
