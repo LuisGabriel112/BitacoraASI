@@ -158,9 +158,12 @@
 					{#each reporte.mesas as m}
 						<tr>
 							<td class="codigo">
-							<a href="/mesas/{m.id}/editar">{m.codigo}</a>
 							{#if m.enlace}
-								<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="link-enlace" title="Abrir en Proactivanet">↗</a>
+								<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="link-codigo" title="Abrir en Proactivanet">
+									{m.codigo} ↗
+								</a>
+							{:else}
+								{m.codigo}
 							{/if}
 						</td>
 							<td>{m.titulo}</td>
@@ -349,22 +352,14 @@
 		font-family: var(--font-mono);
 	}
 
-	.codigo a {
+	.link-codigo {
 		color: var(--text);
-	}
-
-	.codigo a:hover {
-		color: var(--accent-strong);
-	}
-
-	.link-enlace {
-		margin-left: 4px;
-		color: var(--text-faint);
 		text-decoration: none;
 	}
 
-	.link-enlace:hover {
+	.link-codigo:hover {
 		color: var(--accent-strong);
+		text-decoration: underline;
 	}
 
 	.chip-estado {

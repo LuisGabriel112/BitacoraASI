@@ -180,18 +180,18 @@
 				{#each items as m}
 					<tr>
 						<td class="codigo">
-							{m.codigo}
 							{#if m.enlace}
 								<a
 									href={m.enlace}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="link-enlace"
+									class="link-codigo"
 									title="Abrir en Proactivanet"
-									aria-label="Abrir enlace de la mesa en Proactivanet"
 								>
-									↗
+									{m.codigo} ↗
 								</a>
+							{:else}
+								{m.codigo}
 							{/if}
 						</td>
 						<td class="titulo-col">{m.titulo}</td>
@@ -463,14 +463,14 @@
 		color: var(--accent-strong);
 	}
 
-	.link-enlace {
-		margin-left: 4px;
-		color: var(--text-faint);
+	.link-codigo {
+		color: var(--text);
 		text-decoration: none;
 	}
 
-	.link-enlace:hover {
+	.link-codigo:hover {
 		color: var(--accent-strong);
+		text-decoration: underline;
 	}
 
 	.btn-eliminar {
