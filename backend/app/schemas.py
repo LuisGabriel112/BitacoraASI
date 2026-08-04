@@ -118,6 +118,22 @@ class MesaCerrar(BaseModel):
     fecha_cierre_real: date
 
 
+class MesaUpdate(BaseModel):
+    enlace: str | None = None
+    codigo: str | None = None
+    titulo: str | None = None
+    fecha_carga: datetime | None = None
+    descripcion: str | None = None
+    ventana_id: int | None = None
+    categoria_id: int | None = None
+    solicitante_id: int | None = None
+    resolutor_id: int | None = None
+    fecha_estimada_resolucion: datetime | None = None
+    solucion: str | None = None
+    tipo_solucion: TipoSolucion | None = None
+    fecha_cierre_real: date | None = None
+
+
 class MesaOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

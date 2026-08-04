@@ -157,7 +157,12 @@
 				<tbody>
 					{#each reporte.mesas as m}
 						<tr>
-							<td class="codigo">{m.codigo}</td>
+							<td class="codigo">
+							<a href="/mesas/{m.id}/editar">{m.codigo}</a>
+							{#if m.enlace}
+								<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="link-enlace" title="Abrir en Proactivanet">↗</a>
+							{/if}
+						</td>
 							<td>{m.titulo}</td>
 							<td>{formatearFechaHora(m.fecha_carga)}</td>
 							<td>{m.categoria.nombre}</td>
@@ -342,6 +347,24 @@
 
 	.codigo {
 		font-family: var(--font-mono);
+	}
+
+	.codigo a {
+		color: var(--text);
+	}
+
+	.codigo a:hover {
+		color: var(--accent-strong);
+	}
+
+	.link-enlace {
+		margin-left: 4px;
+		color: var(--text-faint);
+		text-decoration: none;
+	}
+
+	.link-enlace:hover {
+		color: var(--accent-strong);
 	}
 
 	.chip-estado {

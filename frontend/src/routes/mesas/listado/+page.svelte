@@ -179,7 +179,21 @@
 			{:else}
 				{#each items as m}
 					<tr>
-						<td class="codigo">{m.codigo}</td>
+						<td class="codigo">
+							{m.codigo}
+							{#if m.enlace}
+								<a
+									href={m.enlace}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="link-enlace"
+									title="Abrir en Proactivanet"
+									aria-label="Abrir enlace de la mesa en Proactivanet"
+								>
+									↗
+								</a>
+							{/if}
+						</td>
 						<td class="titulo-col">{m.titulo}</td>
 						<td>{formatearFechaHora(m.fecha_carga)}</td>
 						<td>{m.categoria.nombre}</td>
@@ -204,6 +218,7 @@
 									{#if !m.fecha_cierre_real}
 										<button class="btn-cerrar" onclick={() => abrirCierre(m.id)}>Cerrar</button>
 									{/if}
+									<a class="btn-editar" href="/mesas/{m.id}/editar">Editar</a>
 									<button class="btn-eliminar" title="Eliminar mesa" aria-label="Eliminar mesa" onclick={() => (confirmandoId = m.id)}>
 										🗑
 									</button>
@@ -429,6 +444,32 @@
 
 	.btn-cerrar:hover {
 		border-color: var(--accent);
+		color: var(--accent-strong);
+	}
+
+	.btn-editar {
+		display: inline-flex;
+		align-items: center;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 4px 10px;
+		color: var(--text);
+		text-decoration: none;
+		font-size: 12px;
+	}
+
+	.btn-editar:hover {
+		border-color: var(--accent);
+		color: var(--accent-strong);
+	}
+
+	.link-enlace {
+		margin-left: 4px;
+		color: var(--text-faint);
+		text-decoration: none;
+	}
+
+	.link-enlace:hover {
 		color: var(--accent-strong);
 	}
 

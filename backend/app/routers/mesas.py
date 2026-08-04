@@ -21,6 +21,7 @@ from app.schemas import (
     MesaCerrar,
     MesaCreate,
     MesaOut,
+    MesaUpdate,
     PaginaMesas,
     PanelMesasKPIs,
     ReporteMesasSemanal,
@@ -115,6 +116,29 @@ async def cerrar_mesa(mesa_id: int, payload: MesaCerrar, session: AsyncSession =
     mesa.tipo_solucion = payload.tipo_solucion
     mesa.fecha_cierre_real = payload.fecha_cierre_real
     await session.commit()
+    mesa = await _obtener_mesa(session, mesa_id)
+    return MesaOut.model_validate(mesa)
+
+
+def _campos_a_actualizar(payload: MesaUpdate) -> dict:
+    return payload.model_dump(exclude_unset=True)
+
+
+@router.post("/{mesa_id}/editar", response_model=MesaOut)
+async def editar_mesa(mesa_id: int, payload: MesaUpdate, session: AsyncSession = Depends(get_session)):
+    mesa = await session.get(Mesa, mesa_id)
+    if mesa is None:
+        raise HTTPException(404, "Mesa no encontrada")
+
+    for campo, valor in _campos_a_actualizar(payload).items():
+        setattr(mesa, campo, valor)
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(409, f"Código '{payload.codigo}' ya existe")
+
     mesa = await _obtener_mesa(session, mesa_id)
     return MesaOut.model_validate(mesa)
 

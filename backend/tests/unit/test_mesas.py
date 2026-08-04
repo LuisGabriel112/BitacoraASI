@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from app.routers import mesas
-from app.schemas import MesaCerrar, MesaCreate
+from app.schemas import MesaCerrar, MesaCreate, MesaUpdate
 
 
 def _mesa(id_: int = 1, fecha_cierre_real: date | None = None) -> SimpleNamespace:
@@ -93,3 +93,37 @@ async def test_cerrar_mesa_ya_cerrada_da_400():
         await mesas.cerrar_mesa(1, payload, session)
 
     assert info.value.status_code == 400
+
+
+def test_campos_a_actualizar_solo_incluye_lo_enviado():
+    payload = MesaUpdate(titulo="Nuevo título")
+
+    assert mesas._campos_a_actualizar(payload) == {"titulo": "Nuevo título"}
+
+
+def test_campos_a_actualizar_vacio_si_nada_se_envia():
+    assert mesas._campos_a_actualizar(MesaUpdate()) == {}
+
+
+@pytest.mark.asyncio
+async def test_editar_mesa_inexistente_da_404():
+    session = AsyncMock()
+    session.get.return_value = None
+
+    with pytest.raises(HTTPException) as info:
+        await mesas.editar_mesa(1, MesaUpdate(titulo="X"), session)
+
+    assert info.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_editar_mesa_traduce_codigo_duplicado_a_409():
+    session = AsyncMock()
+    session.get.return_value = _mesa()
+    session.commit.side_effect = IntegrityError("update", {}, Exception("duplicate key"))
+
+    with pytest.raises(HTTPException) as info:
+        await mesas.editar_mesa(1, MesaUpdate(codigo="YA-EXISTE"), session)
+
+    assert info.value.status_code == 409
+    session.rollback.assert_awaited_once()

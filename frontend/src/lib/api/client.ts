@@ -223,6 +223,25 @@ export const api = {
 
 	mesaPorId: (id: number) => json<Mesa>(`/mesas/${id}`),
 
+	editarMesa: (
+		id: number,
+		payload: Partial<{
+			enlace: string | null;
+			codigo: string;
+			titulo: string;
+			fecha_carga: string;
+			descripcion: string;
+			ventana_id: number;
+			categoria_id: number;
+			solicitante_id: number;
+			resolutor_id: number;
+			fecha_estimada_resolucion: string;
+			solucion: string | null;
+			tipo_solucion: string | null;
+			fecha_cierre_real: string | null;
+		}>
+	) => json<Mesa>(`/mesas/${id}/editar`, { method: 'POST', body: JSON.stringify(payload) }),
+
 	cerrarMesa: (id: number, payload: { solucion: string; tipo_solucion: string; fecha_cierre_real: string }) =>
 		json<Mesa>(`/mesas/${id}/cerrar`, { method: 'POST', body: JSON.stringify(payload) }),
 
