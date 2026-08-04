@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { semanaActual } from '$lib/semana';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	const semana = semanaActual();
 
@@ -24,7 +23,6 @@
 	<div class="marca">
 		<span class="marca-icono">⚓</span>
 		<span class="font-display marca-texto">Bitácora ASIPONA</span>
-		<ThemeToggle />
 	</div>
 
 	<div class="semana-actual" title="Semana ISO en curso">
@@ -43,15 +41,17 @@
 		{/each}
 	</nav>
 
-	<div class="seccion-titulo">Bitácora administrativa</div>
-	<nav>
-		{#each itemsAdministrativa as item}
-			<a href={item.href} class:activo={$page.url.pathname === item.href}>
-				<span class="icono" aria-hidden="true">{item.icon}</span>
-				{item.label}
-			</a>
-		{/each}
-	</nav>
+	<div class="seccion-administrativa">
+		<div class="seccion-titulo">Bitácora administrativa</div>
+		<nav>
+			{#each itemsAdministrativa as item}
+				<a href={item.href} class:activo={$page.url.pathname === item.href}>
+					<span class="icono" aria-hidden="true">{item.icon}</span>
+					{item.label}
+				</a>
+			{/each}
+		</nav>
+	</div>
 </aside>
 
 <style>
@@ -119,6 +119,16 @@
 		gap: 2px;
 	}
 
+	.seccion-administrativa {
+		opacity: 0.72;
+		transition: opacity 0.15s ease;
+	}
+
+	.seccion-administrativa:hover,
+	.seccion-administrativa:focus-within {
+		opacity: 1;
+	}
+
 	.seccion-titulo {
 		padding: 10px 18px 4px;
 		font-size: 11px;
@@ -152,8 +162,8 @@
 
 	nav a.activo {
 		background: var(--surface-raised);
-		color: var(--text);
-		box-shadow: inset 2px 0 0 var(--accent-strong);
+		color: var(--accent);
+		box-shadow: inset 3px 0 0 var(--accent);
 	}
 
 	.icono {
@@ -163,6 +173,6 @@
 	}
 
 	nav a.activo .icono {
-		color: var(--accent-strong);
+		color: var(--accent);
 	}
 </style>

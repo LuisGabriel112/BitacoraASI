@@ -151,7 +151,7 @@
 			<table>
 				<thead>
 					<tr>
-						<th>Código</th><th>Título</th><th>Fecha carga</th><th>Categoría</th><th>Solicitante</th><th>Resolutor</th><th>Estado</th><th>Descripción</th>
+						<th>Código</th><th>Título</th><th>Fecha carga</th><th>Ventana</th><th>Solicitante</th><th>Resolutor</th><th>Estado</th><th>Descripción</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -168,7 +168,7 @@
 						</td>
 							<td>{m.titulo}</td>
 							<td>{formatearFechaHora(m.fecha_carga)}</td>
-							<td>{m.categoria.nombre}</td>
+							<td>{m.ventana.nombre}</td>
 							<td>{m.solicitante.nombre}</td>
 							<td>{m.resolutor.nombre}</td>
 							<td>
@@ -197,8 +197,8 @@
 		background: var(--surface);
 		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
-		width: 32px;
-		height: 32px;
+		width: 40px;
+		height: 40px;
 		color: var(--text);
 		cursor: pointer;
 	}

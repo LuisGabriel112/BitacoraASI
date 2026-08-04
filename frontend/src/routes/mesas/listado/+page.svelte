@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
+	import Header from '$lib/components/Header.svelte';
 	import { api, type Mesa } from '$lib/api/client';
 
 	function formatearFechaHora(iso: string) {
@@ -121,7 +122,7 @@
 	}
 </script>
 
-<h1 class="font-display">Listado de mesas</h1>
+<Header titulo="Listado de mesas" />
 
 <div class="barra-superior">
 	<input
@@ -147,7 +148,7 @@
 	</div>
 	<div class="exportar">
 		<a href={api.exportMesasUrl('csv', paramsFiltros())} class="boton-secundario">Exportar CSV</a>
-		<a href={api.exportMesasUrl('xlsx', paramsFiltros())} class="boton-secundario">Exportar Excel</a>
+		<a href={api.exportMesasUrl('xlsx', paramsFiltros())} class="boton-primario">Exportar Excel</a>
 	</div>
 </div>
 
@@ -158,7 +159,7 @@
 				<th>Código</th>
 				<th>Título</th>
 				<th>Fecha carga</th>
-				<th>Categoría</th>
+				<th>Ventana</th>
 				<th>Solicitante</th>
 				<th>Resolutor</th>
 				<th>Estado</th>
@@ -196,7 +197,7 @@
 						</td>
 						<td class="titulo-col">{m.titulo}</td>
 						<td>{formatearFechaHora(m.fecha_carga)}</td>
-						<td>{m.categoria.nombre}</td>
+						<td>{m.ventana.nombre}</td>
 						<td>{m.solicitante.nombre}</td>
 						<td>{m.resolutor.nombre}</td>
 						<td>
@@ -308,26 +309,85 @@
 		min-width: 130px;
 	}
 
+	/* filtros como chips: misma píldora con flecha ▾ que /listado técnico,
+	   aplicada aquí también al select nativo de Estado para que combine. */
+	.filtros :global(.campo),
+	.filtros .campo {
+		position: relative;
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+		border: 1px solid var(--glass-border);
+		border-radius: 999px;
+		padding: 6px 26px 6px 14px;
+		background: var(--glass-bg);
+	}
+
+	.filtros :global(.campo)::after,
+	.filtros .campo::after {
+		content: '▾';
+		position: absolute;
+		right: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 10px;
+		color: var(--text-faint);
+		pointer-events: none;
+	}
+
+	.filtros :global(label),
+	.filtros label {
+		font-size: 11px;
+		white-space: nowrap;
+	}
+
+	.filtros :global(input),
+	.filtros :global(select),
+	.filtros select {
+		background: transparent !important;
+		border: none !important;
+		padding: 2px 0 !important;
+		min-width: 84px;
+		appearance: none;
+		-webkit-appearance: none;
+	}
+
 	.exportar {
 		display: flex;
 		gap: 8px;
 		margin-left: auto;
 	}
 
-	.boton-secundario {
+	.boton-secundario,
+	.boton-primario {
 		display: inline-flex;
 		align-items: center;
-		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 8px 14px;
 		text-decoration: none;
-		color: var(--text);
 		font-size: 13px;
+	}
+
+	.boton-secundario {
+		border: 1px solid var(--border-strong);
+		color: var(--text);
 	}
 
 	.boton-secundario:hover {
 		border-color: var(--accent);
 		color: var(--accent-strong);
+	}
+
+	.boton-primario {
+		border: none;
+		background: var(--accent);
+		color: var(--bg);
+		font-weight: 600;
+	}
+
+	.boton-primario:hover {
+		background: var(--accent-strong);
 	}
 
 	.campo {
@@ -354,7 +414,8 @@
 	}
 
 	.tabla-wrap {
-		overflow-x: auto;
+		overflow: auto;
+		max-height: 560px;
 		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 	}
@@ -376,7 +437,7 @@
 		border-bottom: 1px solid var(--border-strong);
 		position: sticky;
 		top: 0;
-		background: var(--surface);
+		background: var(--bg);
 	}
 
 	td {
@@ -433,6 +494,9 @@
 	}
 
 	.btn-cerrar {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
 		background: none;
 		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
@@ -450,6 +514,7 @@
 	.btn-editar {
 		display: inline-flex;
 		align-items: center;
+		min-height: 40px;
 		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 4px 10px;
@@ -474,10 +539,14 @@
 	}
 
 	.btn-eliminar {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 40px;
+		min-height: 40px;
 		background: none;
 		border: 1px solid transparent;
 		border-radius: var(--radius);
-		padding: 4px 8px;
 		color: var(--text-faint);
 		cursor: pointer;
 		font-size: 14px;
@@ -601,8 +670,9 @@
 	.botones button {
 		background: var(--surface);
 		border: 1px solid var(--border-strong);
-		border-radius: var(--radius);
-		padding: 6px 12px;
+		border-radius: 999px;
+		min-height: 40px;
+		padding: 6px 14px;
 		color: var(--text);
 		cursor: pointer;
 	}

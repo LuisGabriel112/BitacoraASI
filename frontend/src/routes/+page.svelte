@@ -1,6 +1,8 @@
 <script lang="ts">
+	import Header from '$lib/components/Header.svelte';
 	import StatTile from '$lib/components/StatTile.svelte';
-	import BarChartHorizontal from '$lib/components/BarChartHorizontal.svelte';
+	import Sparkline from '$lib/components/Sparkline.svelte';
+	import Donut from '$lib/components/Donut.svelte';
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
 	import SelectCatalogo from '$lib/components/SelectCatalogo.svelte';
@@ -20,8 +22,11 @@
 
 	async function cargarPanel() {
 		cargandoKpis = true;
-		kpis = await api.panel();
-		cargandoKpis = false;
+		try {
+			kpis = await api.panel();
+		} finally {
+			cargandoKpis = false;
+		}
 	}
 
 	async function cargarTabla() {
@@ -51,131 +56,237 @@
 		cargarTabla();
 	});
 
-	const sistemaChartItems = $derived(
-		kpis
-			? Object.entries(kpis.por_sistema).map(([label, value]) => ({
-					label,
-					value,
-					color: `var(--sistema-${label.toLowerCase()}, var(--accent))`
-				}))
-			: []
+	function lunesDeEstaSemana(): Date {
+		const hoy = new Date();
+		const d = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
+		const diaIso = d.getUTCDay() || 7;
+		d.setUTCDate(d.getUTCDate() - (diaIso - 1));
+		return d;
+	}
+
+	const volumenSemanaCompleta = $derived.by(() => {
+		if (!kpis) return [];
+		const lunes = lunesDeEstaSemana();
+		const mapa = new Map(kpis.volumen_diario.map((v) => [v.fecha, v.total]));
+		return Array.from({ length: 7 }, (_, i) => {
+			const d = new Date(lunes);
+			d.setUTCDate(d.getUTCDate() + i);
+			const iso = d.toISOString().slice(0, 10);
+			return { fecha: iso, total: mapa.get(iso) ?? 0 };
+		});
+	});
+
+	const promedioDiario = $derived(
+		kpis && kpis.volumen_diario.length > 0
+			? Math.round((kpis.total_semana / kpis.volumen_diario.length) * 10) / 10
+			: 0
 	);
 
-	const moduloChartItems = $derived(
-		kpis ? kpis.distribucion_modulo.map((d) => ({ label: d.modulo, value: d.total })) : []
+	const moduloTop = $derived(kpis?.distribucion_modulo[0]?.modulo ?? '—');
+
+	const COLORES_DONUT = ['var(--accent)', 'var(--accent-2)', 'var(--sistema-mediport)', 'var(--border-strong)'];
+
+	const donutItems = $derived.by(() => {
+		if (!kpis) return [];
+		const mods = kpis.distribucion_modulo;
+		const top = mods.slice(0, 3);
+		const restoTotal = mods.slice(3).reduce((s, m) => s + m.total, 0);
+		const items = top.map((m, i) => ({ label: m.modulo, value: m.total, color: COLORES_DONUT[i] }));
+		if (restoTotal > 0) items.push({ label: 'Otros', value: restoTotal, color: COLORES_DONUT[3] });
+		return items;
+	});
+
+	function diasHabilesRestantes(): number {
+		const hoy = new Date();
+		const diaIso = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())).getUTCDay() || 7;
+		return diaIso <= 5 ? 5 - diaIso : 0;
+	}
+
+	function horaCorta(iso: string) {
+		return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+	}
+
+	const ultimaActualizacion = $derived(
+		kpis && kpis.recientes.length > 0 ? horaCorta(kpis.recientes[0].created_at) : '—'
 	);
 </script>
 
-<h1 class="font-display">Panel principal</h1>
-<p class="subtitulo">{kpis ? kpis.semana : 'Cargando semana en curso…'}</p>
+<Header titulo="Panel principal" subtitulo={kpis ? kpis.semana : 'Cargando semana en curso…'} />
 
-<div class="kpis">
-	<StatTile label="Registros esta semana" value={kpis?.total_semana ?? 0} loading={cargandoKpis} />
-	{#each Object.entries(kpis?.por_sistema ?? {}) as [nombre, total]}
-		<StatTile label={nombre} value={total} loading={cargandoKpis} />
-	{/each}
-</div>
-
-<div class="graficas">
-	<section class="tarjeta">
-		<h2 class="font-display">Volumen diario</h2>
-		<BarChartColumnas datos={kpis?.volumen_diario ?? []} loading={cargandoKpis} />
+<div class="bento">
+	<section class="tarjeta tile-hero">
+		<span class="label">Registros esta semana</span>
+		{#if cargandoKpis}
+			<span class="skeleton skeleton-hero" aria-hidden="true"></span>
+		{:else}
+			<span class="valor-hero font-display">{kpis?.total_semana ?? 0}</span>
+			<Sparkline datos={volumenSemanaCompleta} />
+		{/if}
 	</section>
-	<section class="tarjeta">
+
+	<div class="tile-1x1">
+		<StatTile label="Promedio diario" value={promedioDiario} loading={cargandoKpis} />
+	</div>
+
+	<div class="tile-1x1">
+		<StatTile label="Módulo más frecuente" value={moduloTop} loading={cargandoKpis} />
+	</div>
+
+	<section class="tarjeta tile-donut">
 		<h2 class="font-display">Distribución por módulo</h2>
-		<BarChartHorizontal items={moduloChartItems} loading={cargandoKpis} />
+		{#if cargandoKpis}
+			<p class="cargando">Cargando…</p>
+		{:else}
+			<Donut items={donutItems} />
+		{/if}
+	</section>
+
+	<section class="tarjeta tile-barras">
+		<h2 class="font-display">Volumen diario</h2>
+		<BarChartColumnas datos={volumenSemanaCompleta} loading={cargandoKpis} etiquetas="diaSemana" />
+	</section>
+
+	<div class="tile-1x1">
+		<StatTile label="Días hábiles restantes" value={diasHabilesRestantes()} />
+	</div>
+
+	<div class="tile-1x1">
+		<StatTile label="Última actualización" value={ultimaActualizacion} />
+	</div>
+
+	<section class="tarjeta tile-tabla">
+		<div class="tarjeta-cabecera">
+			<h2 class="font-display">Registros recientes</h2>
+			<div class="filtros">
+				<ComboboxCreatable id="f-empresa" catalogo="empresas" label="Empresa" bind:selectedId={empresaId} />
+				<SelectCatalogo id="f-sistema" catalogo="sistemas" label="Sistema" bind:selectedId={sistemaId} />
+				<SelectCatalogo id="f-medio" catalogo="medios" label="Medio" bind:selectedId={medioId} />
+				<ComboboxCreatable id="f-modulo" catalogo="modulos" label="Módulo" bind:selectedId={moduloId} />
+			</div>
+		</div>
+
+		<div class="tabla-wrap">
+			<table>
+				<thead>
+					<tr>
+						<th>Fecha</th>
+						<th>Empresa</th>
+						<th>Sistema</th>
+						<th>Módulo</th>
+						<th>Atendió</th>
+						<th>Descripción</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#if cargandoTabla}
+						{#each Array(5) as _}
+							<tr>
+								{#each Array(6) as _}
+									<td><span class="skeleton skeleton-celda" aria-hidden="true"></span></td>
+								{/each}
+							</tr>
+						{/each}
+					{:else if recientes.length === 0}
+						<tr><td colspan="6" class="vacio">Ningún registro con estos filtros. Ajusta empresa, sistema o módulo.</td></tr>
+					{:else}
+						{#each recientes as r}
+							<tr>
+								<td>{r.fecha}</td>
+								<td>{r.empresa.nombre}</td>
+								<td><ChipSistema nombre={r.sistema.nombre} /></td>
+								<td>{r.modulo.nombre}</td>
+								<td>{r.atendio.nombre}</td>
+								<td class="descripcion">{r.descripcion}</td>
+							</tr>
+						{/each}
+					{/if}
+				</tbody>
+			</table>
+		</div>
 	</section>
 </div>
-
-<section class="tarjeta">
-	<div class="tarjeta-cabecera">
-		<h2 class="font-display">Registros recientes</h2>
-		<div class="filtros">
-			<ComboboxCreatable id="f-empresa" catalogo="empresas" label="Empresa" bind:selectedId={empresaId} />
-			<SelectCatalogo id="f-sistema" catalogo="sistemas" label="Sistema" bind:selectedId={sistemaId} />
-			<SelectCatalogo id="f-medio" catalogo="medios" label="Medio" bind:selectedId={medioId} />
-			<ComboboxCreatable id="f-modulo" catalogo="modulos" label="Módulo" bind:selectedId={moduloId} />
-		</div>
-	</div>
-
-	<div class="tabla-wrap">
-		<table>
-			<thead>
-				<tr>
-					<th>Fecha</th>
-					<th>Empresa</th>
-					<th>Sistema</th>
-					<th>Módulo</th>
-					<th>Atendió</th>
-					<th>Descripción</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#if cargandoTabla}
-					{#each Array(5) as _}
-						<tr>
-							{#each Array(6) as _}
-								<td><span class="skeleton skeleton-celda" aria-hidden="true"></span></td>
-							{/each}
-						</tr>
-					{/each}
-				{:else if recientes.length === 0}
-					<tr><td colspan="6" class="vacio">Ningún registro con estos filtros. Ajusta empresa, sistema o módulo.</td></tr>
-				{:else}
-					{#each recientes as r}
-						<tr>
-							<td>{r.fecha}</td>
-							<td>{r.empresa.nombre}</td>
-							<td><ChipSistema nombre={r.sistema.nombre} /></td>
-							<td>{r.modulo.nombre}</td>
-							<td>{r.atendio.nombre}</td>
-							<td class="descripcion">{r.descripcion}</td>
-						</tr>
-					{/each}
-				{/if}
-			</tbody>
-		</table>
-	</div>
-</section>
 
 <style>
-	.subtitulo {
-		color: var(--text-muted);
-		margin-top: -8px;
-		margin-bottom: 20px;
-		font-size: 13px;
-		font-family: var(--font-mono);
-	}
-
-	.kpis {
-		display: flex;
-		gap: 12px;
-		flex-wrap: wrap;
-		margin-bottom: 20px;
-	}
-
-	.kpis :global(.tile) {
-		flex: 1 1 140px;
-	}
-
-	.graficas {
+	.bento {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 16px;
-		margin-bottom: 20px;
+		grid-template-columns: repeat(4, 1fr);
+		grid-auto-rows: minmax(96px, auto);
+		grid-auto-flow: dense;
+		gap: 18px;
 	}
 
 	.tarjeta {
-		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 		padding: 18px;
+		box-shadow: 0 8px 30px -12px oklch(0 0 0 / 0.35);
 	}
 
 	.tarjeta h2 {
 		font-size: 14px;
 		margin: 0 0 14px;
 		color: var(--text-muted);
+	}
+
+	.tile-hero {
+		grid-column: span 2;
+		grid-row: span 2;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+
+	.tile-hero .label {
+		font-size: 13px;
+		color: var(--text-muted);
+	}
+
+	.valor-hero {
+		font-size: 44px;
+		font-weight: 700;
+		line-height: 1.1;
+		margin-top: 6px;
+	}
+
+	.skeleton-hero {
+		display: block;
+		height: 44px;
+		width: 100px;
+		border-radius: 6px;
+		margin-top: 6px;
+	}
+
+	.tile-1x1 {
+		grid-column: span 1;
+		grid-row: span 1;
+	}
+
+	.tile-1x1 :global(.tile) {
+		height: 100%;
+		justify-content: center;
+	}
+
+	.tile-donut {
+		grid-column: span 2;
+		grid-row: span 2;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.tile-barras {
+		grid-column: span 2;
+		grid-row: span 2;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.tile-tabla {
+		grid-column: span 4;
+	}
+
+	.cargando {
+		color: var(--text-muted);
+		font-size: 13px;
 	}
 
 	.tarjeta-cabecera {
@@ -251,5 +362,32 @@
 		height: 12px;
 		width: 80%;
 		border-radius: 3px;
+	}
+
+	@media (max-width: 960px) {
+		.bento {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.tile-hero,
+		.tile-donut,
+		.tile-barras,
+		.tile-tabla {
+			grid-column: span 2;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.bento {
+			grid-template-columns: 1fr;
+		}
+
+		.tile-hero,
+		.tile-1x1,
+		.tile-donut,
+		.tile-barras,
+		.tile-tabla {
+			grid-column: span 1;
+		}
 	}
 </style>

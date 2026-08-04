@@ -75,6 +75,8 @@ export type PanelMesasKPIs = {
 	por_categoria: Record<string, number>;
 	volumen_diario: { fecha: string; total: number }[];
 	distribucion_resolutor: { resolutor: string; total: number }[];
+	distribucion_ventana: { ventana: string; total: number }[];
+	distribucion_categoria: { categoria: string; total: number }[];
 	recientes: Mesa[];
 };
 export type ReporteMesasSemanal = {

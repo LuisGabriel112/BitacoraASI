@@ -173,6 +173,8 @@ class PanelMesasKPIs(BaseModel):
     por_categoria: dict[str, int]
     volumen_diario: list[dict]
     distribucion_resolutor: list[dict]
+    distribucion_ventana: list[dict]
+    distribucion_categoria: list[dict]
     recientes: list[MesaOut]
 
 

@@ -1,19 +1,29 @@
 :root {
-	/* superficies — oscuro (default) */
-	--bg: #0f1b2d;
-	--surface: #16273d;
-	--surface-raised: #1c3149;
-	--border: #2a3f58;
-	--border-strong: #3c5573;
+	/* fondo de página (gradiente diagonal fijo + blobs) — oscuro (default) */
+	--page-bg-1: oklch(0.16 0.03 240);
+	--page-bg-2: oklch(0.2 0.05 200);
+
+	/* superficie sólida de respaldo (texto sobre botones de acento, selección) */
+	--bg: oklch(0.16 0.03 240);
+
+	/* glass — superficies translúcidas + blur */
+	--glass-bg: oklch(1 0 0 / 0.07);
+	--glass-bg-strong: oklch(1 0 0 / 0.11);
+	--glass-border: oklch(1 0 0 / 0.15);
+	--surface: var(--glass-bg);
+	--surface-raised: var(--glass-bg-strong);
+	--border: var(--glass-border);
+	--border-strong: oklch(1 0 0 / 0.24);
 
 	/* texto */
-	--text: #e8edf2;
-	--text-muted: #8fa3b8;
-	--text-faint: #5b7086;
+	--text: oklch(0.97 0.005 220);
+	--text-muted: oklch(0.75 0.02 220);
+	--text-faint: oklch(0.6 0.02 220);
 
-	/* acentos deliberados */
-	--accent: #2e7d9a;
-	--accent-strong: #3f9bbd;
+	/* acentos deliberados — color sólido, nunca degradado */
+	--accent: oklch(0.72 0.13 195);
+	--accent-strong: oklch(0.78 0.14 195);
+	--accent-2: oklch(0.78 0.13 65);
 	--success: #3b9b6f;
 	--warning: #d97706;
 	--danger: #c1443c;
@@ -26,31 +36,37 @@
 	--sistema-pis: #199e70;
 	--sistema-proactivanet: #d95926;
 
-	/* tipografía */
-	--font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
-	--font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+	/* tipografía: sans del sistema para texto general, mono solo para cifras/fechas/folios */
+	--font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+	--font-display: system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
 
-	/* espaciado / radios */
-	--radius: 6px;
-	--radius-lg: 10px;
-	--nav-width: 232px;
+	/* espaciado / radios / efectos */
+	--radius: 12px;
+	--radius-lg: 22px;
+	--nav-width: 240px;
+	--glass-blur: blur(20px) saturate(160%);
+	--blob-opacity: 0.35;
 }
 
 /* modo claro — sigue la preferencia del sistema por default */
 @media (prefers-color-scheme: light) {
 	:root {
-		--bg: #eef2f6;
-		--surface: #ffffff;
-		--surface-raised: #e4eaf1;
-		--border: #d7dfe7;
-		--border-strong: #b7c3d0;
+		--page-bg-1: oklch(0.95 0.015 220);
+		--page-bg-2: oklch(0.9 0.02 200);
+		--bg: oklch(0.98 0.005 220);
 
-		--text: #16212c;
-		--text-muted: #51667a;
-		--text-faint: #7d8fa1;
+		--glass-bg: oklch(1 0 0 / 0.55);
+		--glass-bg-strong: oklch(1 0 0 / 0.72);
+		--glass-border: oklch(1 0 0 / 0.85);
+		--border-strong: oklch(0.4 0.02 235 / 0.35);
 
-		--accent: #1f6785;
-		--accent-strong: #145269;
+		--text: oklch(0.28 0.03 240);
+		--text-muted: oklch(0.48 0.02 235);
+		--text-faint: oklch(0.58 0.02 235);
+
+		--accent: oklch(0.55 0.13 195);
+		--accent-strong: oklch(0.62 0.14 195);
+		--accent-2: oklch(0.6 0.13 65);
 		--success: #1f7a52;
 		--warning: #a85c02;
 		--danger: #a13429;
@@ -58,46 +74,56 @@
 		--sistema-mediport: #1f5db3;
 		--sistema-pis: #0f7a52;
 		--sistema-proactivanet: #b8451a;
+
+		--blob-opacity: 0.45;
 	}
 }
 
 /* el toggle manual (data-theme) gana sobre la preferencia del sistema en ambas direcciones */
 :root[data-theme='dark'] {
-	--bg: #0f1b2d;
-	--surface: #16273d;
-	--surface-raised: #1c3149;
-	--border: #2a3f58;
-	--border-strong: #3c5573;
-	--text: #e8edf2;
-	--text-muted: #8fa3b8;
-	--text-faint: #5b7086;
-	--accent: #2e7d9a;
-	--accent-strong: #3f9bbd;
+	--page-bg-1: oklch(0.16 0.03 240);
+	--page-bg-2: oklch(0.2 0.05 200);
+	--bg: oklch(0.16 0.03 240);
+	--glass-bg: oklch(1 0 0 / 0.07);
+	--glass-bg-strong: oklch(1 0 0 / 0.11);
+	--glass-border: oklch(1 0 0 / 0.15);
+	--border-strong: oklch(1 0 0 / 0.24);
+	--text: oklch(0.97 0.005 220);
+	--text-muted: oklch(0.75 0.02 220);
+	--text-faint: oklch(0.6 0.02 220);
+	--accent: oklch(0.72 0.13 195);
+	--accent-strong: oklch(0.78 0.14 195);
+	--accent-2: oklch(0.78 0.13 65);
 	--success: #3b9b6f;
 	--warning: #d97706;
 	--danger: #c1443c;
 	--sistema-mediport: #3987e5;
 	--sistema-pis: #199e70;
 	--sistema-proactivanet: #d95926;
+	--blob-opacity: 0.35;
 }
 
 :root[data-theme='light'] {
-	--bg: #eef2f6;
-	--surface: #ffffff;
-	--surface-raised: #e4eaf1;
-	--border: #d7dfe7;
-	--border-strong: #b7c3d0;
-	--text: #16212c;
-	--text-muted: #51667a;
-	--text-faint: #7d8fa1;
-	--accent: #1f6785;
-	--accent-strong: #145269;
+	--page-bg-1: oklch(0.95 0.015 220);
+	--page-bg-2: oklch(0.9 0.02 200);
+	--bg: oklch(0.98 0.005 220);
+	--glass-bg: oklch(1 0 0 / 0.55);
+	--glass-bg-strong: oklch(1 0 0 / 0.72);
+	--glass-border: oklch(1 0 0 / 0.85);
+	--border-strong: oklch(0.4 0.02 235 / 0.35);
+	--text: oklch(0.28 0.03 240);
+	--text-muted: oklch(0.48 0.02 235);
+	--text-faint: oklch(0.58 0.02 235);
+	--accent: oklch(0.55 0.13 195);
+	--accent-strong: oklch(0.62 0.14 195);
+	--accent-2: oklch(0.6 0.13 65);
 	--success: #1f7a52;
 	--warning: #a85c02;
 	--danger: #a13429;
 	--sistema-mediport: #1f5db3;
 	--sistema-pis: #0f7a52;
 	--sistema-proactivanet: #b8451a;
+	--blob-opacity: 0.45;
 }
 
 * {
@@ -111,9 +137,9 @@ body {
 
 body {
 	margin: 0;
-	background: var(--bg);
+	background: linear-gradient(135deg, var(--page-bg-1), var(--page-bg-2)) fixed;
 	color: var(--text);
-	font-family: var(--font-mono);
+	font-family: var(--font-display);
 	font-size: 14px;
 	line-height: 1.5;
 	font-variant-numeric: tabular-nums;
@@ -146,6 +172,46 @@ textarea {
 	color: var(--bg);
 }
 
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* glass — aplicado globalmente a las superficies reusadas en toda la app:
+   tarjetas, sidebar, tiles de estadística, tabla, inputs y botones secundarios.
+   No está scoped a un componente porque el mismo patrón se repite en cada
+   página (bitácora técnica y administrativa) con nombres de clase iguales. */
+.tarjeta,
+.nav,
+.sidebar,
+.tile,
+.tabla-wrap,
+.toast,
+input,
+select,
+textarea,
+.boton-secundario,
+.botones button,
+.badge-semana {
+	backdrop-filter: var(--glass-blur);
+	-webkit-backdrop-filter: var(--glass-blur);
+}
+
+/* .btn-editar/.btn-cerrar/.btn-cancelar/.btn-eliminar/.chip-estado quedan sin blur
+   a propósito: viven dentro de filas de tabla que se desplazan bajo un thead
+   sticky, y el backdrop-filter les crea una capa de composición propia que en
+   Chrome se pinta por encima del header sticky durante el scroll (el elemento
+   "atraviesa" el encabezado). Sin blur, no hay capa independiente y el header
+   los cubre bien. */
+.btn-editar,
+.btn-cerrar,
+.btn-cancelar,
+.btn-eliminar,
+.chip-estado {
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+
 .skeleton {
 	display: inline-block;
 	background: linear-gradient(
@@ -164,6 +230,80 @@ textarea {
 	}
 	100% {
 		background-position: -200% 0;
+	}
+}
+
+/* fondo decorativo fijo: blobs de acento flotando detrás de todo el layout */
+.fondo-decorativo {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.fondo-decorativo .blob {
+	position: absolute;
+	border-radius: 50%;
+	filter: blur(90px);
+	opacity: var(--blob-opacity);
+	will-change: transform;
+}
+
+.fondo-decorativo .blob-1 {
+	width: 480px;
+	height: 480px;
+	top: -120px;
+	left: -80px;
+	background: var(--accent);
+	animation: flotar-1 26s ease-in-out infinite;
+}
+
+.fondo-decorativo .blob-2 {
+	width: 520px;
+	height: 520px;
+	bottom: -160px;
+	right: -100px;
+	background: var(--accent-2);
+	animation: flotar-2 30s ease-in-out infinite;
+}
+
+.fondo-decorativo .blob-3 {
+	width: 340px;
+	height: 340px;
+	top: 40%;
+	left: 55%;
+	background: var(--accent);
+	animation: flotar-3 22s ease-in-out infinite;
+}
+
+@keyframes flotar-1 {
+	0%,
+	100% {
+		transform: translate(0, 0);
+	}
+	50% {
+		transform: translate(20px, -20px);
+	}
+}
+
+@keyframes flotar-2 {
+	0%,
+	100% {
+		transform: translate(0, 0);
+	}
+	50% {
+		transform: translate(-20px, 18px);
+	}
+}
+
+@keyframes flotar-3 {
+	0%,
+	100% {
+		transform: translate(0, 0);
+	}
+	50% {
+		transform: translate(-18px, -20px);
 	}
 }
 

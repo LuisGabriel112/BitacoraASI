@@ -229,16 +229,20 @@ async def panel_mesas(session: AsyncSession = Depends(get_session)):
     mesas_semana = await _mesas_de_semana(session, semana)
 
     por_categoria: dict[str, int] = {}
+    por_ventana: dict[str, int] = {}
     por_dia: dict[str, int] = {}
     por_resolutor: dict[str, int] = {}
     for m in mesas_semana:
         por_categoria[m.categoria.nombre] = por_categoria.get(m.categoria.nombre, 0) + 1
+        por_ventana[m.ventana.nombre] = por_ventana.get(m.ventana.nombre, 0) + 1
         dia = m.fecha_carga.date().isoformat()
         por_dia[dia] = por_dia.get(dia, 0) + 1
         por_resolutor[m.resolutor.nombre] = por_resolutor.get(m.resolutor.nombre, 0) + 1
 
     volumen_diario = [{"fecha": k, "total": v} for k, v in sorted(por_dia.items())]
     distribucion_resolutor = [{"resolutor": k, "total": v} for k, v in sorted(por_resolutor.items(), key=lambda x: -x[1])]
+    distribucion_ventana = [{"ventana": k, "total": v} for k, v in sorted(por_ventana.items(), key=lambda x: -x[1])]
+    distribucion_categoria = [{"categoria": k, "total": v} for k, v in sorted(por_categoria.items(), key=lambda x: -x[1])]
 
     return PanelMesasKPIs(
         semana=semana,
@@ -246,6 +250,8 @@ async def panel_mesas(session: AsyncSession = Depends(get_session)):
         por_categoria=por_categoria,
         volumen_diario=volumen_diario,
         distribucion_resolutor=distribucion_resolutor,
+        distribucion_ventana=distribucion_ventana,
+        distribucion_categoria=distribucion_categoria,
         recientes=[MesaOut.model_validate(m) for m in mesas_semana[:10]],
     )
 

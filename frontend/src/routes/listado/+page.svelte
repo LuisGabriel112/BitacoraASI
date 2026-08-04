@@ -2,6 +2,7 @@
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import SelectCatalogo from '$lib/components/SelectCatalogo.svelte';
+	import Header from '$lib/components/Header.svelte';
 	import { api, type Registro } from '$lib/api/client';
 
 	let buscar = $state('');
@@ -83,7 +84,7 @@
 	}
 </script>
 
-<h1 class="font-display">Listado completo</h1>
+<Header titulo="Listado completo" />
 
 <div class="barra-superior">
 	<input
@@ -102,7 +103,7 @@
 	</div>
 	<div class="exportar">
 		<a href={api.exportUrl('csv', paramsFiltros())} class="boton-secundario">Exportar CSV</a>
-		<a href={api.exportUrl('xlsx', paramsFiltros())} class="boton-secundario">Exportar Excel</a>
+		<a href={api.exportUrl('xlsx', paramsFiltros())} class="boton-primario">Exportar Excel</a>
 	</div>
 </div>
 
@@ -144,7 +145,20 @@
 						<td>{r.modulo.nombre}</td>
 						<td>{r.atendio.nombre}</td>
 						<td class="descripcion">{r.descripcion}</td>
-						<td>{r.trello_card_id ? '✓' : '—'}</td>
+						<td>
+						{#if r.trello_card_id}
+							<a
+								href="https://trello.com/c/{r.trello_card_id}"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="link-trello"
+							>
+								Ver tarjeta ↗
+							</a>
+						{:else}
+							—
+						{/if}
+					</td>
 						<td class="col-acciones">
 							{#if confirmandoId === r.id}
 								<div class="confirmar-eliminar">
@@ -214,12 +228,49 @@
 
 	.filtros {
 		display: flex;
-		gap: 10px;
+		gap: 8px;
 		flex-wrap: wrap;
 	}
 
+	/* filtros como chips: el .campo de ComboboxCreatable/SelectCatalogo pasa
+	   de columna (label arriba, control abajo) a una píldora horizontal con
+	   flecha ▾, sin tocar los componentes (afecta solo dentro de .filtros). */
 	.filtros :global(.campo) {
-		min-width: 130px;
+		position: relative;
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+		border: 1px solid var(--glass-border);
+		border-radius: 999px;
+		padding: 6px 26px 6px 14px;
+		background: var(--glass-bg);
+	}
+
+	.filtros :global(.campo)::after {
+		content: '▾';
+		position: absolute;
+		right: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 10px;
+		color: var(--text-faint);
+		pointer-events: none;
+	}
+
+	.filtros :global(label) {
+		font-size: 11px;
+		white-space: nowrap;
+	}
+
+	.filtros :global(input),
+	.filtros :global(select) {
+		background: transparent !important;
+		border: none !important;
+		padding: 2px 0 !important;
+		min-width: 84px;
+		appearance: none;
+		-webkit-appearance: none;
 	}
 
 	.exportar {
@@ -228,15 +279,19 @@
 		margin-left: auto;
 	}
 
-	.boton-secundario {
+	.boton-secundario,
+	.boton-primario {
 		display: inline-flex;
 		align-items: center;
-		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 8px 14px;
 		text-decoration: none;
-		color: var(--text);
 		font-size: 13px;
+	}
+
+	.boton-secundario {
+		border: 1px solid var(--border-strong);
+		color: var(--text);
 	}
 
 	.boton-secundario:hover {
@@ -244,8 +299,32 @@
 		color: var(--accent-strong);
 	}
 
+	.boton-primario {
+		border: none;
+		background: var(--accent);
+		color: var(--bg);
+		font-weight: 600;
+	}
+
+	.boton-primario:hover {
+		background: var(--accent-strong);
+	}
+
+	.link-trello {
+		color: var(--accent);
+		text-decoration: none;
+		font-size: 12px;
+		white-space: nowrap;
+	}
+
+	.link-trello:hover {
+		color: var(--accent-strong);
+		text-decoration: underline;
+	}
+
 	.tabla-wrap {
-		overflow-x: auto;
+		overflow: auto;
+		max-height: 560px;
 		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 	}
@@ -267,7 +346,7 @@
 		border-bottom: 1px solid var(--border-strong);
 		position: sticky;
 		top: 0;
-		background: var(--surface);
+		background: var(--bg);
 	}
 
 	td {
@@ -306,10 +385,14 @@
 	}
 
 	.btn-eliminar {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 40px;
+		min-height: 40px;
 		background: none;
 		border: 1px solid transparent;
 		border-radius: var(--radius);
-		padding: 4px 8px;
 		color: var(--text-faint);
 		cursor: pointer;
 		font-size: 14px;
@@ -390,8 +473,9 @@
 	.botones button {
 		background: var(--surface);
 		border: 1px solid var(--border-strong);
-		border-radius: var(--radius);
-		padding: 6px 12px;
+		border-radius: 999px;
+		min-height: 40px;
+		padding: 7px 16px;
 		color: var(--text);
 		cursor: pointer;
 	}

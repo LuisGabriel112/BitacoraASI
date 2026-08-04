@@ -179,8 +179,8 @@
 		background: var(--surface);
 		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
-		width: 32px;
-		height: 32px;
+		width: 40px;
+		height: 40px;
 		color: var(--text);
 		cursor: pointer;
 	}

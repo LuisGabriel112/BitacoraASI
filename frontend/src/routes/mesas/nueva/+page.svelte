@@ -2,6 +2,9 @@
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import FechaHoraInput from '$lib/components/FechaHoraInput.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import Header from '$lib/components/Header.svelte';
+	import CampoGrupo from '$lib/components/CampoGrupo.svelte';
+	import LeyendaGrupos from '$lib/components/LeyendaGrupos.svelte';
 	import { api, type Mesa } from '$lib/api/client';
 
 	function hoy() {
@@ -178,195 +181,229 @@
 
 <svelte:window onkeydown={alTeclado} onpaste={alPegar} />
 
-<h1 class="font-display">Nueva mesa</h1>
-<p class="subtitulo">Bitácora administrativa — Ctrl+Enter para guardar sin usar el mouse.</p>
-
-<div class="captura">
-	<label class="boton-captura" class:deshabilitado={extrayendo}>
-		{extrayendo ? 'Analizando imagen…' : 'Adjuntar captura'}
-		<input type="file" accept="image/*" onchange={alSeleccionarArchivo} disabled={extrayendo} hidden />
-	</label>
-	<span class="ayuda-captura">o pega una captura con Ctrl+V para autocompletar código, título, fecha, solicitante y descripción</span>
-</div>
-
-{#if errorExtraccion}
-	<Toast tipo="error">{errorExtraccion}</Toast>
-{/if}
-
-{#if avisoExtraccion}
-	<Toast tipo="pendiente">{avisoExtraccion}</Toast>
-{/if}
+<Header titulo="Nueva mesa" subtitulo="Bitácora administrativa — Ctrl+Enter para guardar sin usar el mouse." />
 
 <div class="columnas">
-<div class="columna-izquierda">
-<form class="formulario" onsubmit={(e) => (e.preventDefault(), guardar())}>
-	<div class="fila">
-		<div class="campo">
-			<label for="codigo">Código de la mesa</label>
-			<input id="codigo" type="text" bind:value={codigo} placeholder="TCK-001" />
-		</div>
-		<div class="campo">
-			<label for="titulo">Título</label>
-			<input id="titulo" type="text" bind:value={titulo} />
-		</div>
-	</div>
+	<div class="columna-izquierda">
+		<label class="dropzone" class:deshabilitado={extrayendo}>
+			<span class="dropzone-icono" aria-hidden="true">⇪</span>
+			<span class="dropzone-texto font-display">
+				{extrayendo ? 'Analizando imagen…' : 'Adjuntar captura'}
+			</span>
+			<span class="dropzone-ayuda">o pega una captura con Ctrl+V para autocompletar código, título, fecha, solicitante y descripción</span>
+			<input type="file" accept="image/*" onchange={alSeleccionarArchivo} disabled={extrayendo} hidden />
+		</label>
 
-	<div class="fila">
-		<FechaHoraInput id="fecha_carga" label="Fecha y hora de carga" bind:value={fechaCarga} />
-		<div class="campo">
-			<label for="enlace">Enlace en Proactivanet</label>
-			<input id="enlace" type="text" bind:value={enlace} placeholder="https://…" />
-		</div>
-	</div>
-
-	<div class="campo">
-		<label for="descripcion">Descripción</label>
-		<textarea id="descripcion" rows="4" bind:value={descripcion} placeholder="Qué se reportó…"></textarea>
-	</div>
-
-	<div class="fila tres">
-		<ComboboxCreatable id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
-		<ComboboxCreatable id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
-		<ComboboxCreatable id="solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} nombreSeleccionado={solicitanteNombre} />
-	</div>
-
-	<div class="fila">
-		<ComboboxCreatable id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
-		<FechaHoraInput id="fecha_estimada" label="Fecha y hora estimada de resolución" bind:value={fechaEstimadaResolucion} />
-	</div>
-
-	<label class="check-resuelta">
-		<input type="checkbox" bind:checked={yaResuelta} />
-		Ya se resolvió — capturar la solución de una vez
-	</label>
-
-	{#if yaResuelta}
-		<div class="bloque-cierre">
-			<div class="campo">
-				<label for="solucion">Solución</label>
-				<textarea id="solucion" rows="3" bind:value={solucionTexto} placeholder="Qué se hizo para resolverlo…"></textarea>
-			</div>
-			<div class="fila">
-				<div class="campo">
-					<label for="tipo_solucion">Tipo de solución</label>
-					<select id="tipo_solucion" bind:value={tipoSolucion}>
-						<option value="Modificación en BD">Modificación en BD</option>
-						<option value="Seguimiento de proceso">Seguimiento de proceso</option>
-					</select>
-				</div>
-				<div class="campo">
-					<label for="fecha_cierre">Fecha real de cierre</label>
-					<input id="fecha_cierre" type="date" bind:value={fechaCierreReal} />
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if errorValidacion}
-		<Toast tipo="error">{errorValidacion}</Toast>
-	{/if}
-
-	<div class="acciones">
-		<button type="submit" class="guardar" disabled={guardando}>
-			{guardando ? 'Guardando…' : 'Guardar mesa'}
-		</button>
-		{#if resultado}
-			<button type="button" class="secundario" onclick={limpiar}>Capturar otra</button>
+		{#if errorExtraccion}
+			<Toast tipo="error">{errorExtraccion}</Toast>
 		{/if}
-	</div>
-</form>
 
-{#if errorGuardado}
-	<div class="confirmaciones">
-		<Toast tipo="error">No se pudo guardar la mesa: {errorGuardado}</Toast>
-	</div>
-{/if}
+		{#if avisoExtraccion}
+			<Toast tipo="pendiente">{avisoExtraccion}</Toast>
+		{/if}
 
-{#if resultado}
-	<div class="confirmaciones">
-		<Toast tipo="ok">Mesa {resultado.codigo} guardada en la bitácora administrativa.</Toast>
+		<div class="tarjeta capturados">
+			<h2 class="font-display">Capturadas hoy</h2>
+			{#if cargandoCapturadas}
+				<ul class="lista-capturados">
+					{#each Array(4) as _}
+						<li class="item-capturado">
+							<span class="skeleton skeleton-item" aria-hidden="true"></span>
+						</li>
+					{/each}
+				</ul>
+			{:else if capturadasHoy.length === 0}
+				<p class="sin-capturas">Ninguna mesa capturada todavía hoy.</p>
+			{:else}
+				<ul class="lista-capturados">
+					{#each capturadasHoy as m}
+						<li class="item-capturado">
+							<div class="item-cabecera">
+								<span class="item-codigo">{m.codigo}</span>
+								<span class="item-hora">{m.fecha_carga.slice(11, 16)}</span>
+							</div>
+							<span class="item-titulo">{m.titulo}</span>
+							<span class="item-solicitante">{m.solicitante.nombre}</span>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
 	</div>
-{/if}
-</div>
 
-	<aside class="sidebar">
-		<h2 class="font-display">Capturadas hoy</h2>
-		{#if cargandoCapturadas}
-			<ul class="lista-capturados">
-				{#each Array(4) as _}
-					<li class="item-capturado">
-						<span class="skeleton skeleton-item" aria-hidden="true"></span>
-					</li>
-				{/each}
-			</ul>
-		{:else if capturadasHoy.length === 0}
-			<p class="sin-capturas">Ninguna mesa capturada todavía hoy.</p>
-		{:else}
-			<ul class="lista-capturados">
-				{#each capturadasHoy as m}
-					<li class="item-capturado">
-						<div class="item-cabecera">
-							<span class="item-codigo">{m.codigo}</span>
-							<span class="item-hora">{m.fecha_carga.slice(11, 16)}</span>
+	<div class="columna-derecha">
+		<form class="tarjeta formulario" onsubmit={(e) => (e.preventDefault(), guardar())}>
+			<LeyendaGrupos />
+
+			<div class="grid-campos">
+				<CampoGrupo grupo="a">
+					<div class="campo">
+						<label for="codigo">Código de la mesa</label>
+						<input id="codigo" type="text" bind:value={codigo} placeholder="TCK-001" />
+					</div>
+				</CampoGrupo>
+				<CampoGrupo grupo="a">
+					<div class="campo">
+						<label for="titulo">Título</label>
+						<input id="titulo" type="text" bind:value={titulo} />
+					</div>
+				</CampoGrupo>
+				<CampoGrupo grupo="a">
+					<FechaHoraInput id="fecha_carga" label="Fecha y hora de carga" bind:value={fechaCarga} />
+				</CampoGrupo>
+				<CampoGrupo grupo="a">
+					<div class="campo">
+						<label for="enlace">Enlace en Proactivanet</label>
+						<input id="enlace" type="text" bind:value={enlace} placeholder="https://…" />
+					</div>
+				</CampoGrupo>
+				<CampoGrupo grupo="b">
+					<ComboboxCreatable id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
+				</CampoGrupo>
+				<CampoGrupo grupo="a">
+					<ComboboxCreatable id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
+				</CampoGrupo>
+				<CampoGrupo grupo="a">
+					<ComboboxCreatable id="solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} nombreSeleccionado={solicitanteNombre} />
+				</CampoGrupo>
+				<CampoGrupo grupo="c">
+					<ComboboxCreatable id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
+				</CampoGrupo>
+				<CampoGrupo grupo="a">
+					<FechaHoraInput id="fecha_estimada" label="Fecha y hora estimada de resolución" bind:value={fechaEstimadaResolucion} />
+				</CampoGrupo>
+			</div>
+
+			<CampoGrupo grupo="a">
+				<div class="campo">
+					<label for="descripcion">Descripción</label>
+					<textarea id="descripcion" rows="4" bind:value={descripcion} placeholder="Qué se reportó…"></textarea>
+				</div>
+			</CampoGrupo>
+
+			<label class="check-resuelta">
+				<input type="checkbox" bind:checked={yaResuelta} />
+				Ya se resolvió — capturar la solución de una vez
+			</label>
+
+			{#if yaResuelta}
+				<div class="bloque-cierre">
+					<CampoGrupo grupo="b">
+						<div class="campo">
+							<label for="solucion">Solución</label>
+							<textarea id="solucion" rows="3" bind:value={solucionTexto} placeholder="Qué se hizo para resolverlo…"></textarea>
 						</div>
-						<span class="item-titulo">{m.titulo}</span>
-						<span class="item-solicitante">{m.solicitante.nombre}</span>
-					</li>
-				{/each}
-			</ul>
+					</CampoGrupo>
+					<div class="grid-campos">
+						<div class="campo">
+							<label for="tipo_solucion">Tipo de solución</label>
+							<select id="tipo_solucion" bind:value={tipoSolucion}>
+								<option value="Modificación en BD">Modificación en BD</option>
+								<option value="Seguimiento de proceso">Seguimiento de proceso</option>
+							</select>
+						</div>
+						<CampoGrupo grupo="c">
+							<div class="campo">
+								<label for="fecha_cierre">Fecha real de cierre</label>
+								<input id="fecha_cierre" type="date" bind:value={fechaCierreReal} />
+							</div>
+						</CampoGrupo>
+					</div>
+				</div>
+			{/if}
+
+			{#if errorValidacion}
+				<Toast tipo="error">{errorValidacion}</Toast>
+			{/if}
+
+			<div class="acciones">
+				{#if resultado}
+					<button type="button" class="secundario" onclick={limpiar}>Capturar otra</button>
+				{/if}
+				<button type="submit" class="guardar" disabled={guardando}>
+					{guardando ? 'Guardando…' : 'Guardar mesa'}
+				</button>
+			</div>
+		</form>
+
+		{#if errorGuardado}
+			<div class="confirmaciones">
+				<Toast tipo="error">No se pudo guardar la mesa: {errorGuardado}</Toast>
+			</div>
 		{/if}
-	</aside>
+
+		{#if resultado}
+			<div class="confirmaciones">
+				<Toast tipo="ok">Mesa {resultado.codigo} guardada en la bitácora administrativa.</Toast>
+			</div>
+		{/if}
+	</div>
 </div>
 
 <style>
-	.subtitulo {
-		color: var(--text-muted);
-		margin-top: -8px;
-		margin-bottom: 24px;
-		font-size: 13px;
+	.columnas {
+		display: grid;
+		grid-template-columns: minmax(280px, 360px) 1fr;
+		gap: 24px;
+		align-items: start;
 	}
 
-	.captura {
+	.columna-izquierda {
 		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		min-width: 0;
+	}
+
+	.columna-derecha {
+		min-width: 0;
+	}
+
+	.dropzone {
+		display: flex;
+		flex-direction: column;
 		align-items: center;
-		gap: 12px;
-		margin-bottom: 18px;
-	}
-
-	.boton-captura {
-		background: none;
+		text-align: center;
+		gap: 6px;
 		border: 1px dashed var(--border-strong);
-		border-radius: var(--radius);
-		padding: 9px 16px;
-		color: var(--text);
+		border-radius: var(--radius-lg);
+		padding: 28px 16px;
 		cursor: pointer;
-		font-size: 13px;
+		background: var(--glass-bg);
+		backdrop-filter: var(--glass-blur);
+		-webkit-backdrop-filter: var(--glass-blur);
+		transition: border-color 0.15s ease;
 	}
 
-	.boton-captura:hover {
+	.dropzone:hover {
 		border-color: var(--accent);
 	}
 
-	.boton-captura.deshabilitado {
+	.dropzone.deshabilitado {
 		opacity: 0.6;
 		cursor: default;
 	}
 
-	.ayuda-captura {
+	.dropzone-icono {
+		font-size: 22px;
+		color: var(--accent);
+	}
+
+	.dropzone-texto {
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.dropzone-ayuda {
 		color: var(--text-muted);
 		font-size: 12px;
 	}
 
-	.columnas {
-		display: flex;
-		gap: 32px;
-		align-items: flex-start;
-	}
-
-	.columna-izquierda {
-		flex: 1 1 640px;
-		max-width: 720px;
-		min-width: 0;
+	.tarjeta {
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 18px;
 	}
 
 	.formulario {
@@ -375,18 +412,7 @@
 		gap: 18px;
 	}
 
-	.sidebar {
-		flex: 1 1 260px;
-		max-width: 320px;
-		background: var(--surface);
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 18px;
-		position: sticky;
-		top: 24px;
-	}
-
-	.sidebar h2 {
+	.capturados h2 {
 		font-size: 14px;
 		margin: 0 0 14px;
 		color: var(--text-muted);
@@ -454,14 +480,10 @@
 		border-radius: 4px;
 	}
 
-	.fila {
+	.grid-campos {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 16px;
-	}
-
-	.fila.tres {
-		grid-template-columns: 1fr 1fr 1fr;
 	}
 
 	.campo {
@@ -522,6 +544,7 @@
 		display: flex;
 		gap: 12px;
 		align-items: center;
+		justify-content: flex-end;
 	}
 
 	.guardar {
@@ -554,10 +577,19 @@
 	}
 
 	.confirmaciones {
-		max-width: 720px;
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
 		margin-top: 18px;
+	}
+
+	@media (max-width: 800px) {
+		.columnas {
+			grid-template-columns: 1fr;
+		}
+
+		.grid-campos {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

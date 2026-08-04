@@ -3,6 +3,8 @@
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import FechaHoraInput from '$lib/components/FechaHoraInput.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import CampoGrupo from '$lib/components/CampoGrupo.svelte';
+	import LeyendaGrupos from '$lib/components/LeyendaGrupos.svelte';
 	import { api, type Mesa } from '$lib/api/client';
 
 	const mesaId = $derived(Number($page.params.id));
@@ -140,40 +142,53 @@
 	<Toast tipo="error">{errorCarga}</Toast>
 {:else}
 	<form class="formulario" onsubmit={(e) => (e.preventDefault(), guardar())}>
-		<div class="fila">
+		<LeyendaGrupos />
+
+		<div class="grid-campos">
+			<CampoGrupo grupo="a">
+				<div class="campo">
+					<label for="codigo">Código de la mesa</label>
+					<input id="codigo" type="text" bind:value={codigo} />
+				</div>
+			</CampoGrupo>
+			<CampoGrupo grupo="a">
+				<div class="campo">
+					<label for="titulo">Título</label>
+					<input id="titulo" type="text" bind:value={titulo} />
+				</div>
+			</CampoGrupo>
+			<CampoGrupo grupo="a">
+				<FechaHoraInput id="fecha_carga" label="Fecha y hora de carga" bind:value={fechaCarga} />
+			</CampoGrupo>
+			<CampoGrupo grupo="a">
+				<div class="campo">
+					<label for="enlace">Enlace en Proactivanet</label>
+					<input id="enlace" type="text" bind:value={enlace} placeholder="https://…" />
+				</div>
+			</CampoGrupo>
+			<CampoGrupo grupo="b">
+				<ComboboxCreatable id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
+			</CampoGrupo>
+			<CampoGrupo grupo="a">
+				<ComboboxCreatable id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
+			</CampoGrupo>
+			<CampoGrupo grupo="a">
+				<ComboboxCreatable id="solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} nombreSeleccionado={solicitanteNombre} />
+			</CampoGrupo>
+			<CampoGrupo grupo="c">
+				<ComboboxCreatable id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
+			</CampoGrupo>
+			<CampoGrupo grupo="a">
+				<FechaHoraInput id="fecha_estimada" label="Fecha y hora estimada de resolución" bind:value={fechaEstimadaResolucion} />
+			</CampoGrupo>
+		</div>
+
+		<CampoGrupo grupo="a">
 			<div class="campo">
-				<label for="codigo">Código de la mesa</label>
-				<input id="codigo" type="text" bind:value={codigo} />
+				<label for="descripcion">Descripción</label>
+				<textarea id="descripcion" rows="4" bind:value={descripcion}></textarea>
 			</div>
-			<div class="campo">
-				<label for="titulo">Título</label>
-				<input id="titulo" type="text" bind:value={titulo} />
-			</div>
-		</div>
-
-		<div class="fila">
-			<FechaHoraInput id="fecha_carga" label="Fecha y hora de carga" bind:value={fechaCarga} />
-			<div class="campo">
-				<label for="enlace">Enlace en Proactivanet</label>
-				<input id="enlace" type="text" bind:value={enlace} placeholder="https://…" />
-			</div>
-		</div>
-
-		<div class="campo">
-			<label for="descripcion">Descripción</label>
-			<textarea id="descripcion" rows="4" bind:value={descripcion}></textarea>
-		</div>
-
-		<div class="fila tres">
-			<ComboboxCreatable id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
-			<ComboboxCreatable id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
-			<ComboboxCreatable id="solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} nombreSeleccionado={solicitanteNombre} />
-		</div>
-
-		<div class="fila">
-			<ComboboxCreatable id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
-			<FechaHoraInput id="fecha_estimada" label="Fecha y hora estimada de resolución" bind:value={fechaEstimadaResolucion} />
-		</div>
+		</CampoGrupo>
 
 		<label class="check-resuelta">
 			<input type="checkbox" bind:checked={cerrada} />
@@ -182,11 +197,13 @@
 
 		{#if cerrada}
 			<div class="bloque-cierre">
-				<div class="campo">
-					<label for="solucion">Solución</label>
-					<textarea id="solucion" rows="3" bind:value={solucionTexto}></textarea>
-				</div>
-				<div class="fila">
+				<CampoGrupo grupo="b">
+					<div class="campo">
+						<label for="solucion">Solución</label>
+						<textarea id="solucion" rows="3" bind:value={solucionTexto}></textarea>
+					</div>
+				</CampoGrupo>
+				<div class="grid-campos">
 					<div class="campo">
 						<label for="tipo_solucion">Tipo de solución</label>
 						<select id="tipo_solucion" bind:value={tipoSolucion}>
@@ -194,10 +211,12 @@
 							<option value="Seguimiento de proceso">Seguimiento de proceso</option>
 						</select>
 					</div>
-					<div class="campo">
-						<label for="fecha_cierre">Fecha real de cierre</label>
-						<input id="fecha_cierre" type="date" bind:value={fechaCierreReal} />
-					</div>
+					<CampoGrupo grupo="c">
+						<div class="campo">
+							<label for="fecha_cierre">Fecha real de cierre</label>
+							<input id="fecha_cierre" type="date" bind:value={fechaCierreReal} />
+						</div>
+					</CampoGrupo>
 				</div>
 			</div>
 		{/if}
@@ -251,14 +270,10 @@
 		max-width: 720px;
 	}
 
-	.fila {
+	.grid-campos {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 16px;
-	}
-
-	.fila.tres {
-		grid-template-columns: 1fr 1fr 1fr;
 	}
 
 	.campo {
@@ -341,5 +356,11 @@
 		flex-direction: column;
 		gap: 10px;
 		margin-top: 18px;
+	}
+
+	@media (max-width: 640px) {
+		.grid-campos {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

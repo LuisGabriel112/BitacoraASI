@@ -3,6 +3,7 @@
 	import SelectCatalogo from '$lib/components/SelectCatalogo.svelte';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import Header from '$lib/components/Header.svelte';
 	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
 
 	function hoy() {
@@ -167,200 +168,194 @@
 
 <svelte:window onkeydown={alTeclado} onpaste={alPegar} />
 
-<h1 class="font-display">Nuevo registro</h1>
-<p class="subtitulo">Captura rápida — Ctrl+Enter para guardar sin usar el mouse.</p>
-
-<div class="captura">
-	<label class="boton-captura" class:deshabilitado={extrayendo}>
-		{extrayendo ? 'Analizando imagen…' : 'Adjuntar captura'}
-		<input type="file" accept="image/*" onchange={alSeleccionarArchivo} disabled={extrayendo} hidden />
-	</label>
-	<span class="ayuda-captura">o pega una captura con Ctrl+V para autocompletar el formulario</span>
-</div>
-
-{#if errorExtraccion}
-	<Toast tipo="error">{errorExtraccion}</Toast>
-{/if}
-
-{#if avisoExtraccion}
-	<Toast tipo="pendiente">{avisoExtraccion}</Toast>
-{/if}
+<Header titulo="Nuevo registro" subtitulo="Captura rápida — Ctrl+Enter para guardar sin usar el mouse." />
 
 <div class="columnas">
-<div class="columna-izquierda">
-<form class="formulario" onsubmit={(e) => (e.preventDefault(), guardar())}>
-	<div class="fila">
-		<div class="campo">
-			<label for="fecha">Fecha</label>
-			<input id="fecha" type="date" bind:value={fecha} />
+	<div class="columna-izquierda">
+		<label class="dropzone" class:deshabilitado={extrayendo}>
+			<span class="dropzone-icono" aria-hidden="true">⇪</span>
+			<span class="dropzone-texto font-display">
+				{extrayendo ? 'Analizando imagen…' : 'Adjuntar captura'}
+			</span>
+			<span class="dropzone-ayuda">o pega una captura con Ctrl+V para autocompletar el formulario</span>
+			<input type="file" accept="image/*" onchange={alSeleccionarArchivo} disabled={extrayendo} hidden />
+		</label>
+
+		{#if errorExtraccion}
+			<Toast tipo="error">{errorExtraccion}</Toast>
+		{/if}
+
+		{#if avisoExtraccion}
+			<Toast tipo="pendiente">{avisoExtraccion}</Toast>
+		{/if}
+
+		<div class="tarjeta capturados">
+			<h2 class="font-display">Capturados hoy</h2>
+			{#if cargandoCapturados}
+				<ul class="lista-capturados">
+					{#each Array(4) as _}
+						<li class="item-capturado">
+							<span class="skeleton skeleton-item" aria-hidden="true"></span>
+						</li>
+					{/each}
+				</ul>
+			{:else if capturadosHoy.length === 0}
+				<p class="sin-capturas">Ningún registro capturado todavía hoy.</p>
+			{:else}
+				<ul class="lista-capturados">
+					{#each capturadosHoy as r}
+						<li class="item-capturado">
+							<div class="item-cabecera">
+								<span class="item-hora">{hora(r.created_at)}</span>
+								<ChipSistema nombre={r.sistema.nombre} />
+							</div>
+							<span class="item-empresa">{r.empresa.nombre}</span>
+							<span class="item-modulo">{r.modulo.nombre}</span>
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		</div>
-		<ComboboxCreatable
-			id="empresa"
-			catalogo="empresas"
-			label="Empresa"
-			bind:selectedId={empresaId}
-			nombreSeleccionado={empresaNombre}
-			autofocus
-		/>
 	</div>
 
-	<div class="fila tres">
-		<SelectCatalogo id="sistema" catalogo="sistemas" label="Sistema" bind:selectedId={sistemaId} />
-		<SelectCatalogo id="medio" catalogo="medios" label="Medio" bind:selectedId={medioId} />
-		<ComboboxCreatable
-			id="modulo"
-			catalogo="modulos"
-			label="Módulo"
-			bind:selectedId={moduloId}
-			nombreSeleccionado={moduloNombre}
-		/>
-	</div>
+	<div class="columna-derecha">
+		<form class="tarjeta formulario" onsubmit={(e) => (e.preventDefault(), guardar())}>
+			<div class="grid-campos">
+				<div class="campo">
+					<label for="fecha">Fecha</label>
+					<input id="fecha" type="date" bind:value={fecha} />
+				</div>
+				<ComboboxCreatable
+					id="empresa"
+					catalogo="empresas"
+					label="Empresa"
+					bind:selectedId={empresaId}
+					nombreSeleccionado={empresaNombre}
+					autofocus
+				/>
+				<SelectCatalogo id="sistema" catalogo="sistemas" label="Sistema" bind:selectedId={sistemaId} />
+				<SelectCatalogo id="medio" catalogo="medios" label="Medio" bind:selectedId={medioId} />
+				<ComboboxCreatable
+					id="modulo"
+					catalogo="modulos"
+					label="Módulo"
+					bind:selectedId={moduloId}
+					nombreSeleccionado={moduloNombre}
+				/>
+				<SelectCatalogo id="atendio" catalogo="agentes" label="Atendió" bind:selectedId={atendioId} />
+			</div>
 
-	<div class="fila">
-		<SelectCatalogo id="atendio" catalogo="agentes" label="Atendió" bind:selectedId={atendioId} />
-	</div>
+			<div class="campo">
+				<label for="descripcion">Descripción</label>
+				<textarea id="descripcion" rows="4" bind:value={descripcion} placeholder="Qué se reportó y qué se hizo…"
+				></textarea>
+			</div>
 
-	<div class="campo">
-		<label for="descripcion">Descripción</label>
-		<textarea id="descripcion" rows="4" bind:value={descripcion} placeholder="Qué se reportó y qué se hizo…"
-		></textarea>
-	</div>
+			{#if errorValidacion}
+				<Toast tipo="error">{errorValidacion}</Toast>
+			{/if}
 
-	{#if errorValidacion}
-		<Toast tipo="error">{errorValidacion}</Toast>
-	{/if}
+			<div class="acciones">
+				{#if resultado}
+					<button type="button" class="secundario" onclick={limpiar}>Capturar otro</button>
+				{/if}
+				<button type="submit" class="guardar" disabled={guardando}>
+					{guardando ? 'Guardando…' : 'Guardar registro'}
+				</button>
+			</div>
+		</form>
 
-	<div class="acciones">
-		<button type="submit" class="guardar" disabled={guardando}>
-			{guardando ? 'Guardando…' : 'Guardar registro'}
-		</button>
+		{#if errorGuardado}
+			<div class="confirmaciones">
+				<Toast tipo="error">No se pudo guardar el registro: {errorGuardado}</Toast>
+			</div>
+		{/if}
+
 		{#if resultado}
-			<button type="button" class="secundario" onclick={limpiar}>Capturar otro</button>
+			<div class="confirmaciones">
+				<Toast tipo="ok">Registro guardado en la bitácora.</Toast>
+				{#if resultado.trello_ok}
+					<Toast tipo="ok">Tarjeta creada en Trello.</Toast>
+				{:else if resultado.trello_error}
+					<Toast
+						tipo="error"
+						accion={{ texto: reintentando ? 'Reintentando…' : 'Reintentar', onClick: reintentarTrello }}
+					>
+						No se pudo crear la tarjeta en Trello: {resultado.trello_error}
+					</Toast>
+				{/if}
+			</div>
 		{/if}
 	</div>
-</form>
-
-{#if errorGuardado}
-	<div class="confirmaciones">
-		<Toast tipo="error">No se pudo guardar el registro: {errorGuardado}</Toast>
-	</div>
-{/if}
-
-{#if resultado}
-	<div class="confirmaciones">
-		<Toast tipo="ok">Registro guardado en la bitácora.</Toast>
-		{#if resultado.trello_ok}
-			<Toast tipo="ok">Tarjeta creada en Trello.</Toast>
-		{:else if resultado.trello_error}
-			<Toast
-				tipo="error"
-				accion={{ texto: reintentando ? 'Reintentando…' : 'Reintentar', onClick: reintentarTrello }}
-			>
-				No se pudo crear la tarjeta en Trello: {resultado.trello_error}
-			</Toast>
-		{/if}
-	</div>
-{/if}
-</div>
-
-	<aside class="sidebar">
-		<h2 class="font-display">Capturados hoy</h2>
-		{#if cargandoCapturados}
-			<ul class="lista-capturados">
-				{#each Array(4) as _}
-					<li class="item-capturado">
-						<span class="skeleton skeleton-item" aria-hidden="true"></span>
-					</li>
-				{/each}
-			</ul>
-		{:else if capturadosHoy.length === 0}
-			<p class="sin-capturas">Ningún registro capturado todavía hoy.</p>
-		{:else}
-			<ul class="lista-capturados">
-				{#each capturadosHoy as r}
-					<li class="item-capturado">
-						<div class="item-cabecera">
-							<span class="item-hora">{hora(r.created_at)}</span>
-							<ChipSistema nombre={r.sistema.nombre} />
-						</div>
-						<span class="item-empresa">{r.empresa.nombre}</span>
-						<span class="item-modulo">{r.modulo.nombre}</span>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-	</aside>
 </div>
 
 <style>
-	.subtitulo {
-		color: var(--text-muted);
-		margin-top: -8px;
-		margin-bottom: 24px;
-		font-size: 13px;
+	.columnas {
+		display: grid;
+		grid-template-columns: minmax(280px, 360px) 1fr;
+		gap: 24px;
+		align-items: start;
 	}
 
-	.captura {
+	.columna-izquierda {
 		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		min-width: 0;
+	}
+
+	.columna-derecha {
+		min-width: 0;
+	}
+
+	.dropzone {
+		display: flex;
+		flex-direction: column;
 		align-items: center;
-		gap: 12px;
-		margin-bottom: 18px;
-	}
-
-	.boton-captura {
-		background: none;
+		text-align: center;
+		gap: 6px;
 		border: 1px dashed var(--border-strong);
-		border-radius: var(--radius);
-		padding: 9px 16px;
-		color: var(--text);
+		border-radius: var(--radius-lg);
+		padding: 28px 16px;
 		cursor: pointer;
-		font-size: 13px;
+		background: var(--glass-bg);
+		backdrop-filter: var(--glass-blur);
+		-webkit-backdrop-filter: var(--glass-blur);
+		transition: border-color 0.15s ease;
 	}
 
-	.boton-captura:hover {
+	.dropzone:hover {
 		border-color: var(--accent);
 	}
 
-	.boton-captura.deshabilitado {
+	.dropzone.deshabilitado {
 		opacity: 0.6;
 		cursor: default;
 	}
 
-	.ayuda-captura {
+	.dropzone-icono {
+		font-size: 22px;
+		color: var(--accent);
+	}
+
+	.dropzone-texto {
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.dropzone-ayuda {
 		color: var(--text-muted);
 		font-size: 12px;
 	}
 
-	.columnas {
-		display: flex;
-		gap: 32px;
-		align-items: flex-start;
-	}
-
-	.columna-izquierda {
-		flex: 1 1 640px;
-		max-width: 720px;
-		min-width: 0;
-	}
-
-	.formulario {
-		display: flex;
-		flex-direction: column;
-		gap: 18px;
-	}
-
-	.sidebar {
-		flex: 1 1 260px;
-		max-width: 320px;
+	.tarjeta {
 		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 		padding: 18px;
-		position: sticky;
-		top: 24px;
 	}
 
-	.sidebar h2 {
+	.capturados h2 {
 		font-size: 14px;
 		margin: 0 0 14px;
 		color: var(--text-muted);
@@ -422,14 +417,16 @@
 		border-radius: 4px;
 	}
 
-	.fila {
-		display: grid;
-		grid-template-columns: 1fr 2fr;
-		gap: 16px;
+	.formulario {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
 	}
 
-	.fila.tres {
-		grid-template-columns: 1fr 1fr 1fr;
+	.grid-campos {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
 	}
 
 	.campo {
@@ -464,6 +461,7 @@
 		display: flex;
 		gap: 12px;
 		align-items: center;
+		justify-content: flex-end;
 	}
 
 	.guardar {
@@ -496,10 +494,19 @@
 	}
 
 	.confirmaciones {
-		max-width: 720px;
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
 		margin-top: 18px;
+	}
+
+	@media (max-width: 800px) {
+		.columnas {
+			grid-template-columns: 1fr;
+		}
+
+		.grid-campos {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

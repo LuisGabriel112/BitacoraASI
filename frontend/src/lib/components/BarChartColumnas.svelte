@@ -1,12 +1,21 @@
 <script lang="ts">
 	type Punto = { fecha: string; total: number };
 
-	let { datos, loading = false }: { datos: Punto[]; loading?: boolean } = $props();
+	let {
+		datos,
+		loading = false,
+		etiquetas = 'fecha'
+	}: { datos: Punto[]; loading?: boolean; etiquetas?: 'fecha' | 'diaSemana' } = $props();
 
 	const max = $derived(Math.max(1, ...datos.map((d) => d.total)));
 	let hoverIdx = $state<number | null>(null);
 
+	const NOMBRES_DIA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
 	function diaCorto(iso: string) {
+		if (etiquetas === 'diaSemana') {
+			return NOMBRES_DIA[new Date(`${iso}T00:00:00Z`).getUTCDay()];
+		}
 		const [, m, d] = iso.split('-');
 		return `${d}/${m}`;
 	}
