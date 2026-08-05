@@ -5,7 +5,10 @@
 	import Header from '$lib/components/Header.svelte';
 	import CampoGrupo from '$lib/components/CampoGrupo.svelte';
 	import LeyendaGrupos from '$lib/components/LeyendaGrupos.svelte';
+	import Celebracion from '$lib/components/Celebracion.svelte';
 	import { api, type Mesa } from '$lib/api/client';
+
+	let celebracion: Celebracion;
 
 	function hoy() {
 		return new Date().toISOString().slice(0, 10);
@@ -35,7 +38,7 @@
 	let yaResuelta = $state(false);
 	let solucionTexto = $state('');
 	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>('Modificación en BD');
-	let fechaCierreReal = $state(hoy());
+	let fechaCierreReal = $state(ahora());
 
 	let guardando = $state(false);
 	let errorValidacion = $state<string | null>(null);
@@ -80,7 +83,7 @@
 		yaResuelta = false;
 		solucionTexto = '';
 		tipoSolucion = 'Modificación en BD';
-		fechaCierreReal = hoy();
+		fechaCierreReal = ahora();
 		resultado = null;
 		errorExtraccion = null;
 		avisoExtraccion = null;
@@ -138,11 +141,11 @@
 		if (!titulo.trim()) return (errorValidacion = 'Falta título');
 		if (!fechaCarga) return (errorValidacion = 'Falta fecha de carga');
 		if (!descripcion.trim()) return (errorValidacion = 'Falta descripción');
-		if (!ventanaId) return (errorValidacion = 'Falta seleccionar ventana');
 		if (!categoriaId) return (errorValidacion = 'Falta seleccionar categoría');
 		if (!solicitanteId) return (errorValidacion = 'Falta seleccionar solicitante');
 		if (!resolutorId) return (errorValidacion = 'Falta seleccionar resolutor');
 		if (!fechaEstimadaResolucion) return (errorValidacion = 'Falta fecha estimada de resolución');
+		if (yaResuelta && !ventanaId) return (errorValidacion = 'Falta seleccionar ventana');
 		if (yaResuelta && !solucionTexto.trim()) return (errorValidacion = 'Falta describir la solución');
 		if (yaResuelta && !fechaCierreReal) return (errorValidacion = 'Falta la fecha real de cierre');
 
@@ -154,16 +157,21 @@
 				titulo: titulo.trim(),
 				fecha_carga: fechaCarga,
 				descripcion: descripcion.trim(),
-				ventana_id: ventanaId,
 				categoria_id: categoriaId,
 				solicitante_id: solicitanteId,
 				resolutor_id: resolutorId,
 				fecha_estimada_resolucion: fechaEstimadaResolucion,
 				...(yaResuelta
-					? { solucion: solucionTexto.trim(), tipo_solucion: tipoSolucion, fecha_cierre_real: fechaCierreReal }
+					? {
+							ventana_id: ventanaId,
+							solucion: solucionTexto.trim(),
+							tipo_solucion: tipoSolucion,
+							fecha_cierre_real: fechaCierreReal
+						}
 					: {})
 			});
 			cargarCapturadasHoy();
+			celebracion?.mostrar(resultado.logros);
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar la mesa';
 		} finally {
@@ -180,6 +188,8 @@
 </script>
 
 <svelte:window onkeydown={alTeclado} onpaste={alPegar} />
+
+<Celebracion bind:this={celebracion} />
 
 <Header titulo="Nueva mesa" subtitulo="Bitácora administrativa — Ctrl+Enter para guardar sin usar el mouse." />
 
@@ -257,9 +267,6 @@
 						<input id="enlace" type="text" bind:value={enlace} placeholder="https://…" />
 					</div>
 				</CampoGrupo>
-				<CampoGrupo grupo="b">
-					<ComboboxCreatable id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
-				</CampoGrupo>
 				<CampoGrupo grupo="a">
 					<ComboboxCreatable id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
 				</CampoGrupo>
@@ -294,19 +301,19 @@
 							<textarea id="solucion" rows="3" bind:value={solucionTexto} placeholder="Qué se hizo para resolverlo…"></textarea>
 						</div>
 					</CampoGrupo>
-					<div class="grid-campos">
+					<div class="grid-cierre">
+						<CampoGrupo grupo="b">
+							<ComboboxCreatable id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
+						</CampoGrupo>
 						<div class="campo">
-							<label for="tipo_solucion">Tipo de solución</label>
+							<label for="tipo_solucion">Categoría de la solución</label>
 							<select id="tipo_solucion" bind:value={tipoSolucion}>
 								<option value="Modificación en BD">Modificación en BD</option>
 								<option value="Seguimiento de proceso">Seguimiento de proceso</option>
 							</select>
 						</div>
 						<CampoGrupo grupo="c">
-							<div class="campo">
-								<label for="fecha_cierre">Fecha real de cierre</label>
-								<input id="fecha_cierre" type="date" bind:value={fechaCierreReal} />
-							</div>
+							<FechaHoraInput id="fecha_cierre" label="Fecha y hora real de cierre" bind:value={fechaCierreReal} />
 						</CampoGrupo>
 					</div>
 				</div>
@@ -486,6 +493,12 @@
 		gap: 16px;
 	}
 
+	.grid-cierre {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 16px;
+	}
+
 	.campo {
 		display: flex;
 		flex-direction: column;
@@ -540,6 +553,11 @@
 		color: var(--text);
 	}
 
+	select option {
+		background: var(--bg);
+		color: var(--text);
+	}
+
 	.acciones {
 		display: flex;
 		gap: 12px;
@@ -588,7 +606,8 @@
 			grid-template-columns: 1fr;
 		}
 
-		.grid-campos {
+		.grid-campos,
+		.grid-cierre {
 			grid-template-columns: 1fr;
 		}
 	}

@@ -51,6 +51,15 @@
 		color: var(--text);
 	}
 
+	/* el menú desplegable de <select> lo dibuja el sistema operativo, no
+	   nuestro CSS de glass — sin color/fondo explícitos en <option>, puede
+	   salir con bajo contraste según el tema del SO. Fondo sólido (no glass)
+	   porque el popup nativo no soporta blur/transparencia. */
+	select option {
+		background: var(--bg);
+		color: var(--text);
+	}
+
 	select:focus-visible {
 		outline: 2px solid var(--accent);
 		outline-offset: 1px;

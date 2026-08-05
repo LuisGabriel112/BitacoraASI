@@ -5,7 +5,16 @@
 	import Toast from '$lib/components/Toast.svelte';
 	import CampoGrupo from '$lib/components/CampoGrupo.svelte';
 	import LeyendaGrupos from '$lib/components/LeyendaGrupos.svelte';
+	import Celebracion from '$lib/components/Celebracion.svelte';
 	import { api, type Mesa } from '$lib/api/client';
+
+	let celebracion: Celebracion;
+
+	function ahora() {
+		const d = new Date();
+		const pad = (n: number) => String(n).padStart(2, '0');
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+	}
 
 	const mesaId = $derived(Number($page.params.id));
 
@@ -43,8 +52,8 @@
 		titulo = m.titulo;
 		fechaCarga = m.fecha_carga.slice(0, 16);
 		descripcion = m.descripcion;
-		ventanaId = m.ventana.id;
-		ventanaNombre = m.ventana.nombre;
+		ventanaId = m.ventana?.id ?? null;
+		ventanaNombre = m.ventana?.nombre ?? '';
 		categoriaId = m.categoria.id;
 		categoriaNombre = m.categoria.nombre;
 		solicitanteId = m.solicitante.id;
@@ -55,7 +64,7 @@
 		cerrada = !!m.fecha_cierre_real;
 		solucionTexto = m.solucion ?? '';
 		tipoSolucion = (m.tipo_solucion as 'Modificación en BD' | 'Seguimiento de proceso') ?? 'Modificación en BD';
-		fechaCierreReal = m.fecha_cierre_real ?? '';
+		fechaCierreReal = m.fecha_cierre_real?.slice(0, 16) ?? ahora();
 	}
 
 	async function cargar() {
@@ -85,23 +94,23 @@
 		if (!titulo.trim()) return (errorValidacion = 'Falta título');
 		if (!fechaCarga) return (errorValidacion = 'Falta fecha de carga');
 		if (!descripcion.trim()) return (errorValidacion = 'Falta descripción');
-		if (!ventanaId) return (errorValidacion = 'Falta seleccionar ventana');
 		if (!categoriaId) return (errorValidacion = 'Falta seleccionar categoría');
 		if (!solicitanteId) return (errorValidacion = 'Falta seleccionar solicitante');
 		if (!resolutorId) return (errorValidacion = 'Falta seleccionar resolutor');
 		if (!fechaEstimadaResolucion) return (errorValidacion = 'Falta fecha estimada de resolución');
+		if (cerrada && !ventanaId) return (errorValidacion = 'Falta seleccionar ventana');
 		if (cerrada && !solucionTexto.trim()) return (errorValidacion = 'Falta describir la solución');
 		if (cerrada && !fechaCierreReal) return (errorValidacion = 'Falta la fecha real de cierre');
 
 		guardando = true;
 		try {
-			await api.editarMesa(mesaId, {
+			const actualizada = await api.editarMesa(mesaId, {
 				enlace: enlace.trim() || null,
 				codigo: codigo.trim(),
 				titulo: titulo.trim(),
 				fecha_carga: fechaCarga,
 				descripcion: descripcion.trim(),
-				ventana_id: ventanaId,
+				ventana_id: cerrada ? ventanaId : null,
 				categoria_id: categoriaId,
 				solicitante_id: solicitanteId,
 				resolutor_id: resolutorId,
@@ -111,6 +120,7 @@
 				fecha_cierre_real: cerrada ? fechaCierreReal : null
 			});
 			guardadoOk = true;
+			celebracion?.mostrar(actualizada.logros);
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar la mesa';
 		} finally {
@@ -127,6 +137,8 @@
 </script>
 
 <svelte:window onkeydown={alTeclado} />
+
+<Celebracion bind:this={celebracion} />
 
 <h1 class="font-display">Editar mesa</h1>
 <p class="subtitulo">
@@ -166,9 +178,6 @@
 					<input id="enlace" type="text" bind:value={enlace} placeholder="https://…" />
 				</div>
 			</CampoGrupo>
-			<CampoGrupo grupo="b">
-				<ComboboxCreatable id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
-			</CampoGrupo>
 			<CampoGrupo grupo="a">
 				<ComboboxCreatable id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
 			</CampoGrupo>
@@ -203,19 +212,19 @@
 						<textarea id="solucion" rows="3" bind:value={solucionTexto}></textarea>
 					</div>
 				</CampoGrupo>
-				<div class="grid-campos">
+				<div class="grid-cierre">
+					<CampoGrupo grupo="b">
+						<ComboboxCreatable id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
+					</CampoGrupo>
 					<div class="campo">
-						<label for="tipo_solucion">Tipo de solución</label>
+						<label for="tipo_solucion">Categoría de la solución</label>
 						<select id="tipo_solucion" bind:value={tipoSolucion}>
 							<option value="Modificación en BD">Modificación en BD</option>
 							<option value="Seguimiento de proceso">Seguimiento de proceso</option>
 						</select>
 					</div>
 					<CampoGrupo grupo="c">
-						<div class="campo">
-							<label for="fecha_cierre">Fecha real de cierre</label>
-							<input id="fecha_cierre" type="date" bind:value={fechaCierreReal} />
-						</div>
+						<FechaHoraInput id="fecha_cierre" label="Fecha y hora real de cierre" bind:value={fechaCierreReal} />
 					</CampoGrupo>
 				</div>
 			</div>
@@ -276,6 +285,12 @@
 		gap: 16px;
 	}
 
+	.grid-cierre {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 16px;
+	}
+
 	.campo {
 		display: flex;
 		flex-direction: column;
@@ -297,6 +312,11 @@
 		padding: 9px 10px;
 		color: var(--text);
 		resize: vertical;
+	}
+
+	select option {
+		background: var(--bg);
+		color: var(--text);
 	}
 
 	input:focus-visible,
@@ -359,7 +379,8 @@
 	}
 
 	@media (max-width: 640px) {
-		.grid-campos {
+		.grid-campos,
+		.grid-cierre {
 			grid-template-columns: 1fr;
 		}
 	}

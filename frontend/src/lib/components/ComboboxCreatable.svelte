@@ -188,15 +188,22 @@
 		pointer-events: none;
 	}
 
+	/* fondo casi opaco a propósito: este menú flota sobre el resto del
+	   formulario (position: absolute) y var(--surface-raised) es demasiado
+	   transparente (11% en modo oscuro) sin blur — el contenido de atrás se
+	   transparentaba y hacía difícil leer las opciones. */
 	.lista {
 		position: absolute;
 		z-index: 20;
 		top: calc(100% + 4px);
 		left: 0;
 		right: 0;
-		background: var(--surface-raised);
+		background: color-mix(in oklch, var(--bg) 96%, var(--surface-raised));
+		backdrop-filter: var(--glass-blur);
+		-webkit-backdrop-filter: var(--glass-blur);
 		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
+		box-shadow: 0 12px 30px -8px oklch(0 0 0 / 0.45);
 		max-height: 220px;
 		overflow-y: auto;
 		list-style: none;

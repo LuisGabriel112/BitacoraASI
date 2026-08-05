@@ -1,5 +1,5 @@
 <script lang="ts">
-	import BarChartHorizontal from '$lib/components/BarChartHorizontal.svelte';
+	import BarChartVertical from '$lib/components/BarChartVertical.svelte';
 	import { api, type GrupoSoporte, type ReporteMesasSemanal } from '$lib/api/client';
 
 	function formatearFechaHora(iso: string) {
@@ -76,9 +76,17 @@
 	const solicitanteItems = $derived(
 		reporte ? Object.entries(reporte.por_solicitante).map(([label, value]) => ({ label, value })) : []
 	);
-	const resolutorItems = $derived(
-		reporte ? Object.entries(reporte.por_resolutor).map(([label, value]) => ({ label, value })) : []
-	);
+
+	let expandidaId = $state<number | null>(null);
+
+	function alternarSolucion(m: { id: number; solucion: string | null }) {
+		if (!m.solucion) return;
+		expandidaId = expandidaId === m.id ? null : m.id;
+	}
+
+	function noPropagar(e: Event) {
+		e.stopPropagation();
+	}
 </script>
 
 <h1 class="font-display">Reporte semanal de mesas</h1>
@@ -87,7 +95,11 @@
 	<button onclick={() => (semanaInput = sumarSemanas(semanaInput, -1))} aria-label="Semana anterior">←</button>
 	<input type="week" bind:value={semanaInput} />
 	<button onclick={() => (semanaInput = sumarSemanas(semanaInput, 1))} aria-label="Semana siguiente">→</button>
-	<a href={api.exportMesasUrl('xlsx', { semana: semanaEtiqueta })} class="boton-excel">Exportar Excel</a>
+	<div class="exportar-reporte">
+		<a href={api.exportReporteMesasUrl(semanaEtiqueta, 'xlsx')} class="boton-secundario">Excel</a>
+		<a href={api.exportReporteMesasUrl(semanaEtiqueta, 'pptx')} class="boton-secundario">PowerPoint</a>
+		<a href={api.exportReporteMesasUrl(semanaEtiqueta, 'pdf')} class="boton-excel">PDF</a>
+	</div>
 </div>
 
 {#if cargando}
@@ -114,16 +126,10 @@
 		</div>
 	</section>
 
-	<div class="graficas">
-		<section class="tarjeta">
-			<h2 class="font-display">Por solicitante</h2>
-			<BarChartHorizontal items={solicitanteItems} />
-		</section>
-		<section class="tarjeta">
-			<h2 class="font-display">Por resolutor</h2>
-			<BarChartHorizontal items={resolutorItems} />
-		</section>
-	</div>
+	<section class="tarjeta">
+		<h2 class="font-display">Por solicitante</h2>
+		<BarChartVertical items={solicitanteItems} />
+	</section>
 
 	<section class="tarjeta">
 		<h2 class="font-display">Temas más frecuentes</h2>
@@ -156,19 +162,19 @@
 				</thead>
 				<tbody>
 					{#each reporte.mesas as m}
-						<tr>
-							<td class="codigo">
+						<tr class:clicable={!!m.solucion} title={m.solucion ? 'Ver solución' : undefined} onclick={() => alternarSolucion(m)}>
+							<td class="codigo" onclick={noPropagar}>
 							{#if m.enlace}
 								<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="link-codigo" title="Abrir en Proactivanet">
 									{m.codigo} ↗
 								</a>
 							{:else}
-								{m.codigo}
+								<span class="sin-enlace">{m.codigo}</span>
 							{/if}
 						</td>
 							<td>{m.titulo}</td>
 							<td>{formatearFechaHora(m.fecha_carga)}</td>
-							<td>{m.ventana.nombre}</td>
+							<td>{m.ventana?.nombre ?? '—'}</td>
 							<td>{m.solicitante.nombre}</td>
 							<td>{m.resolutor.nombre}</td>
 							<td>
@@ -178,6 +184,19 @@
 							</td>
 							<td class="descripcion">{m.descripcion}</td>
 						</tr>
+						{#if expandidaId === m.id}
+							<tr class="fila-solucion">
+								<td colspan="8">
+									<div class="detalle-solucion">
+										<span class="detalle-etiqueta">Solución</span>
+										<p class="detalle-texto">{m.solucion}</p>
+										{#if m.tipo_solucion}
+											<span class="detalle-tipo">{m.tipo_solucion}</span>
+										{/if}
+									</div>
+								</td>
+							</tr>
+						{/if}
 					{/each}
 				</tbody>
 			</table>
@@ -215,10 +234,14 @@
 		color: var(--text);
 	}
 
-	.boton-excel {
+	.exportar-reporte {
 		margin-left: auto;
-		background: var(--accent);
-		color: var(--bg);
+		display: flex;
+		gap: 8px;
+	}
+
+	.boton-excel,
+	.boton-secundario {
 		border-radius: var(--radius);
 		padding: 8px 16px;
 		text-decoration: none;
@@ -226,8 +249,24 @@
 		font-family: var(--font-display);
 	}
 
+	.boton-excel {
+		background: var(--accent);
+		color: var(--bg);
+	}
+
 	.boton-excel:hover {
 		background: var(--accent-strong);
+	}
+
+	.boton-secundario {
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		color: var(--text);
+	}
+
+	.boton-secundario:hover {
+		border-color: var(--accent);
+		color: var(--accent-strong);
 	}
 
 	.cargando {
@@ -273,12 +312,6 @@
 		padding: 3px 8px;
 		font-size: 11px;
 		font-weight: 600;
-	}
-
-	.graficas {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 16px;
 	}
 
 	.grupos-error {
@@ -350,6 +383,21 @@
 
 	.codigo {
 		font-family: var(--font-mono);
+		padding: 0;
+		background: color-mix(in srgb, var(--accent) 7%, transparent);
+		border-left: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+	}
+
+	.codigo .link-codigo,
+	.codigo .sin-enlace {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: 9px 10px;
+	}
+
+	.codigo .link-codigo:hover {
+		background: color-mix(in srgb, var(--accent) 16%, transparent);
 	}
 
 	.link-codigo {
@@ -360,6 +408,47 @@
 	.link-codigo:hover {
 		color: var(--accent-strong);
 		text-decoration: underline;
+	}
+
+	tbody tr.clicable {
+		cursor: pointer;
+	}
+
+	.fila-solucion td {
+		background: var(--surface-raised);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.detalle-solucion {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 10px 4px;
+	}
+
+	.detalle-etiqueta {
+		font-size: 11px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+
+	.detalle-texto {
+		margin: 0;
+		font-size: 13px;
+		color: var(--text);
+		white-space: pre-wrap;
+	}
+
+	.detalle-tipo {
+		align-self: flex-start;
+		font-size: 11px;
+		color: var(--text-muted);
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: 999px;
+		padding: 3px 10px;
 	}
 
 	.chip-estado {

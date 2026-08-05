@@ -1,12 +1,22 @@
 <script lang="ts">
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
+	import FechaHoraInput from '$lib/components/FechaHoraInput.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Celebracion from '$lib/components/Celebracion.svelte';
 	import { api, type Mesa } from '$lib/api/client';
+
+	let celebracion: Celebracion;
 
 	function formatearFechaHora(iso: string) {
 		const [fecha, hora] = iso.split('T');
 		const [anio, mes, dia] = fecha.split('-');
 		return `${dia}/${mes}/${anio} ${hora?.slice(0, 5) ?? ''}`;
+	}
+
+	function ahora() {
+		const d = new Date();
+		const pad = (n: number) => String(n).padStart(2, '0');
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 	}
 
 	let buscar = $state('');
@@ -28,11 +38,23 @@
 	let errorEliminar = $state<string | null>(null);
 
 	let cerrandoId = $state<number | null>(null);
+	let ventanaCierreId = $state<number | null>(null);
 	let solucionTexto = $state('');
 	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>('Modificación en BD');
-	let fechaCierreReal = $state(new Date().toISOString().slice(0, 10));
+	let fechaCierreReal = $state(ahora());
 	let guardandoCierre = $state(false);
 	let errorCierre = $state<string | null>(null);
+
+	let expandidaId = $state<number | null>(null);
+
+	function alternarSolucion(m: Mesa) {
+		if (!m.solucion) return;
+		expandidaId = expandidaId === m.id ? null : m.id;
+	}
+
+	function noPropagar(e: Event) {
+		e.stopPropagation();
+	}
 
 	async function confirmarEliminar(id: number) {
 		eliminandoId = id;
@@ -52,23 +74,27 @@
 	function abrirCierre(id: number) {
 		cerrandoId = id;
 		errorCierre = null;
+		ventanaCierreId = null;
 		solucionTexto = '';
 		tipoSolucion = 'Modificación en BD';
-		fechaCierreReal = new Date().toISOString().slice(0, 10);
+		fechaCierreReal = ahora();
 	}
 
 	async function confirmarCierre(id: number) {
+		if (!ventanaCierreId) return (errorCierre = 'Falta seleccionar ventana');
 		if (!solucionTexto.trim()) return (errorCierre = 'Falta describir la solución');
 		guardandoCierre = true;
 		errorCierre = null;
 		try {
 			const actualizada = await api.cerrarMesa(id, {
+				ventana_id: ventanaCierreId,
 				solucion: solucionTexto.trim(),
 				tipo_solucion: tipoSolucion,
 				fecha_cierre_real: fechaCierreReal
 			});
 			items = items.map((m) => (m.id === id ? actualizada : m));
 			cerrandoId = null;
+			celebracion?.mostrar(actualizada.logros);
 		} catch (e) {
 			errorCierre = e instanceof Error ? e.message : 'No se pudo cerrar la mesa';
 		} finally {
@@ -122,12 +148,14 @@
 	}
 </script>
 
+<Celebracion bind:this={celebracion} />
+
 <Header titulo="Listado de mesas" />
 
 <div class="barra-superior">
 	<input
 		type="search"
-		placeholder="Buscar por código, título o descripción…"
+		placeholder="Buscar por código, título, descripción o solución…"
 		value={buscar}
 		oninput={alBuscar}
 		class="buscador"
@@ -179,8 +207,12 @@
 				<tr><td colspan="8" class="vacio">Ninguna mesa con estos filtros.</td></tr>
 			{:else}
 				{#each items as m}
-					<tr>
-						<td class="codigo">
+					<tr
+						class:clicable={!!m.solucion}
+						title={m.solucion ? 'Ver solución' : undefined}
+						onclick={() => alternarSolucion(m)}
+					>
+						<td class="codigo" onclick={noPropagar}>
 							{#if m.enlace}
 								<a
 									href={m.enlace}
@@ -192,12 +224,12 @@
 									{m.codigo} ↗
 								</a>
 							{:else}
-								{m.codigo}
+								<span class="sin-enlace">{m.codigo}</span>
 							{/if}
 						</td>
 						<td class="titulo-col">{m.titulo}</td>
 						<td>{formatearFechaHora(m.fecha_carga)}</td>
-						<td>{m.ventana.nombre}</td>
+						<td>{m.ventana?.nombre ?? '—'}</td>
 						<td>{m.solicitante.nombre}</td>
 						<td>{m.resolutor.nombre}</td>
 						<td>
@@ -205,7 +237,7 @@
 								{m.fecha_cierre_real ? 'Cerrada' : 'Abierta'}
 							</span>
 						</td>
-						<td class="col-acciones">
+						<td class="col-acciones" onclick={noPropagar}>
 							{#if confirmandoId === m.id}
 								<div class="confirmar-eliminar">
 									<span>¿Eliminar?</span>
@@ -227,6 +259,19 @@
 							{/if}
 						</td>
 					</tr>
+					{#if expandidaId === m.id}
+						<tr class="fila-solucion">
+							<td colspan="8">
+								<div class="detalle-solucion">
+									<span class="detalle-etiqueta">Solución</span>
+									<p class="detalle-texto">{m.solucion}</p>
+									{#if m.tipo_solucion}
+										<span class="detalle-tipo">{m.tipo_solucion}</span>
+									{/if}
+								</div>
+							</td>
+						</tr>
+					{/if}
 					{#if cerrandoId === m.id}
 						<tr class="fila-cierre">
 							<td colspan="8">
@@ -235,17 +280,15 @@
 										<label for="solucion-{m.id}">Solución</label>
 										<textarea id="solucion-{m.id}" rows="2" bind:value={solucionTexto}></textarea>
 									</div>
+									<ComboboxCreatable id="ventana-{m.id}" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaCierreId} />
 									<div class="campo">
-										<label for="tipo-{m.id}">Tipo de solución</label>
+										<label for="tipo-{m.id}">Categoría de la solución</label>
 										<select id="tipo-{m.id}" bind:value={tipoSolucion}>
 											<option value="Modificación en BD">Modificación en BD</option>
 											<option value="Seguimiento de proceso">Seguimiento de proceso</option>
 										</select>
 									</div>
-									<div class="campo">
-										<label for="fecha-cierre-{m.id}">Fecha real de cierre</label>
-										<input id="fecha-cierre-{m.id}" type="date" bind:value={fechaCierreReal} />
-									</div>
+									<FechaHoraInput id="fecha-cierre-{m.id}" label="Fecha y hora real de cierre" bind:value={fechaCierreReal} />
 									<div class="acciones-cierre">
 										<button class="btn-guardar-cierre" disabled={guardandoCierre} onclick={() => confirmarCierre(m.id)}>
 											{guardandoCierre ? 'Guardando…' : 'Guardar cierre'}
@@ -413,6 +456,13 @@
 		resize: vertical;
 	}
 
+	/* ver nota en SelectCatalogo.svelte: el popup nativo de <select> no
+	   soporta glass, necesita fondo sólido explícito en <option>. */
+	select option {
+		background: var(--bg);
+		color: var(--text);
+	}
+
 	.tabla-wrap {
 		overflow: auto;
 		max-height: 560px;
@@ -449,8 +499,68 @@
 		background: var(--surface-raised);
 	}
 
+	/* la celda de código se distingue del resto de la fila con un tinte y borde
+	   de acento: aquí el clic abre el enlace externo, mientras el resto de la
+	   fila despliega la solución — dos acciones distintas necesitan una señal
+	   visual distinta, no solo el cursor. */
 	.codigo {
 		font-family: var(--font-mono);
+		padding: 0;
+		background: color-mix(in srgb, var(--accent) 7%, transparent);
+		border-left: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+	}
+
+	.codigo .link-codigo,
+	.codigo .sin-enlace {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: 9px 10px;
+	}
+
+	.codigo .link-codigo:hover {
+		background: color-mix(in srgb, var(--accent) 16%, transparent);
+	}
+
+	tbody tr.clicable {
+		cursor: pointer;
+	}
+
+	.fila-solucion td {
+		background: var(--surface-raised);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.detalle-solucion {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 10px 4px;
+	}
+
+	.detalle-etiqueta {
+		font-size: 11px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+
+	.detalle-texto {
+		margin: 0;
+		font-size: 13px;
+		color: var(--text);
+		white-space: pre-wrap;
+	}
+
+	.detalle-tipo {
+		align-self: flex-start;
+		font-size: 11px;
+		color: var(--text-muted);
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: 999px;
+		padding: 3px 10px;
 	}
 
 	.titulo-col {
@@ -603,7 +713,7 @@
 
 	.form-cierre {
 		display: grid;
-		grid-template-columns: 2fr 1fr 1fr auto;
+		grid-template-columns: 2fr 1fr 1fr 1fr auto;
 		gap: 12px;
 		align-items: start;
 		padding: 8px 4px;

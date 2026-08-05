@@ -24,7 +24,6 @@ def _mesa_create(codigo: str = "TCK-001") -> MesaCreate:
         titulo="Falla login",
         fecha_carga=date(2026, 8, 3),
         descripcion="No entra al portal",
-        ventana_id=1,
         categoria_id=1,
         solicitante_id=1,
         resolutor_id=1,
@@ -75,7 +74,7 @@ async def test_crear_mesa_traduce_codigo_duplicado_a_409():
 async def test_cerrar_mesa_inexistente_da_404():
     session = AsyncMock()
     session.get.return_value = None
-    payload = MesaCerrar(solucion="...", tipo_solucion="Modificación en BD", fecha_cierre_real=date(2026, 8, 3))
+    payload = MesaCerrar(ventana_id=1, solucion="...", tipo_solucion="Modificación en BD", fecha_cierre_real=date(2026, 8, 3))
 
     with pytest.raises(HTTPException) as info:
         await mesas.cerrar_mesa(1, payload, session)
@@ -87,7 +86,7 @@ async def test_cerrar_mesa_inexistente_da_404():
 async def test_cerrar_mesa_ya_cerrada_da_400():
     session = AsyncMock()
     session.get.return_value = _mesa(fecha_cierre_real=date(2026, 8, 1))
-    payload = MesaCerrar(solucion="...", tipo_solucion="Modificación en BD", fecha_cierre_real=date(2026, 8, 3))
+    payload = MesaCerrar(ventana_id=1, solucion="...", tipo_solucion="Modificación en BD", fecha_cierre_real=date(2026, 8, 3))
 
     with pytest.raises(HTTPException) as info:
         await mesas.cerrar_mesa(1, payload, session)

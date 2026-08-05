@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Sparkline from '$lib/components/Sparkline.svelte';
-	import BarChartHorizontal from '$lib/components/BarChartHorizontal.svelte';
+	import BarChartVertical from '$lib/components/BarChartVertical.svelte';
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import { api, type PanelMesasKPIs } from '$lib/api/client';
@@ -41,15 +41,23 @@
 		});
 	});
 
-	const resolutorChartItems = $derived(
-		kpis ? kpis.distribucion_resolutor.map((d) => ({ label: d.resolutor, value: d.total })) : []
-	);
 	const ventanaChartItems = $derived(
 		kpis ? kpis.distribucion_ventana.map((d) => ({ label: d.ventana, value: d.total })) : []
 	);
-	const categoriaChartItems = $derived(
-		kpis ? kpis.distribucion_categoria.map((d) => ({ label: d.categoria, value: d.total })) : []
+	const categoriaSolucionChartItems = $derived(
+		kpis ? kpis.distribucion_categoria_solucion.map((d) => ({ label: d.categoria_solucion, value: d.total })) : []
 	);
+
+	let expandidaId = $state<number | null>(null);
+
+	function alternarSolucion(m: { id: number; solucion: string | null }) {
+		if (!m.solucion) return;
+		expandidaId = expandidaId === m.id ? null : m.id;
+	}
+
+	function noPropagar(e: Event) {
+		e.stopPropagation();
+	}
 </script>
 
 <Header titulo="Panel de mesas" subtitulo={kpis ? kpis.semana : 'Cargando semana en curso…'} />
@@ -66,18 +74,13 @@
 	</section>
 
 	<section class="tarjeta tile-resolutor">
-		<h2 class="font-display">Carga por resolutor</h2>
-		<BarChartHorizontal items={resolutorChartItems} loading={cargandoKpis} />
-	</section>
-
-	<section class="tarjeta tile-resolutor">
 		<h2 class="font-display">Por ventana</h2>
-		<BarChartHorizontal items={ventanaChartItems} loading={cargandoKpis} />
+		<BarChartVertical items={ventanaChartItems} loading={cargandoKpis} />
 	</section>
 
-	<section class="tarjeta tile-resolutor">
-		<h2 class="font-display">Por categoría</h2>
-		<BarChartHorizontal items={categoriaChartItems} loading={cargandoKpis} />
+	<section class="tarjeta tile-barras">
+		<h2 class="font-display">Por categoría de solución</h2>
+		<BarChartVertical items={categoriaSolucionChartItems} loading={cargandoKpis} vacio="Aún no hay mesas cerradas con categoría de solución esta semana." />
 	</section>
 
 	<section class="tarjeta tile-barras">
@@ -112,10 +115,18 @@
 						<tr><td colspan="6" class="vacio">Ninguna mesa esta semana.</td></tr>
 					{:else}
 						{#each kpis?.recientes ?? [] as m}
-							<tr>
-								<td class="codigo">{m.codigo}</td>
+							<tr class:clicable={!!m.solucion} title={m.solucion ? 'Ver solución' : undefined} onclick={() => alternarSolucion(m)}>
+								<td class="codigo" onclick={noPropagar}>
+									{#if m.enlace}
+										<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="link-codigo" title="Abrir en Proactivanet">
+											{m.codigo} ↗
+										</a>
+									{:else}
+										<span class="sin-enlace">{m.codigo}</span>
+									{/if}
+								</td>
 								<td class="titulo-col">{m.titulo}</td>
-								<td>{m.ventana.nombre}</td>
+								<td>{m.ventana?.nombre ?? '—'}</td>
 								<td>{m.solicitante.nombre}</td>
 								<td>{m.resolutor.nombre}</td>
 								<td>
@@ -124,6 +135,19 @@
 									</span>
 								</td>
 							</tr>
+							{#if expandidaId === m.id}
+								<tr class="fila-solucion">
+									<td colspan="6">
+										<div class="detalle-solucion">
+											<span class="detalle-etiqueta">Solución</span>
+											<p class="detalle-texto">{m.solucion}</p>
+											{#if m.tipo_solucion}
+												<span class="detalle-tipo">{m.tipo_solucion}</span>
+											{/if}
+										</div>
+									</td>
+								</tr>
+							{/if}
 						{/each}
 					{/if}
 				</tbody>
@@ -255,8 +279,76 @@
 		background: var(--surface-raised);
 	}
 
+	tbody tr.clicable {
+		cursor: pointer;
+	}
+
+	.fila-solucion td {
+		background: var(--surface-raised);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.detalle-solucion {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 10px 4px;
+	}
+
+	.detalle-etiqueta {
+		font-size: 11px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+
+	.detalle-texto {
+		margin: 0;
+		font-size: 13px;
+		color: var(--text);
+		white-space: pre-wrap;
+	}
+
+	.detalle-tipo {
+		align-self: flex-start;
+		font-size: 11px;
+		color: var(--text-muted);
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: 999px;
+		padding: 3px 10px;
+	}
+
+	/* misma distinción que en Listado de mesas: la celda de código abre el
+	   enlace, el resto de la fila despliega la solución. */
 	.codigo {
 		font-family: var(--font-mono);
+		padding: 0;
+		background: color-mix(in srgb, var(--accent) 7%, transparent);
+		border-left: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+	}
+
+	.codigo .link-codigo,
+	.codigo .sin-enlace {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: 9px 10px;
+	}
+
+	.codigo .link-codigo:hover {
+		background: color-mix(in srgb, var(--accent) 16%, transparent);
+	}
+
+	.link-codigo {
+		color: var(--text);
+		text-decoration: none;
+	}
+
+	.link-codigo:hover {
+		color: var(--accent-strong);
+		text-decoration: underline;
 	}
 
 	.titulo-col {

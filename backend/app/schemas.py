@@ -92,30 +92,33 @@ class MesaCreate(BaseModel):
     titulo: str
     fecha_carga: datetime
     descripcion: str
-    ventana_id: int
     categoria_id: int
     solicitante_id: int
     resolutor_id: int
     fecha_estimada_resolucion: datetime
+    ventana_id: int | None = None
     solucion: str | None = None
     tipo_solucion: TipoSolucion | None = None
-    fecha_cierre_real: date | None = None
+    fecha_cierre_real: datetime | None = None
 
     @model_validator(mode="after")
     def _cierre_todo_o_nada(self) -> "MesaCreate":
-        campos_cierre = (self.solucion, self.tipo_solucion, self.fecha_cierre_real)
+        # ventana se determina con criterio propio al resolver, no al abrir la mesa:
+        # va junto con el resto de la información de cierre, todo o nada.
+        campos_cierre = (self.solucion, self.tipo_solucion, self.fecha_cierre_real, self.ventana_id)
         if any(campos_cierre) and not all(campos_cierre):
             raise ValueError(
-                "Para colocar la información de cierre al crear, se deben dar solución, "
+                "Para colocar la información de cierre al crear, se deben dar ventana, solución, "
                 "tipo de solución y fecha real de cierre juntos"
             )
         return self
 
 
 class MesaCerrar(BaseModel):
+    ventana_id: int
     solucion: str
     tipo_solucion: TipoSolucion
-    fecha_cierre_real: date
+    fecha_cierre_real: datetime
 
 
 class MesaUpdate(BaseModel):
@@ -131,7 +134,7 @@ class MesaUpdate(BaseModel):
     fecha_estimada_resolucion: datetime | None = None
     solucion: str | None = None
     tipo_solucion: TipoSolucion | None = None
-    fecha_cierre_real: date | None = None
+    fecha_cierre_real: datetime | None = None
 
 
 class MesaOut(BaseModel):
@@ -146,12 +149,13 @@ class MesaOut(BaseModel):
     fecha_estimada_resolucion: datetime
     solucion: str | None
     tipo_solucion: str | None
-    fecha_cierre_real: date | None
+    fecha_cierre_real: datetime | None
     created_at: datetime
-    ventana: CatalogoOut
+    ventana: CatalogoOut | None
     categoria: CatalogoOut
     solicitante: CatalogoOut
     resolutor: CatalogoOut
+    logros: list[str] = []
 
 
 class PaginaMesas(BaseModel):
@@ -170,11 +174,9 @@ class ExtraccionMesa(BaseModel):
 class PanelMesasKPIs(BaseModel):
     semana: str
     total_semana: int
-    por_categoria: dict[str, int]
     volumen_diario: list[dict]
-    distribucion_resolutor: list[dict]
     distribucion_ventana: list[dict]
-    distribucion_categoria: list[dict]
+    distribucion_categoria_solucion: list[dict]
     recientes: list[MesaOut]
 
 
@@ -183,5 +185,4 @@ class ReporteMesasSemanal(BaseModel):
     total: int
     por_categoria: dict[str, int]
     por_solicitante: dict[str, int]
-    por_resolutor: dict[str, int]
     mesas: list[MesaOut]

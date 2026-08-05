@@ -30,6 +30,14 @@ from app.services.clustering import agrupar_por_similitud, tema_representativo
 from app.services.embeddings import asegurar_embeddings
 from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.gemini import GeminiError, extraer_mesa, gemini_configurado
+from app.services.logros import evaluar_logros
+from app.services.reporte_semanal_export import (
+    filas_reporte,
+    generar_pdf_reporte,
+    generar_pptx_reporte,
+    generar_xlsx_reporte,
+    titulo_reporte,
+)
 from app.services.semanas import semana_de
 
 router = APIRouter(prefix="/mesas", tags=["mesas"])
@@ -67,7 +75,8 @@ async def crear_mesa(payload: MesaCreate, session: AsyncSession = Depends(get_se
         await session.rollback()
         raise HTTPException(409, f"Código '{payload.codigo}' ya existe")
     mesa = await _obtener_mesa(session, mesa.id)
-    return MesaOut.model_validate(mesa)
+    logros = await evaluar_logros(session, mesa)
+    return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 
 @router.post("/extraer-imagen", response_model=ExtraccionMesa)
@@ -112,12 +121,14 @@ async def cerrar_mesa(mesa_id: int, payload: MesaCerrar, session: AsyncSession =
     if _ya_cerrada(mesa):
         raise HTTPException(400, "La mesa ya está cerrada")
 
+    mesa.ventana_id = payload.ventana_id
     mesa.solucion = payload.solucion
     mesa.tipo_solucion = payload.tipo_solucion
     mesa.fecha_cierre_real = payload.fecha_cierre_real
     await session.commit()
     mesa = await _obtener_mesa(session, mesa_id)
-    return MesaOut.model_validate(mesa)
+    logros = await evaluar_logros(session, mesa)
+    return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 
 def _campos_a_actualizar(payload: MesaUpdate) -> dict:
@@ -130,6 +141,8 @@ async def editar_mesa(mesa_id: int, payload: MesaUpdate, session: AsyncSession =
     if mesa is None:
         raise HTTPException(404, "Mesa no encontrada")
 
+    recien_cerrada = mesa.fecha_cierre_real is None and payload.fecha_cierre_real is not None
+
     for campo, valor in _campos_a_actualizar(payload).items():
         setattr(mesa, campo, valor)
 
@@ -140,7 +153,8 @@ async def editar_mesa(mesa_id: int, payload: MesaUpdate, session: AsyncSession =
         raise HTTPException(409, f"Código '{payload.codigo}' ya existe")
 
     mesa = await _obtener_mesa(session, mesa_id)
-    return MesaOut.model_validate(mesa)
+    logros = await evaluar_logros(session, mesa) if recien_cerrada else []
+    return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 
 @router.delete("/{mesa_id}", status_code=204)
@@ -176,7 +190,12 @@ def _aplicar_filtros(stmt, *, categoria_id, solicitante_id, resolutor_id, ventan
         stmt = stmt.where(Mesa.fecha_cierre_real.isnot(None))
     if buscar:
         like = f"%{buscar}%"
-        stmt = stmt.where(Mesa.descripcion.ilike(like) | Mesa.titulo.ilike(like) | Mesa.codigo.ilike(like))
+        stmt = stmt.where(
+            Mesa.descripcion.ilike(like)
+            | Mesa.titulo.ilike(like)
+            | Mesa.codigo.ilike(like)
+            | Mesa.solucion.ilike(like)
+        )
     return stmt
 
 
@@ -228,30 +247,29 @@ async def panel_mesas(session: AsyncSession = Depends(get_session)):
     semana = semana_de(date.today())
     mesas_semana = await _mesas_de_semana(session, semana)
 
-    por_categoria: dict[str, int] = {}
     por_ventana: dict[str, int] = {}
     por_dia: dict[str, int] = {}
-    por_resolutor: dict[str, int] = {}
+    por_categoria_solucion: dict[str, int] = {}
     for m in mesas_semana:
-        por_categoria[m.categoria.nombre] = por_categoria.get(m.categoria.nombre, 0) + 1
-        por_ventana[m.ventana.nombre] = por_ventana.get(m.ventana.nombre, 0) + 1
+        if m.ventana:
+            por_ventana[m.ventana.nombre] = por_ventana.get(m.ventana.nombre, 0) + 1
         dia = m.fecha_carga.date().isoformat()
         por_dia[dia] = por_dia.get(dia, 0) + 1
-        por_resolutor[m.resolutor.nombre] = por_resolutor.get(m.resolutor.nombre, 0) + 1
+        if m.tipo_solucion:
+            por_categoria_solucion[m.tipo_solucion] = por_categoria_solucion.get(m.tipo_solucion, 0) + 1
 
     volumen_diario = [{"fecha": k, "total": v} for k, v in sorted(por_dia.items())]
-    distribucion_resolutor = [{"resolutor": k, "total": v} for k, v in sorted(por_resolutor.items(), key=lambda x: -x[1])]
     distribucion_ventana = [{"ventana": k, "total": v} for k, v in sorted(por_ventana.items(), key=lambda x: -x[1])]
-    distribucion_categoria = [{"categoria": k, "total": v} for k, v in sorted(por_categoria.items(), key=lambda x: -x[1])]
+    distribucion_categoria_solucion = [
+        {"categoria_solucion": k, "total": v} for k, v in sorted(por_categoria_solucion.items(), key=lambda x: -x[1])
+    ]
 
     return PanelMesasKPIs(
         semana=semana,
         total_semana=len(mesas_semana),
-        por_categoria=por_categoria,
         volumen_diario=volumen_diario,
-        distribucion_resolutor=distribucion_resolutor,
         distribucion_ventana=distribucion_ventana,
-        distribucion_categoria=distribucion_categoria,
+        distribucion_categoria_solucion=distribucion_categoria_solucion,
         recientes=[MesaOut.model_validate(m) for m in mesas_semana[:10]],
     )
 
@@ -260,20 +278,46 @@ async def panel_mesas(session: AsyncSession = Depends(get_session)):
 async def reporte_mesas_semanal(semana: str = Query(...), session: AsyncSession = Depends(get_session)):
     mesas_semana = await _mesas_de_semana(session, semana)
     if not mesas_semana:
-        return ReporteMesasSemanal(semana=semana, total=0, por_categoria={}, por_solicitante={}, por_resolutor={}, mesas=[])
+        return ReporteMesasSemanal(semana=semana, total=0, por_categoria={}, por_solicitante={}, mesas=[])
 
     por_categoria: dict[str, int] = {}
     por_solicitante: dict[str, int] = {}
-    por_resolutor: dict[str, int] = {}
     for m in mesas_semana:
         por_categoria[m.categoria.nombre] = por_categoria.get(m.categoria.nombre, 0) + 1
         por_solicitante[m.solicitante.nombre] = por_solicitante.get(m.solicitante.nombre, 0) + 1
-        por_resolutor[m.resolutor.nombre] = por_resolutor.get(m.resolutor.nombre, 0) + 1
 
     return ReporteMesasSemanal(
         semana=semana, total=len(mesas_semana),
-        por_categoria=por_categoria, por_solicitante=por_solicitante, por_resolutor=por_resolutor,
+        por_categoria=por_categoria, por_solicitante=por_solicitante,
         mesas=[MesaOut.model_validate(m) for m in mesas_semana],
+    )
+
+
+@router.get("/reporte/exportar")
+async def exportar_reporte_semanal(
+    semana: str = Query(...),
+    formato: str = Query("xlsx", pattern="^(xlsx|pptx|pdf)$"),
+    session: AsyncSession = Depends(get_session),
+):
+    mesas_semana = await _mesas_de_semana(session, semana)
+    cerradas = [m for m in mesas_semana if m.fecha_cierre_real is not None]
+
+    titulo = titulo_reporte(semana)
+    filas = filas_reporte(cerradas)
+    nombre_base = f"reporte_semanal_{semana.replace(' ', '').replace('-', '_')}"
+
+    if formato == "xlsx":
+        out = generar_xlsx_reporte(titulo, filas)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    elif formato == "pptx":
+        out = generar_pptx_reporte(titulo, filas)
+        media = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    else:
+        out = generar_pdf_reporte(titulo, filas)
+        media = "application/pdf"
+
+    return StreamingResponse(
+        out, media_type=media, headers={"Content-Disposition": f"attachment; filename={nombre_base}.{formato}"}
     )
 
 
@@ -343,7 +387,7 @@ def _generar_xlsx_mesas(encabezados: list[str], mesas_filtradas: list[Mesa]) -> 
         ws.cell(i, 4, m.categoria.nombre)
         ws.cell(i, 5, m.solicitante.nombre)
         ws.cell(i, 6, m.resolutor.nombre)
-        ws.cell(i, 7, m.ventana.nombre)
+        ws.cell(i, 7, m.ventana.nombre if m.ventana else "")
         ws.cell(i, 8, m.descripcion)
         ws.cell(i, 9, "Cerrada" if m.fecha_cierre_real else "Abierta")
         ws.cell(i, 10, m.solucion or "—")
@@ -402,7 +446,7 @@ async def exportar_mesas(
         filas = [
             [
                 m.codigo, m.titulo, m.fecha_carga.strftime("%Y-%m-%d %H:%M"), m.categoria.nombre, m.solicitante.nombre,
-                m.resolutor.nombre, m.ventana.nombre, m.descripcion,
+                m.resolutor.nombre, m.ventana.nombre if m.ventana else "", m.descripcion,
                 "Cerrada" if m.fecha_cierre_real else "Abierta", m.solucion or "",
             ]
             for m in mesas_filtradas

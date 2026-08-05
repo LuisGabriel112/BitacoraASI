@@ -56,10 +56,11 @@ export type Mesa = {
 	tipo_solucion: string | null;
 	fecha_cierre_real: string | null;
 	created_at: string;
-	ventana: Catalogo;
+	ventana: Catalogo | null;
 	categoria: Catalogo;
 	solicitante: Catalogo;
 	resolutor: Catalogo;
+	logros: string[];
 };
 export type ExtraccionMesa = {
 	codigo: string | null;
@@ -72,11 +73,9 @@ export type PaginaMesas = { total: number; items: Mesa[] };
 export type PanelMesasKPIs = {
 	semana: string;
 	total_semana: number;
-	por_categoria: Record<string, number>;
 	volumen_diario: { fecha: string; total: number }[];
-	distribucion_resolutor: { resolutor: string; total: number }[];
 	distribucion_ventana: { ventana: string; total: number }[];
-	distribucion_categoria: { categoria: string; total: number }[];
+	distribucion_categoria_solucion: { categoria_solucion: string; total: number }[];
 	recientes: Mesa[];
 };
 export type ReporteMesasSemanal = {
@@ -84,7 +83,6 @@ export type ReporteMesasSemanal = {
 	total: number;
 	por_categoria: Record<string, number>;
 	por_solicitante: Record<string, number>;
-	por_resolutor: Record<string, number>;
 	mesas: Mesa[];
 };
 
@@ -196,11 +194,11 @@ export const api = {
 		titulo: string;
 		fecha_carga: string;
 		descripcion: string;
-		ventana_id: number;
 		categoria_id: number;
 		solicitante_id: number;
 		resolutor_id: number;
 		fecha_estimada_resolucion: string;
+		ventana_id?: number | null;
 		solucion?: string | null;
 		tipo_solucion?: string | null;
 		fecha_cierre_real?: string | null;
@@ -233,7 +231,7 @@ export const api = {
 			titulo: string;
 			fecha_carga: string;
 			descripcion: string;
-			ventana_id: number;
+			ventana_id: number | null;
 			categoria_id: number;
 			solicitante_id: number;
 			resolutor_id: number;
@@ -244,8 +242,10 @@ export const api = {
 		}>
 	) => json<Mesa>(`/mesas/${id}/editar`, { method: 'POST', body: JSON.stringify(payload) }),
 
-	cerrarMesa: (id: number, payload: { solucion: string; tipo_solucion: string; fecha_cierre_real: string }) =>
-		json<Mesa>(`/mesas/${id}/cerrar`, { method: 'POST', body: JSON.stringify(payload) }),
+	cerrarMesa: (
+		id: number,
+		payload: { ventana_id: number; solucion: string; tipo_solucion: string; fecha_cierre_real: string }
+	) => json<Mesa>(`/mesas/${id}/cerrar`, { method: 'POST', body: JSON.stringify(payload) }),
 
 	eliminarMesa: async (id: number) => {
 		const resp = await fetch(`${BASE}/mesas/${id}`, { method: 'DELETE' });
@@ -278,5 +278,8 @@ export const api = {
 		const qs = new URLSearchParams({ formato });
 		for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') qs.set(k, String(v));
 		return `${BASE}/mesas/export?${qs.toString()}`;
-	}
+	},
+
+	exportReporteMesasUrl: (semana: string, formato: 'xlsx' | 'pptx' | 'pdf') =>
+		`${BASE}/mesas/reporte/exportar?semana=${encodeURIComponent(semana)}&formato=${formato}`
 };
