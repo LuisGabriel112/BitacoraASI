@@ -4,7 +4,10 @@
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
 	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
+
+	let aviso: AvisoResultado;
 
 	function hoy() {
 		return new Date().toISOString().slice(0, 10);
@@ -118,31 +121,40 @@
 		if (archivo) extraerDeImagen(archivo);
 	}
 
-	async function guardar() {
-		errorValidacion = null;
-		errorGuardado = null;
+	function validar(): string | null {
+		if (!empresaId) return 'Falta seleccionar empresa';
+		if (!sistemaId) return 'Falta seleccionar sistema';
+		if (!medioId) return 'Falta seleccionar medio';
+		if (!moduloId) return 'Falta seleccionar módulo';
+		if (!atendioId) return 'Falta seleccionar quién atendió';
+		if (!descripcion.trim()) return 'Falta descripción';
+		return null;
+	}
 
-		if (!empresaId) return (errorValidacion = 'Falta seleccionar empresa');
-		if (!sistemaId) return (errorValidacion = 'Falta seleccionar sistema');
-		if (!medioId) return (errorValidacion = 'Falta seleccionar medio');
-		if (!moduloId) return (errorValidacion = 'Falta seleccionar módulo');
-		if (!atendioId) return (errorValidacion = 'Falta seleccionar quién atendió');
-		if (!descripcion.trim()) return (errorValidacion = 'Falta descripción');
+	async function guardar() {
+		errorValidacion = validar();
+		errorGuardado = null;
+		if (errorValidacion) {
+			aviso?.mostrar('error', errorValidacion);
+			return;
+		}
 
 		guardando = true;
 		try {
 			resultado = await api.crearRegistro({
 				fecha,
-				empresa_id: empresaId,
-				sistema_id: sistemaId,
-				medio_id: medioId,
-				modulo_id: moduloId,
-				atendio_id: atendioId,
+				empresa_id: empresaId!,
+				sistema_id: sistemaId!,
+				medio_id: medioId!,
+				modulo_id: moduloId!,
+				atendio_id: atendioId!,
 				descripcion: descripcion.trim()
 			});
 			cargarCapturadosHoy();
+			aviso?.mostrar('exito', 'Registro guardado en la bitácora.');
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar el registro';
+			aviso?.mostrar('error', `No se pudo guardar el registro: ${errorGuardado}`);
 		} finally {
 			guardando = false;
 		}
@@ -167,6 +179,8 @@
 </script>
 
 <svelte:window onkeydown={alTeclado} onpaste={alPegar} />
+
+<AvisoResultado bind:this={aviso} />
 
 <Header titulo="Nuevo registro" subtitulo="Captura rápida — Ctrl+Enter para guardar sin usar el mouse." />
 
