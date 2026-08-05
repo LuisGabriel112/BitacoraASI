@@ -20,3 +20,8 @@ Característica: Aviso sonoro y visual al guardar registro
     Cuando el servidor responde con un error al guardar
     Entonces se reproduce el sonido "denied-ehh.ogg"
     Y aparece un popup de color rojo con el mensaje de error
+
+  Escenario: Confeti al guardar un soporte con éxito
+    Dado que envío un formulario de soporte con todos los campos completos
+    Cuando el servidor confirma que se guardó el registro
+    Entonces se muestra la animación de confeti

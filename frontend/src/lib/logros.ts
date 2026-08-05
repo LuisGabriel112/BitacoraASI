@@ -7,5 +7,6 @@ export const MENSAJES_LOGRO: Record<string, string> = {
 	antes_de_jornada: 'Cerrada antes de que empezara la jornada',
 	ultimos_10_min_dia: 'Cerrada en los últimos 10 minutos del día',
 	ultima_hora_viernes: 'Última hora del viernes',
-	sabado_guardia: 'Guardia de sábado'
+	sabado_guardia: 'Guardia de sábado',
+	soporte_guardado: 'Soporte registrado en la bitácora'
 };

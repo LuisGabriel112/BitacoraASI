@@ -5,9 +5,11 @@
 	import Toast from '$lib/components/Toast.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
+	import Celebracion from '$lib/components/Celebracion.svelte';
 	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
 
 	let aviso: AvisoResultado;
+	let celebracion: Celebracion;
 
 	function hoy() {
 		return new Date().toISOString().slice(0, 10);
@@ -152,6 +154,7 @@
 			});
 			cargarCapturadosHoy();
 			aviso?.mostrar('exito', 'Registro guardado en la bitácora.');
+			celebracion?.mostrar(['soporte_guardado']);
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar el registro';
 			aviso?.mostrar('error', `No se pudo guardar el registro: ${errorGuardado}`);
@@ -181,6 +184,7 @@
 <svelte:window onkeydown={alTeclado} onpaste={alPegar} />
 
 <AvisoResultado bind:this={aviso} />
+<Celebracion bind:this={celebracion} />
 
 <Header titulo="Nuevo registro" subtitulo="Captura rápida — Ctrl+Enter para guardar sin usar el mouse." />
 
