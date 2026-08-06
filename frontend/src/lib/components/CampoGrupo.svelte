@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { grupo, children }: { grupo: 'a' | 'b' | 'c'; children: import('svelte').Snippet } = $props();
+	let { grupo, children }: { grupo: 'a' | 'b'; children: import('svelte').Snippet } = $props();
 </script>
 
 <div class="campo-grupo grupo-{grupo}">
@@ -18,9 +18,5 @@
 
 	.grupo-b {
 		--grupo-color: var(--accent-2);
-	}
-
-	.grupo-c {
-		--grupo-color: var(--danger);
 	}
 </style>

@@ -12,10 +12,9 @@
 	];
 
 	const itemsAdministrativa = [
-		{ href: '/mesas', label: 'Panel mesas', icon: '▤' },
+		{ href: '/mesas', label: 'Resumen', icon: '▤' },
 		{ href: '/mesas/nueva', label: 'Nueva mesa', icon: '＋' },
-		{ href: '/mesas/listado', label: 'Listado mesas', icon: '☰' },
-		{ href: '/mesas/reporte', label: 'Reporte mesas', icon: '▥' }
+		{ href: '/mesas/listado', label: 'Listado', icon: '☰' }
 	];
 </script>
 

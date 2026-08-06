@@ -3,9 +3,12 @@
 	import FechaHoraInput from '$lib/components/FechaHoraInput.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Celebracion from '$lib/components/Celebracion.svelte';
+	import BotonGenerarReporte from '$lib/components/BotonGenerarReporte.svelte';
+	import { semanaActual } from '$lib/semana';
 	import { api, type Mesa } from '$lib/api/client';
 
 	let celebracion: Celebracion;
+	const semanaEtiqueta = semanaActual().etiqueta;
 
 	function formatearFechaHora(iso: string) {
 		const [fecha, hora] = iso.split('T');
@@ -177,6 +180,7 @@
 	<div class="exportar">
 		<a href={api.exportMesasUrl('csv', paramsFiltros())} class="boton-secundario">Exportar CSV</a>
 		<a href={api.exportMesasUrl('xlsx', paramsFiltros())} class="boton-primario">Exportar Excel</a>
+		<BotonGenerarReporte semana={semanaEtiqueta} />
 	</div>
 </div>
 

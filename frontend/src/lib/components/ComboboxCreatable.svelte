@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api, type Catalogo } from '$lib/api/client';
+	import { coincidenciaExacta } from '$lib/catalogoMatch';
 
 	let {
 		catalogo,
@@ -45,9 +46,7 @@
 		buscar(texto);
 	}
 
-	const hayCoincidenciaExacta = $derived(
-		opciones.some((o) => o.nombre.toLowerCase() === texto.trim().toLowerCase())
-	);
+	const hayCoincidenciaExacta = $derived(coincidenciaExacta(opciones, texto) !== null);
 
 	const totalFilas = $derived(opciones.length + (texto.trim() && !hayCoincidenciaExacta ? 1 : 0));
 
@@ -62,6 +61,14 @@
 		if (!nombre) return;
 		const item = await api.crearCatalogo(catalogo, nombre);
 		elegir(item);
+	}
+
+	async function resolverPendiente() {
+		if (selectedId || !texto.trim()) return;
+		const encontradas = await api.catalogo(catalogo, texto.trim());
+		const exacta = coincidenciaExacta(encontradas, texto);
+		if (exacta) elegir(exacta);
+		else await crear();
 	}
 
 	function alTeclado(e: KeyboardEvent) {
@@ -113,7 +120,7 @@
 				abierto = true;
 				buscar(texto);
 			}}
-			onblur={() => setTimeout(() => (abierto = false), 120)}
+			onblur={() => setTimeout(() => ((abierto = false), resolverPendiente()), 120)}
 			onkeydown={alTeclado}
 		/>
 		{#if selectedId}<span class="marca-ok" title="Seleccionado">✓</span>{/if}

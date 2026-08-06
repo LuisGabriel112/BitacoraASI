@@ -78,14 +78,6 @@ export type PanelMesasKPIs = {
 	distribucion_categoria_solucion: { categoria_solucion: string; total: number }[];
 	recientes: Mesa[];
 };
-export type ReporteMesasSemanal = {
-	semana: string;
-	total: number;
-	por_categoria: Record<string, number>;
-	por_solicitante: Record<string, number>;
-	mesas: Mesa[];
-};
-
 const BASE = '/api';
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
@@ -268,11 +260,6 @@ export const api = {
 	},
 
 	panelMesas: () => json<PanelMesasKPIs>('/mesas/panel'),
-
-	reporteMesas: (semana: string) => json<ReporteMesasSemanal>(`/mesas/reporte?semana=${encodeURIComponent(semana)}`),
-
-	temasFrecuentesMesas: (semana: string, top = 10) =>
-		json<GrupoSoporte[]>(`/mesas/temas-frecuentes?semana=${encodeURIComponent(semana)}&top=${top}`),
 
 	exportMesasUrl: (formato: 'csv' | 'xlsx', params: Record<string, string | number | undefined> = {}) => {
 		const qs = new URLSearchParams({ formato });

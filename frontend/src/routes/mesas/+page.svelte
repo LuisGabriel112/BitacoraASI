@@ -3,6 +3,7 @@
 	import BarChartVertical from '$lib/components/BarChartVertical.svelte';
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import BotonGenerarReporte from '$lib/components/BotonGenerarReporte.svelte';
 	import { api, type PanelMesasKPIs } from '$lib/api/client';
 
 	let kpis = $state<PanelMesasKPIs | null>(null);
@@ -41,6 +42,8 @@
 		});
 	});
 
+	const volumenSinDomingo = $derived(volumenSemanaCompleta.slice(0, 6));
+
 	const ventanaChartItems = $derived(
 		kpis ? kpis.distribucion_ventana.map((d) => ({ label: d.ventana, value: d.total })) : []
 	);
@@ -60,7 +63,10 @@
 	}
 </script>
 
-<Header titulo="Panel de mesas" subtitulo={kpis ? kpis.semana : 'Cargando semana en curso…'} />
+<div class="cabecera">
+	<Header titulo="Panel de mesas" subtitulo={kpis ? kpis.semana : 'Cargando semana en curso…'} />
+	<BotonGenerarReporte semana={kpis?.semana ?? ''} />
+</div>
 
 <div class="bento">
 	<section class="tarjeta tile-hero">
@@ -78,14 +84,14 @@
 		<BarChartVertical items={ventanaChartItems} loading={cargandoKpis} />
 	</section>
 
-	<section class="tarjeta tile-barras">
+	<section class="tarjeta tile-barras tile-categoria">
 		<h2 class="font-display">Por categoría de solución</h2>
 		<BarChartVertical items={categoriaSolucionChartItems} loading={cargandoKpis} vacio="Aún no hay mesas cerradas con categoría de solución esta semana." />
 	</section>
 
 	<section class="tarjeta tile-barras">
 		<h2 class="font-display">Volumen diario</h2>
-		<BarChartColumnas datos={volumenSemanaCompleta} loading={cargandoKpis} etiquetas="diaSemana" />
+		<BarChartColumnas datos={volumenSinDomingo} loading={cargandoKpis} etiquetas="diaSemana" />
 	</section>
 
 	<section class="tarjeta tile-tabla">
@@ -157,6 +163,18 @@
 </div>
 
 <style>
+	.cabecera {
+		display: flex;
+		align-items: flex-start;
+		gap: 16px;
+		margin-bottom: 24px;
+	}
+
+	.cabecera :global(.header) {
+		flex: 1;
+		margin-bottom: 0;
+	}
+
 	.bento {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
@@ -221,6 +239,10 @@
 	.tile-barras {
 		display: flex;
 		flex-direction: column;
+	}
+
+	.tile-categoria {
+		max-width: 480px;
 	}
 
 	.tabla-wrap {

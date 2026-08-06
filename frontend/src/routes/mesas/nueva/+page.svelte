@@ -285,7 +285,7 @@
 				<CampoGrupo grupo="a">
 					<ComboboxCreatable id="solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} nombreSeleccionado={solicitanteNombre} />
 				</CampoGrupo>
-				<CampoGrupo grupo="c">
+				<CampoGrupo grupo="b">
 					<ComboboxCreatable id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
@@ -324,7 +324,7 @@
 								<option value="Seguimiento de proceso">Seguimiento de proceso</option>
 							</select>
 						</div>
-						<CampoGrupo grupo="c">
+						<CampoGrupo grupo="b">
 							<FechaHoraInput id="fecha_cierre" label="Fecha y hora real de cierre" bind:value={fechaCierreReal} />
 						</CampoGrupo>
 					</div>

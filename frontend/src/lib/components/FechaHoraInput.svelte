@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { parsearFechaHoraPegada } from '$lib/fechaHora';
+
 	let {
 		id,
 		label,
@@ -9,16 +11,9 @@
 		value: string;
 	} = $props();
 
-	function parsearPegado(texto: string): string | null {
-		const m = texto.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[ T](\d{1,2}):(\d{2})$/);
-		if (!m) return null;
-		const [, d, mes, anio, hora, min] = m;
-		return `${anio}-${mes.padStart(2, '0')}-${d.padStart(2, '0')}T${hora.padStart(2, '0')}:${min}`;
-	}
-
 	function alPegar(e: ClipboardEvent) {
 		const texto = e.clipboardData?.getData('text') ?? '';
-		const parseado = parsearPegado(texto);
+		const parseado = parsearFechaHoraPegada(texto);
 		if (parseado) {
 			e.preventDefault();
 			value = parseado;
