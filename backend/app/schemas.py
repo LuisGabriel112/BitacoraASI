@@ -74,6 +74,16 @@ class RegistroOut(BaseModel):
     atendio: CatalogoOut
 
 
+class RegistroUpdate(BaseModel):
+    fecha: date | None = None
+    empresa_id: int | None = None
+    sistema_id: int | None = None
+    medio_id: int | None = None
+    modulo_id: int | None = None
+    atendio_id: int | None = None
+    descripcion: str | None = None
+
+
 class ExtraccionRegistro(BaseModel):
     fecha: date | None = None
     descripcion: str | None = None

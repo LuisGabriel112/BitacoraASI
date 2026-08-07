@@ -157,6 +157,21 @@ export const api = {
 		descripcion: string;
 	}) => json<RegistroCreado>('/registros', { method: 'POST', body: JSON.stringify(payload) }),
 
+	registroPorId: (id: number) => json<Registro>(`/registros/${id}`),
+
+	editarRegistro: (
+		id: number,
+		payload: Partial<{
+			fecha: string;
+			empresa_id: number;
+			sistema_id: number;
+			medio_id: number;
+			modulo_id: number;
+			atendio_id: number;
+			descripcion: string;
+		}>
+	) => json<Registro>(`/registros/${id}/editar`, { method: 'POST', body: JSON.stringify(payload) }),
+
 	reintentarTrello: (id: number) => json<RegistroCreado>(`/registros/${id}/reintentar-trello`, { method: 'POST' }),
 
 	extraerImagen: async (archivo: File) => {

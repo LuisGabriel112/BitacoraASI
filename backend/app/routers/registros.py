@@ -8,6 +8,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy import Row, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -21,6 +22,7 @@ from app.schemas import (
     RegistroCreadoOut,
     RegistroCreate,
     RegistroOut,
+    RegistroUpdate,
     ReporteSemanal,
 )
 from app.services.clustering import agrupar_por_similitud, tema_representativo
@@ -36,20 +38,23 @@ from app.services.xp import otorgar_xp
 router = APIRouter(prefix="/registros", tags=["registros"], dependencies=[Depends(get_usuario_actual)])
 
 
+_RELACIONES = (
+    selectinload(Registro.empresa),
+    selectinload(Registro.sistema),
+    selectinload(Registro.medio),
+    selectinload(Registro.modulo),
+    selectinload(Registro.atendio),
+)
+
+
 async def _get_registro(session: AsyncSession, registro_id: int) -> Registro:
-    stmt = (
-        select(Registro)
-        .options(
-            selectinload(Registro.empresa),
-            selectinload(Registro.sistema),
-            selectinload(Registro.medio),
-            selectinload(Registro.modulo),
-            selectinload(Registro.atendio),
-        )
-        .where(Registro.id == registro_id)
-    )
+    stmt = select(Registro).options(*_RELACIONES).where(Registro.id == registro_id)
     result = await session.execute(stmt)
     return result.scalar_one()
+
+
+def _campos_a_actualizar(payload: RegistroUpdate) -> dict:
+    return payload.model_dump(exclude_unset=True)
 
 
 @router.post("", response_model=RegistroCreadoOut, status_code=201)
@@ -82,6 +87,33 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
             trello_error = str(exc)
 
     return RegistroCreadoOut(registro=RegistroOut.model_validate(registro), trello_ok=trello_ok, trello_error=trello_error)
+
+
+@router.get("/{registro_id}", response_model=RegistroOut)
+async def obtener_registro(registro_id: int, session: AsyncSession = Depends(get_session)):
+    stmt = select(Registro).options(*_RELACIONES).where(Registro.id == registro_id)
+    registro = (await session.execute(stmt)).scalar_one_or_none()
+    if registro is None:
+        raise HTTPException(404, "Registro no encontrado")
+    return registro
+
+
+@router.post("/{registro_id}/editar", response_model=RegistroOut)
+async def editar_registro(registro_id: int, payload: RegistroUpdate, session: AsyncSession = Depends(get_session)):
+    registro = await session.get(Registro, registro_id)
+    if registro is None:
+        raise HTTPException(404, "Registro no encontrado")
+
+    for campo, valor in _campos_a_actualizar(payload).items():
+        setattr(registro, campo, valor)
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(400, "Datos inválidos (revisa los catálogos seleccionados)")
+
+    return await _get_registro(session, registro_id)
 
 
 @router.post("/extraer-imagen", response_model=ExtraccionRegistro)

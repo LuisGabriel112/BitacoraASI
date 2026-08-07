@@ -173,14 +173,17 @@
 									<button class="btn-cancelar" onclick={() => (confirmandoId = null)}>No</button>
 								</div>
 							{:else}
-								<button
-									class="btn-eliminar"
-									title="Eliminar registro"
-									aria-label="Eliminar registro"
-									onclick={() => (confirmandoId = r.id)}
-								>
-									🗑
-								</button>
+								<div class="acciones-fila">
+									<a class="btn-editar" href="/{r.id}/editar">Editar</a>
+									<button
+										class="btn-eliminar"
+										title="Eliminar registro"
+										aria-label="Eliminar registro"
+										onclick={() => (confirmandoId = r.id)}
+									>
+										🗑
+									</button>
+								</div>
 							{/if}
 						</td>
 					</tr>
@@ -382,6 +385,29 @@
 		width: 1%;
 		white-space: nowrap;
 		text-align: right;
+	}
+
+	.acciones-fila {
+		display: flex;
+		gap: 6px;
+		justify-content: flex-end;
+	}
+
+	.btn-editar {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 4px 10px;
+		color: var(--text);
+		text-decoration: none;
+		font-size: 12px;
+	}
+
+	.btn-editar:hover {
+		border-color: var(--accent);
+		color: var(--accent-strong);
 	}
 
 	.btn-eliminar {
