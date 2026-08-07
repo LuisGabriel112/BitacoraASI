@@ -6,14 +6,14 @@
 	let mensaje = $state('');
 	let timer: ReturnType<typeof setTimeout>;
 
-	function reproducirSonido(t: TipoAviso) {
-		const audio = new Audio(rutaSonidoParaAviso(t));
+	function reproducirSonido(ruta: string) {
+		const audio = new Audio(ruta);
 		audio.play().catch(() => {});
 	}
 
-	export function mostrar(t: TipoAviso, m: string) {
+	export function mostrar(t: TipoAviso, m: string, sonidoOverride?: string) {
 		clearTimeout(timer);
-		reproducirSonido(t);
+		reproducirSonido(sonidoOverride ?? rutaSonidoParaAviso(t));
 		tipo = t;
 		mensaje = m;
 		visible = true;

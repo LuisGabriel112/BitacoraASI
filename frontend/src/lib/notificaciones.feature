@@ -18,8 +18,18 @@ Característica: Aviso sonoro y visual al guardar registro
   Escenario: El servidor rechaza el guardado
     Dado que envío un formulario de mesa o soporte completo
     Cuando el servidor responde con un error al guardar
-    Entonces se reproduce el sonido "denied-ehh.ogg"
+    Entonces se reproduce alguno de los sonidos de error
     Y aparece un popup de color rojo con el mensaje de error
+
+  Escenario: El sonido de éxito varía entre varias opciones
+    Dado que hay más de un sonido de éxito disponible
+    Cuando se guarda con éxito varias veces
+    Entonces el sonido reproducido es siempre uno de los sonidos de éxito registrados
+
+  Escenario: El sonido de error varía entre varias opciones
+    Dado que hay más de un sonido de error disponible
+    Cuando falla el guardado varias veces
+    Entonces el sonido reproducido es siempre uno de los sonidos de error registrados
 
   Escenario: Confeti al guardar un soporte con éxito
     Dado que envío un formulario de soporte con todos los campos completos

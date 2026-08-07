@@ -6,6 +6,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
 	import Celebracion from '$lib/components/Celebracion.svelte';
+	import { RUTA_SONIDO_EE_ATZIMBA, esPrimerSoporteDeAtzimba } from '$lib/easterEggs';
 	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
 
 	let aviso: AvisoResultado;
@@ -133,6 +134,13 @@
 		return null;
 	}
 
+	async function revisarEasterEggAtzimba(registro: Registro): Promise<boolean> {
+		const pagina = await api.listado({ atendio_id: registro.atendio.id, page_size: 1 });
+		if (!esPrimerSoporteDeAtzimba(registro.atendio.nombre, pagina.total)) return false;
+		aviso?.mostrar('exito', `¡Primer soporte de ${registro.atendio.nombre}! 🎉`, RUTA_SONIDO_EE_ATZIMBA);
+		return true;
+	}
+
 	async function guardar() {
 		errorValidacion = validar();
 		errorGuardado = null;
@@ -153,7 +161,8 @@
 				descripcion: descripcion.trim()
 			});
 			cargarCapturadosHoy();
-			aviso?.mostrar('exito', 'Registro guardado en la bitácora.');
+			const fueEasterEgg = await revisarEasterEggAtzimba(resultado.registro);
+			if (!fueEasterEgg) aviso?.mostrar('exito', 'Registro guardado en la bitácora.');
 			celebracion?.mostrar(['soporte_guardado']);
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar el registro';
