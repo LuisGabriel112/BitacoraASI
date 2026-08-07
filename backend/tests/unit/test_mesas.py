@@ -7,11 +7,25 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from app.routers import mesas
+from app.routers.mesas import router as mesas_router
 from app.schemas import MesaCerrar, MesaCreate, MesaUpdate
 
 
 def _mesa(id_: int = 1, fecha_cierre_real: date | None = None) -> SimpleNamespace:
     return SimpleNamespace(id=id_, fecha_cierre_real=fecha_cierre_real)
+
+
+def test_get_por_id_no_tapa_las_rutas_get_estaticas():
+    """Mismo riesgo que en registros.py: GET /{mesa_id} sin tipar como int
+    matchea cualquier segmento — debe quedar al final entre los GET."""
+    rutas_get = [r.path for r in mesas_router.routes if "GET" in r.methods]
+    indice_dinamica = rutas_get.index("/mesas/{mesa_id}")
+
+    for estatica in (
+        "/mesas", "/mesas/panel", "/mesas/reporte", "/mesas/reporte/exportar",
+        "/mesas/temas-frecuentes", "/mesas/export",
+    ):
+        assert rutas_get.index(estatica) < indice_dinamica
 
 
 def _catalogo_item(id_: int, nombre: str, usuario_id: int | None = None) -> SimpleNamespace:

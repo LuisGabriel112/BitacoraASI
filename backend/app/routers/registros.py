@@ -92,15 +92,6 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
     return RegistroCreadoOut(registro=RegistroOut.model_validate(registro), trello_ok=trello_ok, trello_error=trello_error)
 
 
-@router.get("/{registro_id}", response_model=RegistroOut)
-async def obtener_registro(registro_id: int, session: AsyncSession = Depends(get_session)):
-    stmt = select(Registro).options(*_RELACIONES).where(Registro.id == registro_id)
-    registro = (await session.execute(stmt)).scalar_one_or_none()
-    if registro is None:
-        raise HTTPException(404, "Registro no encontrado")
-    return registro
-
-
 @router.post("/{registro_id}/editar", response_model=RegistroOut)
 async def editar_registro(registro_id: int, payload: RegistroUpdate, session: AsyncSession = Depends(get_session)):
     registro = await session.get(Registro, registro_id)
@@ -466,3 +457,12 @@ def _generar_xlsx(encabezados: list[str], registros: list[Registro]) -> io.Bytes
     wb.save(out)
     out.seek(0)
     return out
+
+
+@router.get("/{registro_id}", response_model=RegistroOut)
+async def obtener_registro(registro_id: int, session: AsyncSession = Depends(get_session)):
+    stmt = select(Registro).options(*_RELACIONES).where(Registro.id == registro_id)
+    registro = (await session.execute(stmt)).scalar_one_or_none()
+    if registro is None:
+        raise HTTPException(404, "Registro no encontrado")
+    return registro

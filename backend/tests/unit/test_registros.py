@@ -6,11 +6,24 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from app.routers import registros
+from app.routers.registros import router as registros_router
 from app.schemas import RegistroUpdate
 
 
 def _registro(id_: int = 1) -> SimpleNamespace:
     return SimpleNamespace(id=id_)
+
+
+def test_get_por_id_no_tapa_las_rutas_get_estaticas():
+    """GET /{registro_id} sin tipar como int matchea cualquier segmento
+    (incluido "panel", "reporte", etc): si se registra antes que esas rutas
+    estáticas, Starlette la intercepta primero y devuelve 422 en vez de
+    ejecutar el endpoint real. Debe ir siempre al final entre los GET."""
+    rutas_get = [r.path for r in registros_router.routes if "GET" in r.methods]
+    indice_dinamica = rutas_get.index("/registros/{registro_id}")
+
+    for estatica in ("/registros", "/registros/panel", "/registros/reporte", "/registros/soportes-frecuentes", "/registros/export"):
+        assert rutas_get.index(estatica) < indice_dinamica
 
 
 def test_campos_a_actualizar_solo_incluye_lo_enviado():
