@@ -1,7 +1,42 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class PersonajeOut(BaseModel):
+    nombre: str
+    avatar: str
+    xp: int
+    nivel: int
+    xp_en_nivel_actual: int
+    xp_para_siguiente_nivel: int
+    titulo: str
+
+
+class UsuarioRegistro(BaseModel):
+    nombre: str
+    pin: str = Field(min_length=4, max_length=72)
+    avatar: str = "🙂"
+
+
+class UsuarioLogin(BaseModel):
+    nombre: str
+    pin: str = Field(min_length=1, max_length=72)
+
+
+class EventoXpOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    cantidad: int
+    motivo: str
+    created_at: datetime
+
+
+class RankingItemOut(BaseModel):
+    nombre: str
+    avatar: str
+    nivel: int
+    xp: int
 
 
 class CatalogoOut(BaseModel):

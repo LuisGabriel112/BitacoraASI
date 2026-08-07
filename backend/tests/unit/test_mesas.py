@@ -126,3 +126,36 @@ async def test_editar_mesa_traduce_codigo_duplicado_a_409():
 
     assert info.value.status_code == 409
     session.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_otorgar_xp_cierre_da_accion_mas_logros(monkeypatch):
+    llamadas = []
+
+    async def falso_otorgar_xp(session, nombre, cantidad, motivo):
+        llamadas.append((nombre, cantidad, motivo))
+
+    monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
+    mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"))
+
+    await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=["primera_dia_resolutor", "decima_dia"])
+
+    nombre, cantidad, motivo = llamadas[0]
+    assert nombre == "Ana"
+    assert cantidad == mesas.XP_POR_ACCION + mesas.XP_POR_LOGRO * 2
+    assert motivo == "mesa_cerrada"
+
+
+@pytest.mark.asyncio
+async def test_otorgar_xp_cierre_sin_logros_solo_da_xp_de_accion(monkeypatch):
+    llamadas = []
+
+    async def falso_otorgar_xp(session, nombre, cantidad, motivo):
+        llamadas.append(cantidad)
+
+    monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
+    mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"))
+
+    await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=[])
+
+    assert llamadas[0] == mesas.XP_POR_ACCION

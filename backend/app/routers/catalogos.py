@@ -16,8 +16,9 @@ from app.models import (
     VentanaMesa,
 )
 from app.schemas import CatalogoCreate, CatalogoOut
+from app.services.auth import get_usuario_actual
 
-router = APIRouter(tags=["catalogos"])
+router = APIRouter(tags=["catalogos"], dependencies=[Depends(get_usuario_actual)])
 
 
 def _catalogo_router(prefix: str, model, creatable: bool):

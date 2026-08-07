@@ -27,10 +27,13 @@ from app.services.clustering import agrupar_por_similitud, tema_representativo
 from app.services.embeddings import asegurar_embeddings
 from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.gemini import GeminiError, extraer_registro, gemini_configurado
+from app.services.auth import get_usuario_actual
+from app.services.rpg import XP_POR_ACCION
 from app.services.semanas import semana_de
 from app.services.trello import TrelloError, crear_tarjeta, trello_configurado
+from app.services.xp import otorgar_xp
 
-router = APIRouter(prefix="/registros", tags=["registros"])
+router = APIRouter(prefix="/registros", tags=["registros"], dependencies=[Depends(get_usuario_actual)])
 
 
 async def _get_registro(session: AsyncSession, registro_id: int) -> Registro:
@@ -63,6 +66,7 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
     session.add(registro)
     await session.commit()
     registro = await _get_registro(session, registro.id)
+    await otorgar_xp(session, registro.atendio.nombre, XP_POR_ACCION, "registro_creado")
 
     trello_ok = False
     trello_error = None

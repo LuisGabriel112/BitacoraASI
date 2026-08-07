@@ -38,9 +38,12 @@ from app.services.reporte_semanal_export import (
     generar_xlsx_reporte,
     titulo_reporte,
 )
+from app.services.auth import get_usuario_actual
+from app.services.rpg import XP_POR_ACCION, XP_POR_LOGRO
+from app.services.xp import otorgar_xp
 from app.services.semanas import semana_de
 
-router = APIRouter(prefix="/mesas", tags=["mesas"])
+router = APIRouter(prefix="/mesas", tags=["mesas"], dependencies=[Depends(get_usuario_actual)])
 
 _RELACIONES = (
     selectinload(Mesa.ventana),
@@ -65,6 +68,12 @@ def _resolver_catalogo(catalogo: list, id_elegido: int | None):
     return next((c for c in catalogo if c.id == id_elegido), None)
 
 
+async def _otorgar_xp_cierre(session: AsyncSession, mesa: Mesa, logros: list[str]) -> None:
+    """Mismo XP sin importar si la mesa se cerró vía /cerrar o vía /editar."""
+    cantidad = XP_POR_ACCION + XP_POR_LOGRO * len(logros)
+    await otorgar_xp(session, mesa.resolutor.nombre, cantidad, "mesa_cerrada")
+
+
 @router.post("", response_model=MesaOut, status_code=201)
 async def crear_mesa(payload: MesaCreate, session: AsyncSession = Depends(get_session)):
     mesa = Mesa(**payload.model_dump())
@@ -76,6 +85,7 @@ async def crear_mesa(payload: MesaCreate, session: AsyncSession = Depends(get_se
         raise HTTPException(409, f"Código '{payload.codigo}' ya existe")
     mesa = await _obtener_mesa(session, mesa.id)
     logros = await evaluar_logros(session, mesa)
+    await otorgar_xp(session, mesa.resolutor.nombre, XP_POR_ACCION, "mesa_creada")
     return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 
@@ -128,6 +138,7 @@ async def cerrar_mesa(mesa_id: int, payload: MesaCerrar, session: AsyncSession =
     await session.commit()
     mesa = await _obtener_mesa(session, mesa_id)
     logros = await evaluar_logros(session, mesa)
+    await _otorgar_xp_cierre(session, mesa, logros)
     return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 
@@ -154,6 +165,8 @@ async def editar_mesa(mesa_id: int, payload: MesaUpdate, session: AsyncSession =
 
     mesa = await _obtener_mesa(session, mesa_id)
     logros = await evaluar_logros(session, mesa) if recien_cerrada else []
+    if recien_cerrada:
+        await _otorgar_xp_cierre(session, mesa, logros)
     return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 

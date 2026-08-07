@@ -36,6 +36,28 @@ class Agente(Base):
     nombre: Mapped[str] = mapped_column(Text, unique=True)
 
 
+class Usuario(Base):
+    __tablename__ = "usuarios"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(Text)
+    pin_hash: Mapped[str] = mapped_column(Text)
+    avatar: Mapped[str] = mapped_column(Text, default="🙂")
+    xp: Mapped[int] = mapped_column(default=0)
+    intentos_fallidos: Mapped[int] = mapped_column(default=0)
+    bloqueado_hasta: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class XpEvento(Base):
+    __tablename__ = "xp_eventos"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    nombre_capturado: Mapped[str] = mapped_column(Text)
+    cantidad: Mapped[int] = mapped_column()
+    motivo: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Registro(Base):
     __tablename__ = "registros"
 
