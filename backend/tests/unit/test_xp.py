@@ -59,3 +59,27 @@ async def test_normaliza_el_nombre_antes_de_buscar():
     await otorgar_xp(session, "  Juan   Pérez  ", 5, "prueba")
 
     session.commit.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_usuario_id_directo_evita_buscar_por_nombre():
+    session = AsyncMock()
+    session.add = MagicMock()
+
+    await otorgar_xp(session, "Nombre que no importa", 5, "prueba", usuario_id_directo=99)
+
+    assert session.execute.await_count == 1  # solo el UPDATE, sin búsqueda por nombre
+    evento = session.add.call_args.args[0]
+    assert evento.usuario_id == 99
+    session.commit.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_sin_usuario_id_directo_cae_a_busqueda_por_nombre():
+    session = _session_con_busqueda(usuario_id=7)
+
+    await otorgar_xp(session, "Juan", 5, "prueba", usuario_id_directo=None)
+
+    assert session.execute.await_count == 2  # búsqueda por nombre + UPDATE
+    evento = session.add.call_args.args[0]
+    assert evento.usuario_id == 7

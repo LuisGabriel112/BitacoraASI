@@ -29,6 +29,7 @@ SEGUNDOS_EXPIRACION_COOKIE = 30 * 24 * 60 * 60
 def _personaje_de(usuario: Usuario) -> PersonajeOut:
     info = nivel_y_progreso(usuario.xp)
     return PersonajeOut(
+        id=usuario.id,
         nombre=usuario.nombre,
         avatar=usuario.avatar,
         xp=usuario.xp,

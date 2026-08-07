@@ -14,8 +14,8 @@ def _mesa(id_: int = 1, fecha_cierre_real: date | None = None) -> SimpleNamespac
     return SimpleNamespace(id=id_, fecha_cierre_real=fecha_cierre_real)
 
 
-def _catalogo_item(id_: int, nombre: str) -> SimpleNamespace:
-    return SimpleNamespace(id=id_, nombre=nombre)
+def _catalogo_item(id_: int, nombre: str, usuario_id: int | None = None) -> SimpleNamespace:
+    return SimpleNamespace(id=id_, nombre=nombre, usuario_id=usuario_id)
 
 
 def _mesa_create(codigo: str = "TCK-001") -> MesaCreate:
@@ -132,15 +132,15 @@ async def test_editar_mesa_traduce_codigo_duplicado_a_409():
 async def test_otorgar_xp_cierre_da_accion_mas_logros(monkeypatch):
     llamadas = []
 
-    async def falso_otorgar_xp(session, nombre, cantidad, motivo):
-        llamadas.append((nombre, cantidad, motivo))
+    async def falso_otorgar_xp(session, nombre, cantidad, motivo, usuario_id_directo=None):
+        llamadas.append((nombre, cantidad, motivo, usuario_id_directo))
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
     mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"))
 
     await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=["primera_dia_resolutor", "decima_dia"])
 
-    nombre, cantidad, motivo = llamadas[0]
+    nombre, cantidad, motivo, _ = llamadas[0]
     assert nombre == "Ana"
     assert cantidad == mesas.XP_POR_ACCION + mesas.XP_POR_LOGRO * 2
     assert motivo == "mesa_cerrada"
@@ -150,7 +150,7 @@ async def test_otorgar_xp_cierre_da_accion_mas_logros(monkeypatch):
 async def test_otorgar_xp_cierre_sin_logros_solo_da_xp_de_accion(monkeypatch):
     llamadas = []
 
-    async def falso_otorgar_xp(session, nombre, cantidad, motivo):
+    async def falso_otorgar_xp(session, nombre, cantidad, motivo, usuario_id_directo=None):
         llamadas.append(cantidad)
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
@@ -159,3 +159,18 @@ async def test_otorgar_xp_cierre_sin_logros_solo_da_xp_de_accion(monkeypatch):
     await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=[])
 
     assert llamadas[0] == mesas.XP_POR_ACCION
+
+
+@pytest.mark.asyncio
+async def test_otorgar_xp_cierre_pasa_el_usuario_id_vinculado(monkeypatch):
+    llamadas = []
+
+    async def falso_otorgar_xp(session, nombre, cantidad, motivo, usuario_id_directo=None):
+        llamadas.append(usuario_id_directo)
+
+    monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
+    mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana", usuario_id=42))
+
+    await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=[])
+
+    assert llamadas[0] == 42

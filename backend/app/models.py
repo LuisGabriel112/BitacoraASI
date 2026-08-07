@@ -34,6 +34,7 @@ class Agente(Base):
     __tablename__ = "agentes"
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(Text, unique=True)
+    usuario_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
 
 
 class Usuario(Base):
@@ -104,6 +105,7 @@ class ResolutorMesa(Base):
     __tablename__ = "resolutores_mesa"
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(Text, unique=True)
+    usuario_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
 
 
 class VentanaMesa(Base):

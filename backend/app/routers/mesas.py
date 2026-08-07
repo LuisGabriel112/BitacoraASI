@@ -71,7 +71,10 @@ def _resolver_catalogo(catalogo: list, id_elegido: int | None):
 async def _otorgar_xp_cierre(session: AsyncSession, mesa: Mesa, logros: list[str]) -> None:
     """Mismo XP sin importar si la mesa se cerró vía /cerrar o vía /editar."""
     cantidad = XP_POR_ACCION + XP_POR_LOGRO * len(logros)
-    await otorgar_xp(session, mesa.resolutor.nombre, cantidad, "mesa_cerrada")
+    await otorgar_xp(
+        session, mesa.resolutor.nombre, cantidad, "mesa_cerrada",
+        usuario_id_directo=mesa.resolutor.usuario_id,
+    )
 
 
 @router.post("", response_model=MesaOut, status_code=201)
@@ -85,7 +88,10 @@ async def crear_mesa(payload: MesaCreate, session: AsyncSession = Depends(get_se
         raise HTTPException(409, f"Código '{payload.codigo}' ya existe")
     mesa = await _obtener_mesa(session, mesa.id)
     logros = await evaluar_logros(session, mesa)
-    await otorgar_xp(session, mesa.resolutor.nombre, XP_POR_ACCION, "mesa_creada")
+    await otorgar_xp(
+        session, mesa.resolutor.nombre, XP_POR_ACCION, "mesa_creada",
+        usuario_id_directo=mesa.resolutor.usuario_id,
+    )
     return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
-	import { api, type EventoXp, type Personaje, type RankingItem } from '$lib/api/client';
+	import { api, type Catalogo, type EventoXp, type Personaje, type RankingItem } from '$lib/api/client';
 
 	const MOTIVOS: Record<string, string> = {
 		registro_creado: 'Registro de soporte creado',
@@ -24,15 +24,23 @@
 	let personaje = $state<Personaje | null>(null);
 	let historial = $state<EventoXp[]>([]);
 	let ranking = $state<RankingItem[]>([]);
+	let agentes = $state<Catalogo[]>([]);
+	let resolutores = $state<Catalogo[]>([]);
+	let agenteSeleccionado = $state<number | null>(null);
+	let resolutorSeleccionado = $state<number | null>(null);
+	let vinculando = $state(false);
+	let errorVinculo = $state<string | null>(null);
 	let cargando = $state(true);
 
 	async function cargar() {
 		cargando = true;
 		try {
-			[personaje, historial, ranking] = await Promise.all([
+			[personaje, historial, ranking, agentes, resolutores] = await Promise.all([
 				api.miPersonaje(),
 				api.miHistorial(),
-				api.ranking()
+				api.ranking(),
+				api.catalogo('agentes'),
+				api.catalogo('resolutores-mesa')
 			]);
 		} finally {
 			cargando = false;
@@ -46,6 +54,37 @@
 	const porcentajeXp = $derived(
 		personaje ? Math.min(100, (personaje.xp_en_nivel_actual / personaje.xp_para_siguiente_nivel) * 100) : 0
 	);
+
+	const agenteVinculado = $derived(agentes.find((a) => a.usuario_id === personaje?.id) ?? null);
+	const resolutorVinculado = $derived(resolutores.find((r) => r.usuario_id === personaje?.id) ?? null);
+
+	async function recargarCatalogosVinculo() {
+		[agentes, resolutores] = await Promise.all([api.catalogo('agentes'), api.catalogo('resolutores-mesa')]);
+	}
+
+	async function vincular(tipo: 'agentes' | 'resolutores-mesa', id: number | null) {
+		if (!id) return;
+		errorVinculo = null;
+		vinculando = true;
+		try {
+			await api.vincularCatalogo(tipo, id);
+			await recargarCatalogosVinculo();
+		} catch (e) {
+			errorVinculo = e instanceof Error ? e.message : 'No se pudo vincular';
+		} finally {
+			vinculando = false;
+		}
+	}
+
+	async function desvincular(tipo: 'agentes' | 'resolutores-mesa', id: number) {
+		errorVinculo = null;
+		try {
+			await api.desvincularCatalogo(tipo, id);
+			await recargarCatalogosVinculo();
+		} catch (e) {
+			errorVinculo = e instanceof Error ? e.message : 'No se pudo desvincular';
+		}
+	}
 </script>
 
 <Header titulo="Mi personaje" subtitulo="Nivel, XP y actividad reciente." />
@@ -100,6 +139,71 @@
 						</li>
 					{/each}
 				</ol>
+			{/if}
+		</section>
+
+		<section class="tarjeta vincular">
+			<h2 class="font-display">Vincular tu cuenta</h2>
+			<p class="ayuda-vincular">
+				Si tu nombre de agente/resolutor no es igual al de tu cuenta, vincúlalo aquí para que el XP te llegue.
+			</p>
+
+			<div class="campo-vincular">
+				<span class="etiqueta-vinculo">Agente (soporte)</span>
+				{#if agenteVinculado}
+					<div class="vinculo-actual">
+						<span>{agenteVinculado.nombre}</span>
+						<button type="button" onclick={() => desvincular('agentes', agenteVinculado.id)}>Desvincular</button>
+					</div>
+				{:else}
+					<div class="elegir-vinculo">
+						<select bind:value={agenteSeleccionado}>
+							<option value={null} disabled selected>Selecciona…</option>
+							{#each agentes as a}
+								<option value={a.id}>{a.nombre}</option>
+							{/each}
+						</select>
+						<button
+							type="button"
+							disabled={vinculando || !agenteSeleccionado}
+							onclick={() => vincular('agentes', agenteSeleccionado)}
+						>
+							Vincular
+						</button>
+					</div>
+				{/if}
+			</div>
+
+			<div class="campo-vincular">
+				<span class="etiqueta-vinculo">Resolutor (mesas)</span>
+				{#if resolutorVinculado}
+					<div class="vinculo-actual">
+						<span>{resolutorVinculado.nombre}</span>
+						<button type="button" onclick={() => desvincular('resolutores-mesa', resolutorVinculado.id)}>
+							Desvincular
+						</button>
+					</div>
+				{:else}
+					<div class="elegir-vinculo">
+						<select bind:value={resolutorSeleccionado}>
+							<option value={null} disabled selected>Selecciona…</option>
+							{#each resolutores as r}
+								<option value={r.id}>{r.nombre}</option>
+							{/each}
+						</select>
+						<button
+							type="button"
+							disabled={vinculando || !resolutorSeleccionado}
+							onclick={() => vincular('resolutores-mesa', resolutorSeleccionado)}
+						>
+							Vincular
+						</button>
+					</div>
+				{/if}
+			</div>
+
+			{#if errorVinculo}
+				<p class="error-vinculo">{errorVinculo}</p>
 			{/if}
 		</section>
 	</div>
@@ -263,6 +367,88 @@
 		font-size: 12px;
 		min-width: 60px;
 		text-align: right;
+	}
+
+	.vincular {
+		grid-column: 1 / -1;
+	}
+
+	.ayuda-vincular {
+		color: var(--text-muted);
+		font-size: 12px;
+		margin: 0 0 14px;
+	}
+
+	.campo-vincular {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 0;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.campo-vincular:last-of-type {
+		border-bottom: none;
+	}
+
+	.etiqueta-vinculo {
+		width: 140px;
+		flex-shrink: 0;
+		font-size: 13px;
+		color: var(--text-muted);
+	}
+
+	.vinculo-actual,
+	.elegir-vinculo {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex: 1;
+	}
+
+	.vinculo-actual span {
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	.campo-vincular select {
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 7px 10px;
+		color: var(--text);
+		min-width: 200px;
+	}
+
+	.campo-vincular select option {
+		background: var(--bg);
+		color: var(--text);
+	}
+
+	.campo-vincular button {
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 7px 12px;
+		color: var(--text);
+		font-size: 12px;
+		cursor: pointer;
+	}
+
+	.campo-vincular button:hover:not(:disabled) {
+		border-color: var(--accent);
+		color: var(--accent-strong);
+	}
+
+	.campo-vincular button:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	.error-vinculo {
+		color: var(--danger);
+		font-size: 12px;
+		margin: 10px 0 0;
 	}
 
 	@media (max-width: 720px) {

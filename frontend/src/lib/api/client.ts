@@ -1,6 +1,7 @@
-export type Catalogo = { id: number; nombre: string };
+export type Catalogo = { id: number; nombre: string; usuario_id?: number | null };
 
 export type Personaje = {
+	id: number;
 	nombre: string;
 	avatar: string;
 	xp: number;
@@ -141,6 +142,12 @@ export const api = {
 
 	catalogo: (nombre: NombreCatalogo, q = '') =>
 		json<Catalogo[]>(`/${nombre}${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+
+	vincularCatalogo: (nombre: 'agentes' | 'resolutores-mesa', id: number) =>
+		json<Catalogo>(`/${nombre}/${id}/vincular`, { method: 'POST' }),
+
+	desvincularCatalogo: (nombre: 'agentes' | 'resolutores-mesa', id: number) =>
+		json<Catalogo>(`/${nombre}/${id}/desvincular`, { method: 'POST' }),
 
 	crearCatalogo: (
 		nombre: 'empresas' | 'modulos' | 'categorias-mesa' | 'solicitantes-mesa' | 'resolutores-mesa' | 'ventanas-mesa',

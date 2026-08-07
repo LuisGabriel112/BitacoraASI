@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class PersonajeOut(BaseModel):
+    id: int
     nombre: str
     avatar: str
     xp: int
@@ -43,6 +44,7 @@ class CatalogoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     nombre: str
+    usuario_id: int | None = None
 
 
 class CatalogoCreate(BaseModel):

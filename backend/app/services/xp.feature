@@ -26,3 +26,14 @@ Característica: Otorgar XP por acciones y logros
     Cuando se calcula el XP de cierre
     Entonces el XP otorgado es XP_POR_ACCION + XP_POR_LOGRO * N
     Y es igual sin importar si se cerró vía /cerrar o vía /editar
+
+  Escenario: El agente/resolutor está vinculado explícitamente a una cuenta
+    Dado que el catálogo (agente o resolutor) tiene un usuario_id vinculado
+    Cuando se otorga XP para ese catálogo
+    Entonces el XP se acredita directo a ese usuario_id
+    Y no se busca coincidencia por nombre
+
+  Escenario: El catálogo no está vinculado, se usa el nombre como antes
+    Dado que el catálogo no tiene usuario_id vinculado
+    Cuando se otorga XP para ese catálogo
+    Entonces se busca coincidencia por nombre, igual que siempre

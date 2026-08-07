@@ -71,7 +71,10 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
     session.add(registro)
     await session.commit()
     registro = await _get_registro(session, registro.id)
-    await otorgar_xp(session, registro.atendio.nombre, XP_POR_ACCION, "registro_creado")
+    await otorgar_xp(
+        session, registro.atendio.nombre, XP_POR_ACCION, "registro_creado",
+        usuario_id_directo=registro.atendio.usuario_id,
+    )
 
     trello_ok = False
     trello_error = None
