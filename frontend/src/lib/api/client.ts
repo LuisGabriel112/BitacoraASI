@@ -1,5 +1,18 @@
 export type Catalogo = { id: number; nombre: string };
 
+export type Personaje = {
+	nombre: string;
+	avatar: string;
+	xp: number;
+	nivel: number;
+	xp_en_nivel_actual: number;
+	xp_para_siguiente_nivel: number;
+	titulo: string;
+};
+
+export type EventoXp = { cantidad: number; motivo: string; created_at: string };
+export type RankingItem = { nombre: string; avatar: string; nivel: number; xp: number };
+
 export type Registro = {
 	id: number;
 	fecha: string;
@@ -110,6 +123,22 @@ export type NombreCatalogo =
 	| 'ventanas-mesa';
 
 export const api = {
+	registrarse: (nombre: string, pin: string, avatar = '🙂') =>
+		json<Personaje>('/auth/registro', { method: 'POST', body: JSON.stringify({ nombre, pin, avatar }) }),
+
+	iniciarSesion: (nombre: string, pin: string) =>
+		json<Personaje>('/auth/login', { method: 'POST', body: JSON.stringify({ nombre, pin }) }),
+
+	cerrarSesion: async () => {
+		await fetch(`${BASE}/auth/logout`, { method: 'POST' });
+	},
+
+	miPersonaje: () => json<Personaje>('/auth/me'),
+
+	miHistorial: () => json<EventoXp[]>('/auth/historial'),
+
+	ranking: () => json<RankingItem[]>('/auth/ranking'),
+
 	catalogo: (nombre: NombreCatalogo, q = '') =>
 		json<Catalogo[]>(`/${nombre}${q ? `?q=${encodeURIComponent(q)}` : ''}`),
 

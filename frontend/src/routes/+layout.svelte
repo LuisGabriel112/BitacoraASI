@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import '../lib/tokens.css';
 	import Nav from '$lib/components/Nav.svelte';
 
 	let { children } = $props();
+	const enLogin = $derived($page.url.pathname.startsWith('/login'));
 </script>
 
 <div class="fondo-decorativo" aria-hidden="true">
@@ -12,8 +14,10 @@
 </div>
 
 <div class="app">
-	<Nav />
-	<main>
+	{#if !enLogin}
+		<Nav />
+	{/if}
+	<main class:sin-nav={enLogin}>
 		{@render children()}
 	</main>
 </div>
@@ -28,5 +32,9 @@
 		flex: 1;
 		min-width: 0;
 		padding: 24px 28px;
+	}
+
+	main.sin-nav {
+		padding: 0;
 	}
 </style>

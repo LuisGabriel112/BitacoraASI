@@ -1,14 +1,36 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { semanaActual } from '$lib/semana';
+	import { api, type Personaje } from '$lib/api/client';
 
 	const semana = semanaActual();
+	let personaje = $state<Personaje | null>(null);
+
+	async function cargarPersonaje() {
+		try {
+			personaje = await api.miPersonaje();
+		} catch {
+			personaje = null;
+		}
+	}
+
+	$effect(() => {
+		cargarPersonaje();
+	});
+
+	async function cerrarSesion() {
+		await api.cerrarSesion();
+		personaje = null;
+		await goto('/login');
+	}
 
 	const items = [
 		{ href: '/', label: 'Panel', icon: '▤' },
 		{ href: '/nuevo', label: 'Nuevo registro', icon: '＋' },
 		{ href: '/listado', label: 'Listado', icon: '☰' },
-		{ href: '/reporte', label: 'Reporte semanal', icon: '▥' }
+		{ href: '/reporte', label: 'Reporte semanal', icon: '▥' },
+		{ href: '/personaje', label: 'Mi personaje', icon: '🛡' }
 	];
 
 	const itemsAdministrativa = [
@@ -30,6 +52,19 @@
 			<div class="semana-progreso" style="width: {semana.progreso * 100}%"></div>
 		</div>
 	</div>
+
+	{#if personaje}
+		<div class="personaje-badge">
+			<span class="personaje-avatar" aria-hidden="true">{personaje.avatar}</span>
+			<div class="personaje-info">
+				<span class="personaje-nombre">{personaje.nombre}</span>
+				<span class="personaje-nivel">Nv. {personaje.nivel} · {personaje.titulo}</span>
+			</div>
+			<button type="button" class="cerrar-sesion" onclick={cerrarSesion} title="Cerrar sesión" aria-label="Cerrar sesión">
+				⏻
+			</button>
+		</div>
+	{/if}
 
 	<nav>
 		{#each items as item}
@@ -109,6 +144,53 @@
 		height: 100%;
 		background: var(--success);
 		transition: width 0.3s ease;
+	}
+
+	.personaje-badge {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.personaje-avatar {
+		font-size: 20px;
+		flex-shrink: 0;
+	}
+
+	.personaje-info {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.personaje-nombre {
+		font-size: 13px;
+		font-weight: 600;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.personaje-nivel {
+		font-size: 11px;
+		color: var(--text-muted);
+	}
+
+	.cerrar-sesion {
+		background: none;
+		border: none;
+		color: var(--text-faint);
+		cursor: pointer;
+		font-size: 14px;
+		padding: 4px;
+		flex-shrink: 0;
+	}
+
+	.cerrar-sesion:hover {
+		color: var(--danger);
 	}
 
 	nav {
