@@ -6,10 +6,12 @@
 	import CampoGrupo from '$lib/components/CampoGrupo.svelte';
 	import LeyendaGrupos from '$lib/components/LeyendaGrupos.svelte';
 	import Celebracion from '$lib/components/Celebracion.svelte';
+	import AnimacionExito3D from '$lib/components/AnimacionExito3D.svelte';
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
 	import { api, type Mesa } from '$lib/api/client';
 
 	let celebracion: Celebracion;
+	let animacionExito: AnimacionExito3D;
 	let aviso: AvisoResultado;
 
 	function hoy() {
@@ -181,6 +183,7 @@
 			});
 			cargarCapturadasHoy();
 			celebracion?.mostrar(resultado.logros);
+			animacionExito?.mostrar();
 			aviso?.mostrar('exito', `Mesa ${resultado.codigo} guardada en la bitácora administrativa.`);
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar la mesa';
@@ -201,6 +204,7 @@
 <svelte:window onkeydown={alTeclado} onpaste={alPegar} />
 
 <Celebracion bind:this={celebracion} />
+<AnimacionExito3D bind:this={animacionExito} />
 <AvisoResultado bind:this={aviso} />
 
 <Header titulo="Nueva mesa" subtitulo="Bitácora administrativa — Ctrl+Enter para guardar sin usar el mouse." />

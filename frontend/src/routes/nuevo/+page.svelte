@@ -6,11 +6,13 @@
 	import Header from '$lib/components/Header.svelte';
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
 	import Celebracion from '$lib/components/Celebracion.svelte';
+	import AnimacionExito3D from '$lib/components/AnimacionExito3D.svelte';
 	import { RUTA_SONIDO_EE_ATZIMBA, esPrimerSoporteDelDiaDeAtzimba } from '$lib/easterEggs';
 	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
 
 	let aviso: AvisoResultado;
 	let celebracion: Celebracion;
+	let animacionExito: AnimacionExito3D;
 
 	function hoy() {
 		return new Date().toISOString().slice(0, 10);
@@ -163,6 +165,7 @@
 			const fueEasterEgg = revisarEasterEggAtzimba(resultado.registro, resultado.logros);
 			if (!fueEasterEgg) aviso?.mostrar('exito', 'Registro guardado en la bitácora.');
 			celebracion?.mostrar(['soporte_guardado', ...resultado.logros]);
+			animacionExito?.mostrar();
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar el registro';
 			aviso?.mostrar('error', `No se pudo guardar el registro: ${errorGuardado}`);
@@ -193,6 +196,7 @@
 
 <AvisoResultado bind:this={aviso} />
 <Celebracion bind:this={celebracion} />
+<AnimacionExito3D bind:this={animacionExito} />
 
 <Header titulo="Nuevo registro" subtitulo="Captura rápida — Ctrl+Enter para guardar sin usar el mouse." />
 
