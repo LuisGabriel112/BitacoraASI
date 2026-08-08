@@ -12,6 +12,8 @@ from app.models import JefeSemanal
 DANIO_POR_ACCION = 5
 DANIO_POR_LOGRO = 25
 VIDA_MAX_SEMANAL = 1000
+FACTOR_DIFICULTAD = 1.2
+VIDA_MAX_TOPE = 5000
 
 NOMBRES_JEFE = [
     "Backlog Infinito",
@@ -31,12 +33,29 @@ def nombre_del_jefe(semana: str) -> str:
     return NOMBRES_JEFE[indice]
 
 
+def calcular_vida_max_siguiente(vida_max_anterior: int | None, derrotado_anterior: bool) -> int:
+    """Sube un 20% si el equipo derrotó al jefe anterior; si no lo derrotó, se
+    reinicia a la vida base — la dificultad solo escala tras una victoria."""
+    if vida_max_anterior is None or not derrotado_anterior:
+        return VIDA_MAX_SEMANAL
+    return min(VIDA_MAX_TOPE, round(vida_max_anterior * FACTOR_DIFICULTAD))
+
+
+async def _jefe_anterior(session: AsyncSession) -> JefeSemanal | None:
+    stmt = select(JefeSemanal).order_by(JefeSemanal.id.desc()).limit(1)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
 async def obtener_o_crear_jefe(session: AsyncSession, semana: str) -> JefeSemanal:
     jefe = (await session.execute(select(JefeSemanal).where(JefeSemanal.semana == semana))).scalar_one_or_none()
     if jefe is not None:
         return jefe
 
-    jefe = JefeSemanal(semana=semana, vida_max=VIDA_MAX_SEMANAL, vida_actual=VIDA_MAX_SEMANAL)
+    anterior = await _jefe_anterior(session)
+    derrotado_anterior = anterior.vida_actual <= 0 if anterior else False
+    vida_max = calcular_vida_max_siguiente(anterior.vida_max if anterior else None, derrotado_anterior)
+
+    jefe = JefeSemanal(semana=semana, vida_max=vida_max, vida_actual=vida_max)
     session.add(jefe)
     try:
         await session.commit()

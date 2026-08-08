@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -7,6 +8,8 @@ from app.services.jefes import (
     DANIO_POR_LOGRO,
     NOMBRES_JEFE,
     VIDA_MAX_SEMANAL,
+    VIDA_MAX_TOPE,
+    calcular_vida_max_siguiente,
     danar_jefe,
     nombre_del_jefe,
     obtener_o_crear_jefe,
@@ -44,12 +47,12 @@ async def test_obtener_o_crear_jefe_devuelve_existente_sin_crear_otro():
 
 
 @pytest.mark.asyncio
-async def test_obtener_o_crear_jefe_crea_con_vida_completa_si_no_existe():
+async def test_obtener_o_crear_jefe_crea_con_vida_base_si_no_hay_jefe_anterior():
     session = AsyncMock()
-    resultado = MagicMock()
-    resultado.scalar_one_or_none.return_value = None
-    session.execute.return_value = resultado
     session.add = MagicMock()
+    resultado_vacio = MagicMock()
+    resultado_vacio.scalar_one_or_none.return_value = None
+    session.execute.return_value = resultado_vacio
 
     await obtener_o_crear_jefe(session, "SEM 32 - 2026")
 
@@ -58,6 +61,56 @@ async def test_obtener_o_crear_jefe_crea_con_vida_completa_si_no_existe():
     assert nuevo.semana == "SEM 32 - 2026"
     assert nuevo.vida_max == VIDA_MAX_SEMANAL
     assert nuevo.vida_actual == VIDA_MAX_SEMANAL
+
+
+@pytest.mark.asyncio
+async def test_obtener_o_crear_jefe_sube_la_vida_si_el_anterior_fue_derrotado():
+    session = AsyncMock()
+    session.add = MagicMock()
+    resultado_actual = MagicMock()
+    resultado_actual.scalar_one_or_none.return_value = None
+    anterior = SimpleNamespace(vida_max=1000, vida_actual=0)
+    resultado_anterior = MagicMock()
+    resultado_anterior.scalar_one_or_none.return_value = anterior
+    session.execute.side_effect = [resultado_actual, resultado_anterior]
+
+    await obtener_o_crear_jefe(session, "SEM 33 - 2026")
+
+    nuevo = session.add.call_args.args[0]
+    assert nuevo.vida_max == round(1000 * 1.2)
+
+
+@pytest.mark.asyncio
+async def test_obtener_o_crear_jefe_reinicia_la_vida_si_el_anterior_no_fue_derrotado():
+    session = AsyncMock()
+    session.add = MagicMock()
+    resultado_actual = MagicMock()
+    resultado_actual.scalar_one_or_none.return_value = None
+    anterior = SimpleNamespace(vida_max=3000, vida_actual=250)
+    resultado_anterior = MagicMock()
+    resultado_anterior.scalar_one_or_none.return_value = anterior
+    session.execute.side_effect = [resultado_actual, resultado_anterior]
+
+    await obtener_o_crear_jefe(session, "SEM 33 - 2026")
+
+    nuevo = session.add.call_args.args[0]
+    assert nuevo.vida_max == VIDA_MAX_SEMANAL
+
+
+def test_primer_jefe_usa_vida_base():
+    assert calcular_vida_max_siguiente(None, False) == VIDA_MAX_SEMANAL
+
+
+def test_vida_sube_20_por_ciento_si_fue_derrotado():
+    assert calcular_vida_max_siguiente(1000, True) == 1200
+
+
+def test_vida_se_reinicia_a_la_base_si_no_fue_derrotado():
+    assert calcular_vida_max_siguiente(3000, False) == VIDA_MAX_SEMANAL
+
+
+def test_vida_tiene_un_tope_maximo():
+    assert calcular_vida_max_siguiente(VIDA_MAX_TOPE, True) == VIDA_MAX_TOPE
 
 
 @pytest.mark.asyncio

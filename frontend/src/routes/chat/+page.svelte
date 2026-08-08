@@ -18,6 +18,10 @@
 		requestAnimationFrame(() => contenedor?.scrollTo({ top: contenedor.scrollHeight }));
 	}
 
+	function reproducirSonidoNuevoMensaje() {
+		new Audio('/sonidos/pop-succes.ogg').play().catch(() => {});
+	}
+
 	function esImagen(tipo: string | null) {
 		return !!tipo?.startsWith('image/');
 	}
@@ -51,6 +55,7 @@
 				const nuevos = await api.mensajesChat(mensajes[mensajes.length - 1].id);
 				if (!cancelado && nuevos.length > 0) {
 					mensajes = [...mensajes, ...nuevos];
+					reproducirSonidoNuevoMensaje();
 					desplazarAbajo();
 				}
 			} catch {
