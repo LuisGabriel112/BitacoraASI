@@ -6,7 +6,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
 	import Celebracion from '$lib/components/Celebracion.svelte';
-	import { RUTA_SONIDO_EE_ATZIMBA, esPrimerSoporteDeAtzimba } from '$lib/easterEggs';
+	import { RUTA_SONIDO_EE_ATZIMBA, esPrimerSoporteDelDiaDeAtzimba } from '$lib/easterEggs';
 	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
 
 	let aviso: AvisoResultado;
@@ -134,10 +134,9 @@
 		return null;
 	}
 
-	async function revisarEasterEggAtzimba(registro: Registro): Promise<boolean> {
-		const pagina = await api.listado({ atendio_id: registro.atendio.id, page_size: 1 });
-		if (!esPrimerSoporteDeAtzimba(registro.atendio.nombre, pagina.total)) return false;
-		aviso?.mostrar('exito', `¡Primer soporte de ${registro.atendio.nombre}! 🎉`, RUTA_SONIDO_EE_ATZIMBA);
+	function revisarEasterEggAtzimba(registro: Registro, logros: string[]): boolean {
+		if (!esPrimerSoporteDelDiaDeAtzimba(registro.atendio.nombre, logros)) return false;
+		aviso?.mostrar('exito', `¡Primer soporte de hoy de ${registro.atendio.nombre}! 🎉`, RUTA_SONIDO_EE_ATZIMBA);
 		return true;
 	}
 
@@ -161,7 +160,7 @@
 				descripcion: descripcion.trim()
 			});
 			cargarCapturadosHoy();
-			const fueEasterEgg = await revisarEasterEggAtzimba(resultado.registro);
+			const fueEasterEgg = revisarEasterEggAtzimba(resultado.registro, resultado.logros);
 			if (!fueEasterEgg) aviso?.mostrar('exito', 'Registro guardado en la bitácora.');
 			celebracion?.mostrar(['soporte_guardado', ...resultado.logros]);
 		} catch (e) {

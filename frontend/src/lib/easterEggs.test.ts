@@ -1,21 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { RUTA_SONIDO_EE_ATZIMBA, esPrimerSoporteDeAtzimba } from './easterEggs';
+import { RUTA_SONIDO_EE_ATZIMBA, esPrimerSoporteDelDiaDeAtzimba } from './easterEggs';
 
-describe('esPrimerSoporteDeAtzimba', () => {
-	it('aplica cuando el agente es Atzimba Torres y es su primer soporte', () => {
-		expect(esPrimerSoporteDeAtzimba('Atzimba Torres', 1)).toBe(true);
+describe('esPrimerSoporteDelDiaDeAtzimba', () => {
+	it('aplica cuando el agente es Atzimba Torres y el logro de primer soporte del día está presente', () => {
+		expect(esPrimerSoporteDelDiaDeAtzimba('Atzimba Torres', ['primer_soporte_dia_agente'])).toBe(true);
 	});
 
-	it('no aplica cuando ya tiene más de un soporte', () => {
-		expect(esPrimerSoporteDeAtzimba('Atzimba Torres', 2)).toBe(false);
+	it('no aplica cuando el logro de primer soporte del día no está', () => {
+		expect(esPrimerSoporteDelDiaDeAtzimba('Atzimba Torres', ['primer_soporte_semana'])).toBe(false);
+	});
+
+	it('no aplica cuando no hay logros', () => {
+		expect(esPrimerSoporteDelDiaDeAtzimba('Atzimba Torres', [])).toBe(false);
 	});
 
 	it('no aplica cuando el agente no es Atzimba Torres', () => {
-		expect(esPrimerSoporteDeAtzimba('Juan Pérez', 1)).toBe(false);
+		expect(esPrimerSoporteDelDiaDeAtzimba('Juan Pérez', ['primer_soporte_dia_agente'])).toBe(false);
 	});
 
 	it('ignora mayúsculas y espacios extra en el nombre', () => {
-		expect(esPrimerSoporteDeAtzimba('  atzimba   torres ', 1)).toBe(true);
+		expect(esPrimerSoporteDelDiaDeAtzimba('  atzimba   torres ', ['primer_soporte_dia_agente'])).toBe(true);
 	});
 
 	it('define una ruta de sonido para el easter egg', () => {
