@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
-	import { api, type Catalogo, type EventoXp, type Personaje, type RankingItem } from '$lib/api/client';
+	import Personaje3D from '$lib/components/Personaje3D.svelte';
+	import { ACCESORIOS } from '$lib/apariencia';
+	import { api, type Accesorio, type Catalogo, type EventoXp, type Personaje, type RankingItem } from '$lib/api/client';
 
 	const MOTIVOS: Record<string, string> = {
 		registro_creado: 'Registro de soporte creado',
@@ -31,6 +33,40 @@
 	let vinculando = $state(false);
 	let errorVinculo = $state<string | null>(null);
 	let cargando = $state(true);
+
+	let colorPielEdit = $state('#f2c9a1');
+	let colorCuerpoEdit = $state('#3b82f6');
+	let accesorioEdit = $state<Accesorio>('ninguno');
+	let inicializadoApariencia = $state(false);
+	let guardandoApariencia = $state(false);
+	let errorApariencia = $state<string | null>(null);
+	let okApariencia = $state(false);
+
+	$effect(() => {
+		if (!personaje || inicializadoApariencia) return;
+		colorPielEdit = personaje.color_piel;
+		colorCuerpoEdit = personaje.color_cuerpo;
+		accesorioEdit = personaje.accesorio;
+		inicializadoApariencia = true;
+	});
+
+	async function guardarApariencia() {
+		errorApariencia = null;
+		okApariencia = false;
+		guardandoApariencia = true;
+		try {
+			personaje = await api.actualizarApariencia({
+				color_piel: colorPielEdit,
+				color_cuerpo: colorCuerpoEdit,
+				accesorio: accesorioEdit
+			});
+			okApariencia = true;
+		} catch (e) {
+			errorApariencia = e instanceof Error ? e.message : 'No se pudo guardar la apariencia';
+		} finally {
+			guardandoApariencia = false;
+		}
+	}
 
 	async function cargar() {
 		cargando = true;
@@ -94,7 +130,7 @@
 {:else if personaje}
 	<div class="columnas">
 		<section class="tarjeta ficha">
-			<span class="avatar-grande" aria-hidden="true">{personaje.avatar}</span>
+			<Personaje3D colorPiel={colorPielEdit} colorCuerpo={colorCuerpoEdit} accesorio={accesorioEdit} tamano={200} />
 			<h2 class="font-display">{personaje.nombre}</h2>
 			<span class="titulo-nivel">Nivel {personaje.nivel} · {personaje.titulo}</span>
 			<div class="barra-xp" title="{personaje.xp_en_nivel_actual} / {personaje.xp_para_siguiente_nivel} XP">
@@ -104,6 +140,32 @@
 				{personaje.xp_en_nivel_actual} / {personaje.xp_para_siguiente_nivel} XP para el siguiente nivel ·
 				{personaje.xp} XP total
 			</span>
+
+			<div class="personalizar">
+				<div class="fila-personalizar">
+					<label>
+						Piel
+						<input type="color" bind:value={colorPielEdit} />
+					</label>
+					<label>
+						Ropa
+						<input type="color" bind:value={colorCuerpoEdit} />
+					</label>
+				</div>
+				<label class="campo-accesorio">
+					Accesorio
+					<select bind:value={accesorioEdit}>
+						{#each ACCESORIOS as opcion}
+							<option value={opcion.valor}>{opcion.etiqueta}</option>
+						{/each}
+					</select>
+				</label>
+				<button type="button" class="btn-guardar-apariencia" disabled={guardandoApariencia} onclick={guardarApariencia}>
+					{guardandoApariencia ? 'Guardando…' : 'Guardar apariencia'}
+				</button>
+				{#if okApariencia}<p class="ok-apariencia">Apariencia guardada.</p>{/if}
+				{#if errorApariencia}<p class="error-apariencia">{errorApariencia}</p>{/if}
+			</div>
 		</section>
 
 		<section class="tarjeta historial">
@@ -244,10 +306,6 @@
 		gap: 6px;
 	}
 
-	.avatar-grande {
-		font-size: 48px;
-	}
-
 	.ficha h2 {
 		margin: 4px 0 0;
 		color: var(--text);
@@ -367,6 +425,89 @@
 		font-size: 12px;
 		min-width: 60px;
 		text-align: right;
+	}
+
+	.personalizar {
+		width: 100%;
+		margin-top: 18px;
+		padding-top: 16px;
+		border-top: 1px solid var(--border);
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.fila-personalizar {
+		display: flex;
+		gap: 16px;
+		justify-content: center;
+	}
+
+	.personalizar label {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		font-size: 11px;
+		color: var(--text-muted);
+	}
+
+	.campo-accesorio {
+		align-items: center;
+	}
+
+	.personalizar input[type='color'] {
+		width: 44px;
+		height: 32px;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		background: var(--surface);
+		padding: 2px;
+		cursor: pointer;
+	}
+
+	.personalizar select {
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 7px 10px;
+		color: var(--text);
+	}
+
+	.personalizar select option {
+		background: var(--bg);
+		color: var(--text);
+	}
+
+	.btn-guardar-apariencia {
+		background: var(--accent);
+		color: var(--bg);
+		border: none;
+		border-radius: var(--radius);
+		padding: 8px 16px;
+		font-weight: 600;
+		font-size: 13px;
+		cursor: pointer;
+	}
+
+	.btn-guardar-apariencia:hover:not(:disabled) {
+		background: var(--accent-strong);
+	}
+
+	.btn-guardar-apariencia:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
+	.ok-apariencia {
+		color: var(--success);
+		font-size: 12px;
+		margin: 0;
+	}
+
+	.error-apariencia {
+		color: var(--danger);
+		font-size: 12px;
+		margin: 0;
 	}
 
 	.vincular {

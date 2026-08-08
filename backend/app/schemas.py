@@ -4,10 +4,16 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+AccesorioTipo = Literal["ninguno", "gorra", "casco", "antenas"]
+
+
 class PersonajeOut(BaseModel):
     id: int
     nombre: str
     avatar: str
+    color_piel: str
+    color_cuerpo: str
+    accesorio: AccesorioTipo
     xp: int
     nivel: int
     xp_en_nivel_actual: int
@@ -19,6 +25,15 @@ class UsuarioRegistro(BaseModel):
     nombre: str
     pin: str = Field(min_length=4, max_length=72)
     avatar: str = "🙂"
+    color_piel: str = Field(default="#f2c9a1", pattern=r"^#[0-9a-fA-F]{6}$")
+    color_cuerpo: str = Field(default="#3b82f6", pattern=r"^#[0-9a-fA-F]{6}$")
+    accesorio: AccesorioTipo = "ninguno"
+
+
+class AparienciaUpdate(BaseModel):
+    color_piel: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
+    color_cuerpo: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
+    accesorio: AccesorioTipo
 
 
 class UsuarioLogin(BaseModel):

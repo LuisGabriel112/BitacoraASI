@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Toast from '$lib/components/Toast.svelte';
-	import { api } from '$lib/api/client';
+	import Personaje3D from '$lib/components/Personaje3D.svelte';
+	import { ACCESORIOS, COLOR_CUERPO_DEFECTO, COLOR_PIEL_DEFECTO } from '$lib/apariencia';
+	import { api, type Accesorio } from '$lib/api/client';
 
 	const AVATARES = ['🙂', '🦾', '🛡️', '🧠', '🚀', '🐉', '🦉', '⚡'];
 
@@ -10,6 +12,9 @@
 	let pin = $state('');
 	let confirmarPin = $state('');
 	let avatar = $state(AVATARES[0]);
+	let colorPiel = $state(COLOR_PIEL_DEFECTO);
+	let colorCuerpo = $state(COLOR_CUERPO_DEFECTO);
+	let accesorio = $state<Accesorio>('ninguno');
 	let enviando = $state(false);
 	let error = $state<string | null>(null);
 	let inputNombre: HTMLInputElement;
@@ -37,7 +42,7 @@
 		enviando = true;
 		try {
 			if (modo === 'login') await api.iniciarSesion(nombre.trim(), pin);
-			else await api.registrarse(nombre.trim(), pin, avatar);
+			else await api.registrarse(nombre.trim(), pin, avatar, { color_piel: colorPiel, color_cuerpo: colorCuerpo, accesorio });
 			await goto('/', { invalidateAll: true });
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo continuar';
@@ -82,6 +87,28 @@
 							{opcion}
 						</button>
 					{/each}
+				</div>
+			</div>
+
+			<div class="preview-3d">
+				<Personaje3D {colorPiel} {colorCuerpo} {accesorio} tamano={160} />
+				<div class="controles-3d">
+					<label>
+						Piel
+						<input type="color" bind:value={colorPiel} />
+					</label>
+					<label>
+						Ropa
+						<input type="color" bind:value={colorCuerpo} />
+					</label>
+					<label class="campo-accesorio-3d">
+						Accesorio
+						<select bind:value={accesorio}>
+							{#each ACCESORIOS as opcion}
+								<option value={opcion.valor}>{opcion.etiqueta}</option>
+							{/each}
+						</select>
+					</label>
 				</div>
 			</div>
 		{/if}
@@ -177,6 +204,55 @@
 	.avatar.elegido {
 		border-color: var(--accent);
 		background: color-mix(in srgb, var(--accent) 16%, transparent);
+	}
+
+	.preview-3d {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.controles-3d {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+	}
+
+	.controles-3d label {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		font-size: 11px;
+		color: var(--text-muted);
+	}
+
+	.campo-accesorio-3d {
+		align-items: center;
+	}
+
+	.controles-3d input[type='color'] {
+		width: 40px;
+		height: 30px;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		background: var(--surface);
+		padding: 2px;
+		cursor: pointer;
+	}
+
+	.controles-3d select {
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 6px 8px;
+		color: var(--text);
+		font-size: 12px;
+	}
+
+	.controles-3d select option {
+		background: var(--bg);
+		color: var(--text);
 	}
 
 	.enviar {

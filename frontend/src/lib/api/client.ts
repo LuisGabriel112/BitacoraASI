@@ -1,9 +1,14 @@
 export type Catalogo = { id: number; nombre: string; usuario_id?: number | null };
 
+export type Accesorio = 'ninguno' | 'gorra' | 'casco' | 'antenas';
+
 export type Personaje = {
 	id: number;
 	nombre: string;
 	avatar: string;
+	color_piel: string;
+	color_cuerpo: string;
+	accesorio: Accesorio;
 	xp: number;
 	nivel: number;
 	xp_en_nivel_actual: number;
@@ -141,8 +146,19 @@ export type NombreCatalogo =
 	| 'ventanas-mesa';
 
 export const api = {
-	registrarse: (nombre: string, pin: string, avatar = '🙂') =>
-		json<Personaje>('/auth/registro', { method: 'POST', body: JSON.stringify({ nombre, pin, avatar }) }),
+	registrarse: (
+		nombre: string,
+		pin: string,
+		avatar: string,
+		apariencia: { color_piel: string; color_cuerpo: string; accesorio: Accesorio }
+	) =>
+		json<Personaje>('/auth/registro', {
+			method: 'POST',
+			body: JSON.stringify({ nombre, pin, avatar, ...apariencia })
+		}),
+
+	actualizarApariencia: (apariencia: { color_piel: string; color_cuerpo: string; accesorio: Accesorio }) =>
+		json<Personaje>('/auth/apariencia', { method: 'POST', body: JSON.stringify(apariencia) }),
 
 	iniciarSesion: (nombre: string, pin: string) =>
 		json<Personaje>('/auth/login', { method: 'POST', body: JSON.stringify({ nombre, pin }) }),

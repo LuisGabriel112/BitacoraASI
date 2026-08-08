@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
 from app.models import Usuario, XpEvento
-from app.schemas import EventoXpOut, PersonajeOut, RankingItemOut, UsuarioLogin, UsuarioRegistro
+from app.schemas import AparienciaUpdate, EventoXpOut, PersonajeOut, RankingItemOut, UsuarioLogin, UsuarioRegistro
 from app.services.auth import (
     NOMBRE_COOKIE,
     calcular_bloqueo_hasta,
@@ -33,6 +33,9 @@ def _personaje_de(usuario: Usuario) -> PersonajeOut:
         id=usuario.id,
         nombre=usuario.nombre,
         avatar=usuario.avatar,
+        color_piel=usuario.color_piel,
+        color_cuerpo=usuario.color_cuerpo,
+        accesorio=usuario.accesorio,
         xp=usuario.xp,
         nivel=info.nivel,
         xp_en_nivel_actual=info.xp_en_nivel_actual,
@@ -70,7 +73,14 @@ async def registro(
     if await _buscar_por_nombre(session, nombre_limpio) is not None:
         raise HTTPException(409, f"Ya existe una cuenta con el nombre '{nombre_limpio}'")
 
-    usuario = Usuario(nombre=nombre_limpio, pin_hash=hash_pin(payload.pin), avatar=payload.avatar)
+    usuario = Usuario(
+        nombre=nombre_limpio,
+        pin_hash=hash_pin(payload.pin),
+        avatar=payload.avatar,
+        color_piel=payload.color_piel,
+        color_cuerpo=payload.color_cuerpo,
+        accesorio=payload.accesorio,
+    )
     session.add(usuario)
     try:
         await session.commit()
@@ -146,6 +156,20 @@ async def ranking(session: AsyncSession = Depends(get_session)):
         RankingItemOut(nombre=u.nombre, avatar=u.avatar, nivel=nivel_y_progreso(u.xp).nivel, xp=u.xp)
         for u in usuarios
     ]
+
+
+@router.post("/apariencia", response_model=PersonajeOut)
+async def actualizar_apariencia(
+    payload: AparienciaUpdate,
+    usuario: Usuario = Depends(get_usuario_actual),
+    session: AsyncSession = Depends(get_session),
+):
+    usuario.color_piel = payload.color_piel
+    usuario.color_cuerpo = payload.color_cuerpo
+    usuario.accesorio = payload.accesorio
+    await session.commit()
+    await session.refresh(usuario)
+    return _personaje_de(usuario)
 
 
 @router.post("/heartbeat", status_code=204)
