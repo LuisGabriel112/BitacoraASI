@@ -163,7 +163,7 @@
 			cargarCapturadosHoy();
 			const fueEasterEgg = await revisarEasterEggAtzimba(resultado.registro);
 			if (!fueEasterEgg) aviso?.mostrar('exito', 'Registro guardado en la bitácora.');
-			celebracion?.mostrar(['soporte_guardado']);
+			celebracion?.mostrar(['soporte_guardado', ...resultado.logros]);
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar el registro';
 			aviso?.mostrar('error', `No se pudo guardar el registro: ${errorGuardado}`);

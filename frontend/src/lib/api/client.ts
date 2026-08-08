@@ -13,6 +13,18 @@ export type Personaje = {
 
 export type EventoXp = { cantidad: number; motivo: string; created_at: string };
 export type RankingItem = { nombre: string; avatar: string; nivel: number; xp: number };
+export type Jefe = { semana: string; nombre: string; vida_max: number; vida_actual: number; derrotado: boolean };
+
+export type AutorChat = { nombre: string; avatar: string };
+export type MensajeChat = {
+	id: number;
+	autor: AutorChat;
+	texto: string | null;
+	archivo_url: string | null;
+	archivo_nombre: string | null;
+	archivo_tipo: string | null;
+	created_at: string;
+};
 
 export type Registro = {
 	id: number;
@@ -28,7 +40,12 @@ export type Registro = {
 	atendio: Catalogo;
 };
 
-export type RegistroCreado = { registro: Registro; trello_ok: boolean; trello_error: string | null };
+export type RegistroCreado = {
+	registro: Registro;
+	trello_ok: boolean;
+	trello_error: string | null;
+	logros: string[];
+};
 export type ExtraccionRegistro = {
 	fecha: string | null;
 	descripcion: string | null;
@@ -139,6 +156,35 @@ export const api = {
 	miHistorial: () => json<EventoXp[]>('/auth/historial'),
 
 	ranking: () => json<RankingItem[]>('/auth/ranking'),
+
+	heartbeat: async () => {
+		await fetch(`${BASE}/auth/heartbeat`, { method: 'POST' });
+	},
+
+	enLinea: () => json<RankingItem[]>('/auth/en-linea'),
+
+	jefeActual: () => json<Jefe>('/jefes/actual'),
+
+	crearUrlSubidaChat: (nombreArchivo: string, contentType: string) =>
+		json<{ url_subida: string; url_publica: string }>('/chat/subir-url', {
+			method: 'POST',
+			body: JSON.stringify({ nombre_archivo: nombreArchivo, content_type: contentType })
+		}),
+
+	subirArchivoDirecto: async (urlSubida: string, archivo: File) => {
+		const resp = await fetch(urlSubida, { method: 'PUT', headers: { 'Content-Type': archivo.type }, body: archivo });
+		if (!resp.ok) throw new Error('No se pudo subir el archivo');
+	},
+
+	enviarMensajeChat: (payload: {
+		texto?: string;
+		archivo_url?: string;
+		archivo_nombre?: string;
+		archivo_tipo?: string;
+	}) => json<MensajeChat>('/chat/mensajes', { method: 'POST', body: JSON.stringify(payload) }),
+
+	mensajesChat: (despuesDe?: number) =>
+		json<MensajeChat[]>(`/chat/mensajes${despuesDe !== undefined ? `?despues_de=${despuesDe}` : ''}`),
 
 	catalogo: (nombre: NombreCatalogo, q = '') =>
 		json<Catalogo[]>(`/${nombre}${q ? `?q=${encodeURIComponent(q)}` : ''}`),

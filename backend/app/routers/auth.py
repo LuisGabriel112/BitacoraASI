@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,7 @@ from app.services.auth import (
     calcular_bloqueo_hasta,
     crear_token,
     debe_bloquear,
+    esta_en_linea,
     get_usuario_actual,
     hash_pin,
     normalizar_nombre,
@@ -144,4 +145,27 @@ async def ranking(session: AsyncSession = Depends(get_session)):
     return [
         RankingItemOut(nombre=u.nombre, avatar=u.avatar, nivel=nivel_y_progreso(u.xp).nivel, xp=u.xp)
         for u in usuarios
+    ]
+
+
+@router.post("/heartbeat", status_code=204)
+async def heartbeat(
+    usuario: Usuario = Depends(get_usuario_actual),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.execute(
+        update(Usuario).where(Usuario.id == usuario.id).values(ultima_actividad=datetime.now(timezone.utc))
+    )
+    await session.commit()
+
+
+@router.get("/en-linea", response_model=list[RankingItemOut])
+async def en_linea(session: AsyncSession = Depends(get_session)):
+    ahora = datetime.now(timezone.utc)
+    stmt = select(Usuario).order_by(Usuario.xp.desc())
+    usuarios = (await session.execute(stmt)).scalars().all()
+    return [
+        RankingItemOut(nombre=u.nombre, avatar=u.avatar, nivel=nivel_y_progreso(u.xp).nivel, xp=u.xp)
+        for u in usuarios
+        if esta_en_linea(u.ultima_actividad, ahora)
     ]

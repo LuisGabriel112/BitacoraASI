@@ -30,7 +30,10 @@
 		{ href: '/nuevo', label: 'Nuevo registro', icon: '＋' },
 		{ href: '/listado', label: 'Listado', icon: '☰' },
 		{ href: '/reporte', label: 'Reporte semanal', icon: '▥' },
-		{ href: '/personaje', label: 'Mi personaje', icon: '🛡' }
+		{ href: '/personaje', label: 'Mi personaje', icon: '🛡' },
+		{ href: '/jefe', label: 'Jefe semanal', icon: '👹' },
+		{ href: '/hub', label: 'En línea', icon: '🟢' },
+		{ href: '/chat', label: 'Chat', icon: '💬' }
 	];
 
 	const itemsAdministrativa = [

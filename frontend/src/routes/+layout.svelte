@@ -2,9 +2,18 @@
 	import { page } from '$app/stores';
 	import '../lib/tokens.css';
 	import Nav from '$lib/components/Nav.svelte';
+	import { api } from '$lib/api/client';
+
+	const INTERVALO_HEARTBEAT_MS = 25_000;
 
 	let { children } = $props();
 	const enLogin = $derived($page.url.pathname.startsWith('/login'));
+
+	$effect(() => {
+		api.heartbeat();
+		const id = setInterval(() => api.heartbeat(), INTERVALO_HEARTBEAT_MS);
+		return () => clearInterval(id);
+	});
 </script>
 
 <div class="fondo-decorativo" aria-hidden="true">

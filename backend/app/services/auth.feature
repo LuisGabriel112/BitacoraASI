@@ -47,3 +47,18 @@ Característica: Autenticación por PIN
     Dado los nombres "  Juan Pérez  " y "juan   pérez"
     Cuando se normalizan ambos
     Entonces el resultado normalizado es el mismo para los dos
+
+  Escenario: Usuario con actividad reciente está en línea
+    Dado que la última actividad fue hace 10 segundos
+    Cuando se consulta si está en línea ahora
+    Entonces está en línea
+
+  Escenario: Usuario sin actividad reciente no está en línea
+    Dado que la última actividad fue hace 5 minutos
+    Cuando se consulta si está en línea ahora (umbral de 90 segundos)
+    Entonces no está en línea
+
+  Escenario: Usuario que nunca ha mandado heartbeat no está en línea
+    Dado que la última actividad es nula (nunca se conectó)
+    Cuando se consulta si está en línea ahora
+    Entonces no está en línea

@@ -150,6 +150,7 @@ async def test_otorgar_xp_cierre_da_accion_mas_logros(monkeypatch):
         llamadas.append((nombre, cantidad, motivo, usuario_id_directo))
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
+    monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
     mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"))
 
     await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=["primera_dia_resolutor", "decima_dia"])
@@ -168,6 +169,7 @@ async def test_otorgar_xp_cierre_sin_logros_solo_da_xp_de_accion(monkeypatch):
         llamadas.append(cantidad)
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
+    monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
     mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"))
 
     await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=[])
@@ -183,6 +185,7 @@ async def test_otorgar_xp_cierre_pasa_el_usuario_id_vinculado(monkeypatch):
         llamadas.append(usuario_id_directo)
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
+    monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
     mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana", usuario_id=42))
 
     await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=[])

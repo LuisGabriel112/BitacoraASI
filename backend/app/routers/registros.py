@@ -30,6 +30,8 @@ from app.services.embeddings import asegurar_embeddings
 from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.gemini import GeminiError, extraer_registro, gemini_configurado
 from app.services.auth import get_usuario_actual
+from app.services.jefes import DANIO_POR_ACCION, danar_jefe
+from app.services.logros import evaluar_logros_registro
 from app.services.rpg import XP_POR_ACCION
 from app.services.semanas import semana_de
 from app.services.trello import TrelloError, crear_tarjeta, trello_configurado
@@ -75,6 +77,8 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
         session, registro.atendio.nombre, XP_POR_ACCION, "registro_creado",
         usuario_id_directo=registro.atendio.usuario_id,
     )
+    await danar_jefe(session, semana_de(date.today()), DANIO_POR_ACCION)
+    logros = await evaluar_logros_registro(session, registro)
 
     trello_ok = False
     trello_error = None
@@ -89,7 +93,9 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
         except TrelloError as exc:
             trello_error = str(exc)
 
-    return RegistroCreadoOut(registro=RegistroOut.model_validate(registro), trello_ok=trello_ok, trello_error=trello_error)
+    return RegistroCreadoOut(
+        registro=RegistroOut.model_validate(registro), trello_ok=trello_ok, trello_error=trello_error, logros=logros,
+    )
 
 
 @router.post("/{registro_id}/editar", response_model=RegistroOut)

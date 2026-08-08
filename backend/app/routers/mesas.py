@@ -30,6 +30,7 @@ from app.services.clustering import agrupar_por_similitud, tema_representativo
 from app.services.embeddings import asegurar_embeddings
 from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.gemini import GeminiError, extraer_mesa, gemini_configurado
+from app.services.jefes import DANIO_POR_ACCION, DANIO_POR_LOGRO, danar_jefe
 from app.services.logros import evaluar_logros
 from app.services.reporte_semanal_export import (
     filas_reporte,
@@ -75,6 +76,8 @@ async def _otorgar_xp_cierre(session: AsyncSession, mesa: Mesa, logros: list[str
         session, mesa.resolutor.nombre, cantidad, "mesa_cerrada",
         usuario_id_directo=mesa.resolutor.usuario_id,
     )
+    danio = DANIO_POR_ACCION + DANIO_POR_LOGRO * len(logros)
+    await danar_jefe(session, semana_de(date.today()), danio)
 
 
 @router.post("", response_model=MesaOut, status_code=201)
@@ -92,6 +95,7 @@ async def crear_mesa(payload: MesaCreate, session: AsyncSession = Depends(get_se
         session, mesa.resolutor.nombre, XP_POR_ACCION, "mesa_creada",
         usuario_id_directo=mesa.resolutor.usuario_id,
     )
+    await danar_jefe(session, semana_de(date.today()), DANIO_POR_ACCION)
     return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-flash-latest"
     gemini_embed_model: str = "models/gemini-embedding-001"
     cors_origins: str = "http://localhost:5173"
+    supabase_url: str = ""
+    supabase_service_key: str = ""
+    chat_bucket: str = "chat-adjuntos"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

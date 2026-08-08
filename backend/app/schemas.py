@@ -40,6 +40,42 @@ class RankingItemOut(BaseModel):
     xp: int
 
 
+class JefeOut(BaseModel):
+    semana: str
+    nombre: str
+    vida_max: int
+    vida_actual: int
+    derrotado: bool
+
+
+class AutorChatOut(BaseModel):
+    nombre: str
+    avatar: str
+
+
+class MensajeChatOut(BaseModel):
+    id: int
+    autor: AutorChatOut
+    texto: str | None
+    archivo_url: str | None
+    archivo_nombre: str | None
+    archivo_tipo: str | None
+    created_at: datetime
+
+
+class MensajeChatCreate(BaseModel):
+    texto: str | None = None
+    archivo_url: str | None = None
+    archivo_nombre: str | None = None
+    archivo_tipo: str | None = None
+
+    @model_validator(mode="after")
+    def _texto_o_archivo(self) -> "MensajeChatCreate":
+        if not (self.texto or "").strip() and not self.archivo_url:
+            raise ValueError("El mensaje necesita texto o un archivo adjunto")
+        return self
+
+
 class CatalogoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -100,6 +136,7 @@ class RegistroCreadoOut(BaseModel):
     registro: RegistroOut
     trello_ok: bool
     trello_error: str | None = None
+    logros: list[str] = []
 
 
 class PaginaRegistros(BaseModel):

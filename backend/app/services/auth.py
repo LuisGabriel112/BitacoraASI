@@ -53,6 +53,12 @@ def normalizar_nombre(nombre: str) -> str:
     return " ".join(nombre.split()).casefold()
 
 
+def esta_en_linea(ultima_actividad: datetime | None, ahora: datetime, umbral_segundos: int = 90) -> bool:
+    if ultima_actividad is None:
+        return False
+    return (ahora - ultima_actividad).total_seconds() < umbral_segundos
+
+
 async def get_usuario_actual(
     bitacora_sesion: str | None = Cookie(default=None),
     session: AsyncSession = Depends(get_session),

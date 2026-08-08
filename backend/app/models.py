@@ -46,6 +46,7 @@ class Usuario(Base):
     xp: Mapped[int] = mapped_column(default=0)
     intentos_fallidos: Mapped[int] = mapped_column(default=0)
     bloqueado_hasta: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ultima_actividad: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -57,6 +58,28 @@ class XpEvento(Base):
     cantidad: Mapped[int] = mapped_column()
     motivo: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class JefeSemanal(Base):
+    __tablename__ = "jefes_semanales"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    semana: Mapped[str] = mapped_column(Text)
+    vida_max: Mapped[int] = mapped_column()
+    vida_actual: Mapped[int] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class MensajeChat(Base):
+    __tablename__ = "mensajes_chat"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    texto: Mapped[str | None] = mapped_column(Text, nullable=True)
+    archivo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    archivo_nombre: Mapped[str | None] = mapped_column(Text, nullable=True)
+    archivo_tipo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    usuario: Mapped[Usuario] = relationship(lazy="joined")
 
 
 class Registro(Base):

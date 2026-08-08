@@ -7,6 +7,7 @@ from app.services.auth import (
     ALGORITMO,
     crear_token,
     debe_bloquear,
+    esta_en_linea,
     hash_pin,
     leer_token,
     normalizar_nombre,
@@ -66,3 +67,25 @@ def test_sin_bloqueo_previo_no_esta_bloqueado():
 
 def test_normalizar_nombre_ignora_espacios_y_mayusculas():
     assert normalizar_nombre("  Juan Pérez  ") == normalizar_nombre("juan   pérez")
+
+
+def test_actividad_reciente_esta_en_linea():
+    ahora = datetime.now(timezone.utc)
+    ultima_actividad = ahora - timedelta(seconds=10)
+    assert esta_en_linea(ultima_actividad, ahora) is True
+
+
+def test_actividad_vieja_no_esta_en_linea():
+    ahora = datetime.now(timezone.utc)
+    ultima_actividad = ahora - timedelta(minutes=5)
+    assert esta_en_linea(ultima_actividad, ahora, umbral_segundos=90) is False
+
+
+def test_justo_en_el_umbral_ya_no_esta_en_linea():
+    ahora = datetime.now(timezone.utc)
+    ultima_actividad = ahora - timedelta(seconds=90)
+    assert esta_en_linea(ultima_actividad, ahora, umbral_segundos=90) is False
+
+
+def test_sin_actividad_nunca_no_esta_en_linea():
+    assert esta_en_linea(None, datetime.now(timezone.utc)) is False
