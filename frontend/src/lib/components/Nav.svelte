@@ -29,17 +29,20 @@
 		{ href: '/', label: 'Panel', icon: '▤' },
 		{ href: '/nuevo', label: 'Nuevo registro', icon: '＋' },
 		{ href: '/listado', label: 'Listado', icon: '☰' },
-		{ href: '/reporte', label: 'Reporte semanal', icon: '▥' },
-		{ href: '/personaje', label: 'Mi personaje', icon: '🛡' },
-		{ href: '/jefe', label: 'Jefe semanal', icon: '👹' },
-		{ href: '/hub', label: 'En línea', icon: '🟢' },
-		{ href: '/chat', label: 'Chat', icon: '💬' }
+		{ href: '/reporte', label: 'Reporte semanal', icon: '▥' }
 	];
 
 	const itemsAdministrativa = [
 		{ href: '/mesas', label: 'Resumen', icon: '▤' },
 		{ href: '/mesas/nueva', label: 'Nueva mesa', icon: '＋' },
 		{ href: '/mesas/listado', label: 'Listado', icon: '☰' }
+	];
+
+	const itemsRpg = [
+		{ href: '/personaje', label: 'Mi personaje', icon: '🛡' },
+		{ href: '/jefe', label: 'Jefe semanal', icon: '👹' },
+		{ href: '/hub', label: 'En línea', icon: '🟢' },
+		{ href: '/chat', label: 'Chat', icon: '💬' }
 	];
 </script>
 
@@ -82,6 +85,18 @@
 		<div class="seccion-titulo">Bitácora administrativa</div>
 		<nav>
 			{#each itemsAdministrativa as item}
+				<a href={item.href} class:activo={$page.url.pathname === item.href}>
+					<span class="icono" aria-hidden="true">{item.icon}</span>
+					{item.label}
+				</a>
+			{/each}
+		</nav>
+	</div>
+
+	<div class="seccion-rpg">
+		<div class="seccion-titulo">Modo RPG</div>
+		<nav>
+			{#each itemsRpg as item}
 				<a href={item.href} class:activo={$page.url.pathname === item.href}>
 					<span class="icono" aria-hidden="true">{item.icon}</span>
 					{item.label}
@@ -210,6 +225,16 @@
 
 	.seccion-administrativa:hover,
 	.seccion-administrativa:focus-within {
+		opacity: 1;
+	}
+
+	.seccion-rpg {
+		opacity: 0.72;
+		transition: opacity 0.15s ease;
+	}
+
+	.seccion-rpg:hover,
+	.seccion-rpg:focus-within {
 		opacity: 1;
 	}
 
