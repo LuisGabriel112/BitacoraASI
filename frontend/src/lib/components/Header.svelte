@@ -1,10 +1,18 @@
 <script lang="ts">
 	import { semanaActual } from '$lib/semana';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { api, type Personaje } from '$lib/api/client';
 
 	let { titulo, subtitulo = '' }: { titulo: string; subtitulo?: string } = $props();
 
 	const semana = semanaActual();
+	let personaje = $state<Personaje | null>(null);
+
+	$effect(() => {
+		api.miPersonaje()
+			.then((p) => (personaje = p))
+			.catch(() => (personaje = null));
+	});
 </script>
 
 <header class="header">
@@ -15,7 +23,9 @@
 	<div class="acciones">
 		<span class="badge-semana" title="Semana ISO en curso">{semana.etiqueta}</span>
 		<ThemeToggle />
-		<span class="avatar" aria-hidden="true">BA</span>
+		<a href="/personaje" class="avatar" title={personaje ? `${personaje.nombre} · Nv. ${personaje.nivel}` : 'Mi personaje'}>
+			{personaje?.avatar ?? '🙂'}
+		</a>
 	</div>
 </header>
 
@@ -67,9 +77,12 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-family: var(--font-display);
-		font-weight: 700;
-		font-size: 13px;
+		font-size: 18px;
+		text-decoration: none;
 		flex-shrink: 0;
+	}
+
+	.avatar:hover {
+		background: var(--accent-strong);
 	}
 </style>

@@ -8,5 +8,14 @@ export const MENSAJES_LOGRO: Record<string, string> = {
 	ultimos_10_min_dia: 'Cerrada en los últimos 10 minutos del día',
 	ultima_hora_viernes: 'Última hora del viernes',
 	sabado_guardia: 'Guardia de sábado',
-	soporte_guardado: 'Soporte registrado en la bitácora'
+	soporte_guardado: 'Soporte registrado en la bitácora',
+	antes_de_jornada_soporte: 'Soporte atendido antes de que empezara la jornada',
+	ultimas_del_dia_soporte: 'Soporte atendido en la recta final del día (5-6pm)',
+	despues_de_hora_soporte: 'Soporte atendido después de hora de salida',
+	ultimos_10_min_dia_soporte: 'Soporte atendido en los últimos 10 minutos del día',
+	ultima_hora_viernes_soporte: 'Último soporte de la hora en viernes',
+	sabado_guardia_soporte: 'Guardia de sábado',
+	primer_soporte_dia_agente: 'Primer soporte atendido hoy por este agente',
+	decimo_soporte_dia: '10mo soporte del día entre todo el equipo',
+	primer_soporte_semana: 'Primer soporte de la semana'
 };
