@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_service_key: str = ""
     chat_bucket: str = "chat-adjuntos"
+    exponer_docs: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

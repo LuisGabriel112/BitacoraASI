@@ -4,7 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers import auth, catalogos, chat, jefes, mesas, registros
 
-app = FastAPI(title="Bitácora ASIPONA API")
+app = FastAPI(
+    title="Bitácora ASIPONA API",
+    docs_url="/docs" if settings.exponer_docs else None,
+    redoc_url="/redoc" if settings.exponer_docs else None,
+    openapi_url="/openapi.json" if settings.exponer_docs else None,
+)
 
 app.add_middleware(
     CORSMiddleware,
