@@ -36,6 +36,9 @@
 	let resolutorNombre = $state('');
 	let fechaEstimadaResolucion = $state('');
 
+	let prioridad = $state(false);
+	let destacada = $state(false);
+
 	let cerrada = $state(false);
 	let solucionTexto = $state('');
 	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>('Modificación en BD');
@@ -61,6 +64,8 @@
 		resolutorId = m.resolutor.id;
 		resolutorNombre = m.resolutor.nombre;
 		fechaEstimadaResolucion = m.fecha_estimada_resolucion.slice(0, 16);
+		prioridad = m.prioridad;
+		destacada = m.destacada;
 		cerrada = !!m.fecha_cierre_real;
 		solucionTexto = m.solucion ?? '';
 		tipoSolucion = (m.tipo_solucion as 'Modificación en BD' | 'Seguimiento de proceso') ?? 'Modificación en BD';
@@ -115,6 +120,8 @@
 				solicitante_id: solicitanteId,
 				resolutor_id: resolutorId,
 				fecha_estimada_resolucion: fechaEstimadaResolucion,
+				prioridad,
+				destacada,
 				solucion: cerrada ? solucionTexto.trim() : null,
 				tipo_solucion: cerrada ? tipoSolucion : null,
 				fecha_cierre_real: cerrada ? fechaCierreReal : null
@@ -199,10 +206,20 @@
 			</div>
 		</CampoGrupo>
 
-		<label class="check-resuelta">
-			<input type="checkbox" bind:checked={cerrada} />
-			Mesa cerrada
-		</label>
+		<div class="fila-checks">
+			<label class="check-resuelta">
+				<input type="checkbox" bind:checked={cerrada} />
+				Mesa cerrada
+			</label>
+			<label class="check-resuelta">
+				<input type="checkbox" bind:checked={prioridad} />
+				Prioritaria
+			</label>
+			<label class="check-resuelta">
+				<input type="checkbox" bind:checked={destacada} />
+				Destacada
+			</label>
+		</div>
 
 		{#if cerrada}
 			<div class="bloque-cierre">
@@ -324,6 +341,12 @@
 	select:focus-visible {
 		outline: 2px solid var(--accent);
 		outline-offset: 1px;
+	}
+
+	.fila-checks {
+		display: flex;
+		gap: 20px;
+		flex-wrap: wrap;
 	}
 
 	.check-resuelta {

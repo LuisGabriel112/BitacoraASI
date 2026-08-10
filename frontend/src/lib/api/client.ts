@@ -91,6 +91,8 @@ export type Mesa = {
 	solucion: string | null;
 	tipo_solucion: string | null;
 	fecha_cierre_real: string | null;
+	prioridad: boolean;
+	destacada: boolean;
 	created_at: string;
 	ventana: Catalogo | null;
 	categoria: Catalogo;
@@ -344,6 +346,8 @@ export const api = {
 			solucion: string | null;
 			tipo_solucion: string | null;
 			fecha_cierre_real: string | null;
+			prioridad: boolean;
+			destacada: boolean;
 		}>
 	) => json<Mesa>(`/mesas/${id}/editar`, { method: 'POST', body: JSON.stringify(payload) }),
 
@@ -366,7 +370,7 @@ export const api = {
 		}
 	},
 
-	listadoMesas: (params: Record<string, string | number | undefined>) => {
+	listadoMesas: (params: Record<string, string | number | boolean | undefined>) => {
 		const qs = new URLSearchParams();
 		for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') qs.set(k, String(v));
 		return json<PaginaMesas>(`/mesas?${qs.toString()}`);

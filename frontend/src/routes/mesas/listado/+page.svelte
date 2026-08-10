@@ -74,6 +74,24 @@
 		}
 	}
 
+	async function alternarPrioridad(m: Mesa) {
+		try {
+			const actualizada = await api.editarMesa(m.id, { prioridad: !m.prioridad });
+			items = items.map((it) => (it.id === m.id ? actualizada : it));
+		} catch {
+			// un fallo al marcar no debe romper el listado
+		}
+	}
+
+	async function alternarDestacada(m: Mesa) {
+		try {
+			const actualizada = await api.editarMesa(m.id, { destacada: !m.destacada });
+			items = items.map((it) => (it.id === m.id ? actualizada : it));
+		} catch {
+			// un fallo al marcar no debe romper el listado
+		}
+	}
+
 	function abrirCierre(id: number) {
 		cerrandoId = id;
 		errorCierre = null;
@@ -231,7 +249,11 @@
 								<span class="sin-enlace">{m.codigo}</span>
 							{/if}
 						</td>
-						<td class="titulo-col">{m.titulo}</td>
+						<td class="titulo-col">
+							{#if m.prioridad}<span class="badge-prioridad" title="Prioritaria">❗</span>{/if}
+							{#if m.destacada}<span class="badge-destacada" title="Destacada">⭐</span>{/if}
+							{m.titulo}
+						</td>
 						<td>{formatearFechaHora(m.fecha_carga)}</td>
 						<td>{m.ventana?.nombre ?? '—'}</td>
 						<td>{m.solicitante.nombre}</td>
@@ -252,6 +274,26 @@
 								</div>
 							{:else}
 								<div class="acciones-fila">
+									<button
+										type="button"
+										class="btn-toggle"
+										class:activo={m.prioridad}
+										title={m.prioridad ? 'Quitar prioridad' : 'Marcar como prioritaria'}
+										aria-label={m.prioridad ? 'Quitar prioridad' : 'Marcar como prioritaria'}
+										onclick={() => alternarPrioridad(m)}
+									>
+										❗
+									</button>
+									<button
+										type="button"
+										class="btn-toggle"
+										class:activo={m.destacada}
+										title={m.destacada ? 'Quitar de destacadas' : 'Marcar como destacada'}
+										aria-label={m.destacada ? 'Quitar de destacadas' : 'Marcar como destacada'}
+										onclick={() => alternarDestacada(m)}
+									>
+										⭐
+									</button>
 									{#if !m.fecha_cierre_real}
 										<button class="btn-cerrar" onclick={() => abrirCierre(m.id)}>Cerrar</button>
 									{/if}
@@ -572,6 +614,38 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.badge-prioridad,
+	.badge-destacada {
+		font-size: 11px;
+		margin-right: 4px;
+	}
+
+	.btn-toggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 40px;
+		min-height: 40px;
+		background: none;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		color: var(--text-faint);
+		cursor: pointer;
+		font-size: 13px;
+		opacity: 0.55;
+	}
+
+	.btn-toggle:hover {
+		border-color: var(--accent);
+		opacity: 1;
+	}
+
+	.btn-toggle.activo {
+		border-color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 14%, transparent);
+		opacity: 1;
 	}
 
 	.chip-estado {

@@ -4,7 +4,7 @@
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import BotonGenerarReporte from '$lib/components/BotonGenerarReporte.svelte';
-	import { api, type PanelMesasKPIs } from '$lib/api/client';
+	import { api, type Mesa, type PanelMesasKPIs } from '$lib/api/client';
 
 	let kpis = $state<PanelMesasKPIs | null>(null);
 	let cargandoKpis = $state(true);
@@ -21,6 +21,38 @@
 	$effect(() => {
 		cargarPanel();
 	});
+
+	let prioritarias = $state<Mesa[]>([]);
+	let destacadas = $state<Mesa[]>([]);
+	let indiceDestacada = $state(0);
+	let cargandoDestacar = $state(true);
+
+	async function cargarPrioritariasYDestacadas() {
+		cargandoDestacar = true;
+		try {
+			const [pagPrioritarias, pagDestacadas] = await Promise.all([
+				api.listadoMesas({ prioridad: true, estado: 'abierta', page_size: 10 }),
+				api.listadoMesas({ destacada: true, page_size: 10 })
+			]);
+			prioritarias = pagPrioritarias.items;
+			destacadas = pagDestacadas.items;
+			indiceDestacada = 0;
+		} finally {
+			cargandoDestacar = false;
+		}
+	}
+
+	$effect(() => {
+		cargarPrioritariasYDestacadas();
+	});
+
+	function siguienteDestacada() {
+		indiceDestacada = (indiceDestacada + 1) % destacadas.length;
+	}
+
+	function anteriorDestacada() {
+		indiceDestacada = (indiceDestacada - 1 + destacadas.length) % destacadas.length;
+	}
 
 	function lunesDeEstaSemana(): Date {
 		const hoy = new Date();
@@ -84,9 +116,75 @@
 		<BarChartVertical items={ventanaChartItems} loading={cargandoKpis} />
 	</section>
 
-	<section class="tarjeta tile-barras tile-categoria">
+	<section class="tarjeta tile-mitad tile-categoria">
 		<h2 class="font-display">Por categoría de solución</h2>
 		<BarChartVertical items={categoriaSolucionChartItems} loading={cargandoKpis} vacio="Aún no hay mesas cerradas con categoría de solución esta semana." />
+	</section>
+
+	<section class="tarjeta tile-mitad tile-destacar">
+		<div class="bloque-prioritarias">
+			<h2 class="font-display">Prioritarias</h2>
+			{#if cargandoDestacar}
+				<p class="cargando-mini">Cargando…</p>
+			{:else if prioritarias.length === 0}
+				<p class="vacio-mini">Ninguna mesa marcada como prioritaria.</p>
+			{:else}
+				<ul class="lista-mini">
+					{#each prioritarias as m}
+						<li>
+							{#if m.enlace}
+								<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="mini-codigo" title="Abrir en Proactivanet">
+									{m.codigo}
+								</a>
+							{:else}
+								<span class="mini-codigo sin-enlace">{m.codigo}</span>
+							{/if}
+							<span class="mini-titulo">{m.titulo}</span>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+
+		<div class="bloque-destacadas">
+			<h2 class="font-display">Destacadas</h2>
+			{#if cargandoDestacar}
+				<p class="cargando-mini">Cargando…</p>
+			{:else if destacadas.length === 0}
+				<p class="vacio-mini">Ninguna mesa destacada todavía.</p>
+			{:else}
+				<div class="carrusel">
+					<button
+						type="button"
+						class="carrusel-flecha"
+						onclick={anteriorDestacada}
+						disabled={destacadas.length <= 1}
+						aria-label="Destacada anterior"
+					>
+						‹
+					</button>
+					<div class="carrusel-contenido">
+						<span class="mini-codigo">{destacadas[indiceDestacada].codigo}</span>
+						<span class="mini-titulo">{destacadas[indiceDestacada].titulo}</span>
+						<span class="mini-categoria">{destacadas[indiceDestacada].categoria.nombre}</span>
+					</div>
+					<button
+						type="button"
+						class="carrusel-flecha"
+						onclick={siguienteDestacada}
+						disabled={destacadas.length <= 1}
+						aria-label="Siguiente destacada"
+					>
+						›
+					</button>
+				</div>
+				<div class="carrusel-puntos">
+					{#each destacadas as _, i}
+						<span class="punto" class:activo={i === indiceDestacada}></span>
+					{/each}
+				</div>
+			{/if}
+		</div>
 	</section>
 
 	<section class="tarjeta tile-barras">
@@ -241,8 +339,134 @@
 		flex-direction: column;
 	}
 
+	.tile-mitad {
+		grid-column: span 2;
+	}
+
 	.tile-categoria {
-		max-width: 480px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.tile-destacar {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+	}
+
+	.bloque-prioritarias,
+	.bloque-destacadas {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.bloque-destacadas {
+		border-top: 1px solid var(--border);
+		padding-top: 14px;
+	}
+
+	.cargando-mini,
+	.vacio-mini {
+		color: var(--text-muted);
+		font-size: 12px;
+	}
+
+	.lista-mini {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		max-height: 120px;
+		overflow-y: auto;
+	}
+
+	.lista-mini li {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		font-size: 12px;
+	}
+
+	.mini-codigo {
+		font-family: var(--font-mono);
+		color: var(--accent-strong);
+		text-decoration: none;
+		flex-shrink: 0;
+	}
+
+	.mini-codigo.sin-enlace {
+		color: var(--text-muted);
+	}
+
+	.mini-codigo:not(.sin-enlace):hover {
+		text-decoration: underline;
+	}
+
+	.mini-titulo {
+		color: var(--text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.carrusel {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.carrusel-flecha {
+		background: none;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		width: 28px;
+		height: 28px;
+		flex-shrink: 0;
+		color: var(--text);
+		cursor: pointer;
+	}
+
+	.carrusel-flecha:hover:not(:disabled) {
+		border-color: var(--accent);
+		color: var(--accent-strong);
+	}
+
+	.carrusel-flecha:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
+
+	.carrusel-contenido {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.mini-categoria {
+		font-size: 11px;
+		color: var(--text-muted);
+	}
+
+	.carrusel-puntos {
+		display: flex;
+		justify-content: center;
+		gap: 5px;
+		margin-top: 10px;
+	}
+
+	.punto {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--border-strong);
+	}
+
+	.punto.activo {
+		background: var(--accent);
 	}
 
 	.tabla-wrap {
@@ -257,7 +481,8 @@
 		.tile-hero,
 		.tile-resolutor,
 		.tile-barras,
-		.tile-tabla {
+		.tile-tabla,
+		.tile-mitad {
 			grid-column: span 2;
 		}
 	}
@@ -270,7 +495,8 @@
 		.tile-hero,
 		.tile-resolutor,
 		.tile-barras,
-		.tile-tabla {
+		.tile-tabla,
+		.tile-mitad {
 			grid-column: span 1;
 		}
 	}

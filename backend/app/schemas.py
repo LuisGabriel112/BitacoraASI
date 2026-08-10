@@ -234,6 +234,8 @@ class MesaUpdate(BaseModel):
     solucion: str | None = None
     tipo_solucion: TipoSolucion | None = None
     fecha_cierre_real: datetime | None = None
+    prioridad: bool | None = None
+    destacada: bool | None = None
 
 
 class MesaOut(BaseModel):
@@ -249,6 +251,8 @@ class MesaOut(BaseModel):
     solucion: str | None
     tipo_solucion: str | None
     fecha_cierre_real: datetime | None
+    prioridad: bool
+    destacada: bool
     created_at: datetime
     ventana: CatalogoOut | None
     categoria: CatalogoOut

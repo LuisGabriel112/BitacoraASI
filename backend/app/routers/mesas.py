@@ -189,7 +189,14 @@ async def eliminar_mesa(mesa_id: int, session: AsyncSession = Depends(get_sessio
     await session.commit()
 
 
-def _aplicar_filtros(stmt, *, categoria_id, solicitante_id, resolutor_id, ventana_id, semana, fecha_desde, fecha_hasta, buscar, estado):
+def _aplicar_filtros(
+    stmt, *, categoria_id, solicitante_id, resolutor_id, ventana_id, semana, fecha_desde, fecha_hasta,
+    buscar, estado, prioridad=None, destacada=None,
+):
+    if prioridad:
+        stmt = stmt.where(Mesa.prioridad.is_(True))
+    if destacada:
+        stmt = stmt.where(Mesa.destacada.is_(True))
     if categoria_id:
         stmt = stmt.where(Mesa.categoria_id == categoria_id)
     if solicitante_id:
@@ -236,12 +243,14 @@ async def listar_mesas(
     fecha_hasta: date | None = None,
     buscar: str | None = None,
     estado: str | None = None,
+    prioridad: bool | None = None,
+    destacada: bool | None = None,
 ):
     base = _aplicar_filtros(
         select(Mesa),
         categoria_id=categoria_id, solicitante_id=solicitante_id, resolutor_id=resolutor_id,
         ventana_id=ventana_id, semana=semana, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta,
-        buscar=buscar, estado=estado,
+        buscar=buscar, estado=estado, prioridad=prioridad, destacada=destacada,
     )
     total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
 
