@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
+	import Enemigo3D from '$lib/components/Enemigo3D.svelte';
 	import { api, type Jefe } from '$lib/api/client';
 
 	const INTERVALO_MS = 10_000;
@@ -39,7 +40,7 @@
 	<p class="cargando">Cargando jefe…</p>
 {:else if jefe}
 	<section class="tarjeta">
-		<span class="emoji-jefe" aria-hidden="true">{jefe.derrotado ? '💀' : '👹'}</span>
+		<Enemigo3D derrotado={jefe.derrotado} {porcentajeVida} tamano={200} />
 		<h2 class="font-display">{jefe.nombre}</h2>
 		<span class="semana">{jefe.semana}</span>
 
@@ -70,10 +71,6 @@
 		align-items: center;
 		text-align: center;
 		gap: 6px;
-	}
-
-	.emoji-jefe {
-		font-size: 56px;
 	}
 
 	.tarjeta h2 {
