@@ -50,7 +50,7 @@
 	async function cargarPrioritarias() {
 		cargandoPrioritarias = true;
 		try {
-			const pagina = await api.listadoMesas({ prioridad: true, estado: 'abierta', page_size: 10 });
+			const pagina = await api.listadoMesas({ prioridad: true, page_size: 10 });
 			prioritarias = pagina.items;
 		} finally {
 			cargandoPrioritarias = false;
@@ -156,8 +156,11 @@
 		{:else}
 			<ul class="lista-prioritarias">
 				{#each prioritarias as m}
-					<li>
+					<li class:resuelta={!!m.fecha_cierre_real}>
 						<div class="prioritaria-cabecera">
+							{#if m.fecha_cierre_real}
+								<span class="marca-resuelta" title="Ya resuelta">✓</span>
+							{/if}
 							{#if m.enlace}
 								<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="mini-codigo" title="Abrir en Proactivanet">
 									{m.codigo}
@@ -405,11 +408,22 @@
 		padding-bottom: 0;
 	}
 
+	.lista-prioritarias li.resuelta {
+		border-left: 2px solid var(--success);
+		padding-left: 8px;
+	}
+
 	.prioritaria-cabecera {
 		display: flex;
 		align-items: baseline;
 		gap: 8px;
 		font-size: 12px;
+	}
+
+	.marca-resuelta {
+		color: var(--success);
+		font-weight: 700;
+		flex-shrink: 0;
 	}
 
 	.mini-codigo {

@@ -23,6 +23,7 @@ from app.services.excel_charts import escribir_tabla_conteo, grafica_barras_cont
 from app.services.semanas import rango_semana
 
 ENCABEZADOS = ["Código", "Fecha de resolución real", "Solución", "Observaciones"]
+FILAS_POR_DIAPOSITIVA = 4
 
 _COLOR_TITULO_FONDO = "FFFF00"
 _COLOR_ENCABEZADO_FONDO = "FF9900"
@@ -30,6 +31,12 @@ _COLOR_TEXTO = "000000"
 _COLOR_FILA = "FFFFFF"
 _COLOR_BORDE = "BFBFBF"
 _COLOR_ACENTO = "FF9900"
+_COLOR_PORTADA_FONDO = "4CAE9B"
+_COLOR_PORTADA_TEXTO = "FFFFFF"
+
+
+def _en_bloques(filas: list, tamano: int) -> list[list]:
+    return [filas[i : i + tamano] for i in range(0, len(filas), tamano)]
 
 
 def titulo_reporte(semana: str) -> str:
@@ -94,23 +101,75 @@ def generar_xlsx_reporte(
     return out
 
 
-def generar_pptx_reporte(
-    titulo: str, filas: list[tuple[str, str, str]], graficas: dict[str, list[tuple[str, int]]]
-) -> io.BytesIO:
-    prs = Presentation()
-    prs.slide_width = Inches(13.33)
-    prs.slide_height = Inches(7.5)
+def _agregar_logo_pptx(slide) -> None:
+    caja = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.5), Inches(1.6), Inches(2.0), Inches(1.1))
+    caja.fill.solid()
+    caja.fill.fore_color.rgb = RGBColor.from_string("FFFFFF")
+    caja.line.color.rgb = RGBColor.from_string("2A2A2A")
+    caja.shadow.inherit = False
+    marco = caja.text_frame
+    marco.word_wrap = True
+    p1 = marco.paragraphs[0]
+    p1.text = "INTER-SYST"
+    p1.font.bold = True
+    p1.font.size = Pt(15)
+    p1.font.color.rgb = RGBColor.from_string("1A1A1A")
+    p2 = marco.add_paragraph()
+    p2.text = "SEGURIDAD Y CONTROL"
+    p2.font.size = Pt(7)
+    p2.font.color.rgb = RGBColor.from_string("1A1A1A")
+
+    for i in range(5):
+        cuadro = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE, Inches(0.5 + i * 0.24), Inches(2.8), Inches(0.2), Inches(0.2)
+        )
+        cuadro.fill.solid()
+        cuadro.fill.fore_color.rgb = RGBColor.from_string("FFFFFF" if i % 2 else _COLOR_PORTADA_FONDO)
+        cuadro.line.color.rgb = RGBColor.from_string("FFFFFF")
+
+
+def _agregar_portada_pptx(prs: Presentation, titulo: str) -> None:
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    fondo = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height)
+    fondo.fill.solid()
+    fondo.fill.fore_color.rgb = RGBColor.from_string(_COLOR_PORTADA_FONDO)
+    fondo.line.fill.background()
+    fondo.shadow.inherit = False
+
+    _agregar_logo_pptx(slide)
+
+    caja_titulo = slide.shapes.add_textbox(Inches(2.9), Inches(1.4), Inches(10.0), Inches(2.6))
+    marco = caja_titulo.text_frame
+    marco.word_wrap = True
+    p1 = marco.paragraphs[0]
+    p1.text = "Resumen de actividades: Mesa de Ayuda"
+    p1.font.bold = True
+    p1.font.size = Pt(34)
+    p1.font.color.rgb = RGBColor.from_string(_COLOR_PORTADA_TEXTO)
+    p2 = marco.add_paragraph()
+    p2.text = "(Soporte Operativo)"
+    p2.font.bold = True
+    p2.font.size = Pt(34)
+    p2.font.color.rgb = RGBColor.from_string(_COLOR_PORTADA_TEXTO)
+
+    caja_subtitulo = slide.shapes.add_textbox(Inches(2.9), Inches(5.6), Inches(10.0), Inches(0.6))
+    sub = caja_subtitulo.text_frame.paragraphs[0]
+    sub.text = titulo
+    sub.font.size = Pt(15)
+    sub.font.color.rgb = RGBColor.from_string(_COLOR_PORTADA_TEXTO)
+
+
+def _agregar_diapositiva_tabla(prs: Presentation, bloque: list[tuple[str, str, str]], numero: int, total: int) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
 
-    caja_titulo = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12.3), Inches(0.8))
+    caja_titulo = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12.3), Inches(0.6))
     parrafo = caja_titulo.text_frame.paragraphs[0]
-    parrafo.text = titulo
-    parrafo.font.size = Pt(22)
+    parrafo.text = f"Incidencias resueltas ({numero}/{total})"
+    parrafo.font.size = Pt(20)
     parrafo.font.bold = True
     parrafo.font.color.rgb = RGBColor.from_string(_COLOR_TEXTO)
 
-    filas_totales = len(filas) + 1
-    tabla_shape = slide.shapes.add_table(filas_totales, 4, Inches(0.5), Inches(1.3), Inches(12.3), Inches(5.7))
+    tabla_shape = slide.shapes.add_table(len(bloque) + 1, 4, Inches(0.5), Inches(1.1), Inches(12.3), Inches(5.9))
     tabla = tabla_shape.table
     for col, ancho in zip(tabla.columns, (1.8, 2.2, 5.3, 3.0)):
         col.width = Inches(ancho)
@@ -125,15 +184,29 @@ def generar_pptx_reporte(
             p.font.size = Pt(13)
             p.font.color.rgb = RGBColor.from_string(_COLOR_TEXTO)
 
-    for r, (codigo, fecha, solucion) in enumerate(filas, start=1):
+    for r, (codigo, fecha, solucion) in enumerate(bloque, start=1):
         for c, valor in enumerate((codigo, fecha, solucion, "")):
             celda = tabla.cell(r, c)
             celda.text = valor
             celda.fill.solid()
             celda.fill.fore_color.rgb = RGBColor.from_string(_COLOR_FILA)
             for p in celda.text_frame.paragraphs:
-                p.font.size = Pt(11)
+                p.font.size = Pt(13)
                 p.font.color.rgb = RGBColor.from_string(_COLOR_TEXTO)
+
+
+def generar_pptx_reporte(
+    titulo: str, filas: list[tuple[str, str, str]], graficas: dict[str, list[tuple[str, int]]]
+) -> io.BytesIO:
+    prs = Presentation()
+    prs.slide_width = Inches(13.33)
+    prs.slide_height = Inches(7.5)
+
+    _agregar_portada_pptx(prs, titulo)
+
+    bloques = _en_bloques(filas, FILAS_POR_DIAPOSITIVA)
+    for numero, bloque in enumerate(bloques, start=1):
+        _agregar_diapositiva_tabla(prs, bloque, numero, len(bloques))
 
     graficas_con_datos = {k: v for k, v in graficas.items() if v}
     if graficas_con_datos:

@@ -25,7 +25,7 @@
 		await goto('/login');
 	}
 
-	const items = [
+	const itemsOperativa = [
 		{ href: '/', label: 'Panel', icon: '▤' },
 		{ href: '/nuevo', label: 'Nuevo registro', icon: '＋' },
 		{ href: '/listado', label: 'Listado', icon: '☰' },
@@ -44,6 +44,30 @@
 		{ href: '/hub', label: 'En línea', icon: '🟢' },
 		{ href: '/chat', label: 'Chat', icon: '💬' }
 	];
+
+	const grupos = [
+		{ clave: 'operativa', titulo: 'Bitácora operativa', items: itemsOperativa },
+		{ clave: 'administrativa', titulo: 'Bitácora administrativa', items: itemsAdministrativa },
+		{ clave: 'rpg', titulo: 'Modo RPG', items: itemsRpg }
+	];
+
+	const CLAVE_ALMACENAMIENTO = 'bitacora-nav-colapsadas';
+
+	function cargarColapsadas(): Record<string, boolean> {
+		if (typeof localStorage === 'undefined') return {};
+		try {
+			return JSON.parse(localStorage.getItem(CLAVE_ALMACENAMIENTO) ?? '{}');
+		} catch {
+			return {};
+		}
+	}
+
+	let colapsadas = $state<Record<string, boolean>>(cargarColapsadas());
+
+	function alternarSeccion(clave: string) {
+		colapsadas = { ...colapsadas, [clave]: !colapsadas[clave] };
+		localStorage.setItem(CLAVE_ALMACENAMIENTO, JSON.stringify(colapsadas));
+	}
 </script>
 
 <aside class="nav">
@@ -72,38 +96,29 @@
 		</div>
 	{/if}
 
-	<nav>
-		{#each items as item}
-			<a href={item.href} class:activo={$page.url.pathname === item.href}>
-				<span class="icono" aria-hidden="true">{item.icon}</span>
-				{item.label}
-			</a>
-		{/each}
-	</nav>
-
-	<div class="seccion-administrativa">
-		<div class="seccion-titulo">Bitácora administrativa</div>
-		<nav>
-			{#each itemsAdministrativa as item}
-				<a href={item.href} class:activo={$page.url.pathname === item.href}>
-					<span class="icono" aria-hidden="true">{item.icon}</span>
-					{item.label}
-				</a>
-			{/each}
-		</nav>
-	</div>
-
-	<div class="seccion-rpg">
-		<div class="seccion-titulo">Modo RPG</div>
-		<nav>
-			{#each itemsRpg as item}
-				<a href={item.href} class:activo={$page.url.pathname === item.href}>
-					<span class="icono" aria-hidden="true">{item.icon}</span>
-					{item.label}
-				</a>
-			{/each}
-		</nav>
-	</div>
+	{#each grupos as grupo, i}
+		<div class="seccion" class:primero={i === 0}>
+			<button
+				type="button"
+				class="seccion-titulo"
+				onclick={() => alternarSeccion(grupo.clave)}
+				aria-expanded={!colapsadas[grupo.clave]}
+			>
+				<span>{grupo.titulo}</span>
+				<span class="chevron" class:girado={colapsadas[grupo.clave]} aria-hidden="true">▾</span>
+			</button>
+			{#if !colapsadas[grupo.clave]}
+				<nav>
+					{#each grupo.items as item}
+						<a href={item.href} class:activo={$page.url.pathname === item.href}>
+							<span class="icono" aria-hidden="true">{item.icon}</span>
+							{item.label}
+						</a>
+					{/each}
+				</nav>
+			{/if}
+		</div>
+	{/each}
 </aside>
 
 <style>
@@ -117,6 +132,7 @@
 		height: 100vh;
 		position: sticky;
 		top: 0;
+		overflow-y: auto;
 	}
 
 	.marca {
@@ -214,38 +230,53 @@
 	nav {
 		display: flex;
 		flex-direction: column;
-		padding: 12px 8px;
+		padding: 4px 8px 12px;
 		gap: 2px;
 	}
 
-	.seccion-administrativa {
+	.seccion {
 		opacity: 0.72;
 		transition: opacity 0.15s ease;
 	}
 
-	.seccion-administrativa:hover,
-	.seccion-administrativa:focus-within {
-		opacity: 1;
-	}
-
-	.seccion-rpg {
-		opacity: 0.72;
-		transition: opacity 0.15s ease;
-	}
-
-	.seccion-rpg:hover,
-	.seccion-rpg:focus-within {
+	.seccion:hover,
+	.seccion:focus-within {
 		opacity: 1;
 	}
 
 	.seccion-titulo {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
 		padding: 10px 18px 4px;
+		background: none;
+		border: none;
+		border-top: 1px solid var(--border);
+		margin-top: 4px;
 		font-size: 11px;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		color: var(--text-faint);
-		border-top: 1px solid var(--border);
-		margin-top: 4px;
+		cursor: pointer;
+	}
+
+	.seccion.primero .seccion-titulo {
+		border-top: none;
+		margin-top: 0;
+	}
+
+	.seccion-titulo:hover {
+		color: var(--text-muted);
+	}
+
+	.chevron {
+		font-size: 9px;
+		transition: transform 0.15s ease;
+	}
+
+	.chevron.girado {
+		transform: rotate(-90deg);
 	}
 
 	nav a {
