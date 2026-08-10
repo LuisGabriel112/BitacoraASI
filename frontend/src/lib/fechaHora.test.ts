@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsearFechaHoraPegada } from './fechaHora';
+import { formatearFechaHora, parsearFechaHoraPegada } from './fechaHora';
 
 describe('parsearFechaHoraPegada', () => {
 	it('convierte una fecha DD/MM/AAAA HH:mm a formato datetime-local', () => {
@@ -20,5 +20,20 @@ describe('parsearFechaHoraPegada', () => {
 
 	it('devuelve null cuando el texto no contiene una fecha reconocible', () => {
 		expect(parsearFechaHoraPegada('TCK-001')).toBeNull();
+	});
+});
+
+describe('formatearFechaHora', () => {
+	it('convierte el formato datetime-local a DD/MM/AAAA HH:mm', () => {
+		expect(formatearFechaHora('2026-08-06T15:49')).toBe('06/08/2026 15:49');
+	});
+
+	it('devuelve cadena vacía si no hay valor guardado', () => {
+		expect(formatearFechaHora('')).toBe('');
+	});
+
+	it('es el inverso de parsearFechaHoraPegada para un valor ya normalizado', () => {
+		const iso = parsearFechaHoraPegada('05/08/2026 10:36')!;
+		expect(formatearFechaHora(iso)).toBe('05/08/2026 10:36');
 	});
 });

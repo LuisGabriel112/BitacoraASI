@@ -1,14 +1,16 @@
 <script lang="ts">
-	import { parsearFechaHoraPegada } from '$lib/fechaHora';
+	import { formatearFechaHora, parsearFechaHoraPegada } from '$lib/fechaHora';
 
 	let {
 		id,
 		label,
-		value = $bindable('')
+		value = $bindable(''),
+		comoTexto = false
 	}: {
 		id: string;
 		label: string;
 		value: string;
+		comoTexto?: boolean;
 	} = $props();
 
 	function alPegar(e: ClipboardEvent) {
@@ -19,11 +21,38 @@
 			value = parseado;
 		}
 	}
+
+	let texto = $state(formatearFechaHora(value));
+
+	$effect(() => {
+		texto = formatearFechaHora(value);
+	});
+
+	function alEscribirTexto(e: Event) {
+		texto = (e.target as HTMLInputElement).value;
+		const parseado = parsearFechaHoraPegada(texto);
+		if (parseado) value = parseado;
+	}
+
+	function alPerderFocoTexto() {
+		texto = formatearFechaHora(value);
+	}
 </script>
 
 <div class="campo">
 	<label for={id}>{label}</label>
-	<input {id} type="datetime-local" bind:value onpaste={alPegar} />
+	{#if comoTexto}
+		<input
+			{id}
+			type="text"
+			placeholder="DD/MM/AAAA HH:mm"
+			bind:value={texto}
+			oninput={alEscribirTexto}
+			onblur={alPerderFocoTexto}
+		/>
+	{:else}
+		<input {id} type="datetime-local" bind:value onpaste={alPegar} />
+	{/if}
 </div>
 
 <style>

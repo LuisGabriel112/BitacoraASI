@@ -22,3 +22,13 @@ Característica: Pegar fecha copiada de Proactivanet en campos de fecha/hora
     Dado que el portapapeles contiene "TCK-001"
     Cuando se pega en un campo de fecha y hora
     Entonces el campo conserva su valor anterior
+
+  Escenario: Mostrar una fecha guardada en formato legible
+    Dado que el valor guardado es "2026-08-06T15:49"
+    Cuando se formatea para mostrar en el campo de texto
+    Entonces se muestra "06/08/2026 15:49"
+
+  Escenario: No hay nada que mostrar todavía
+    Dado que el valor guardado está vacío
+    Cuando se formatea para mostrar en el campo de texto
+    Entonces se muestra una cadena vacía

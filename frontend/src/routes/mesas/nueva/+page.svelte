@@ -275,7 +275,7 @@
 					</div>
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
-					<FechaHoraInput id="fecha_carga" label="Fecha y hora de carga" bind:value={fechaCarga} />
+					<FechaHoraInput id="fecha_carga" label="Fecha y hora de carga" bind:value={fechaCarga} comoTexto />
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
 					<div class="campo">
@@ -293,7 +293,12 @@
 					<ComboboxCreatable id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
-					<FechaHoraInput id="fecha_estimada" label="Fecha y hora estimada de resolución" bind:value={fechaEstimadaResolucion} />
+					<FechaHoraInput
+					id="fecha_estimada"
+					label="Fecha y hora estimada de resolución"
+					bind:value={fechaEstimadaResolucion}
+					comoTexto
+				/>
 				</CampoGrupo>
 			</div>
 

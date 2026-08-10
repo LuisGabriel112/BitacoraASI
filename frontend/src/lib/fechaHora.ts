@@ -6,3 +6,10 @@ export function parsearFechaHoraPegada(texto: string): string | null {
 	const [, dia, mes, anio, hora, min] = m;
 	return `${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}T${hora.padStart(2, '0')}:${min}`;
 }
+
+export function formatearFechaHora(valorGuardado: string): string {
+	if (!valorGuardado) return '';
+	const [fecha, hora] = valorGuardado.split('T');
+	const [anio, mes, dia] = fecha.split('-');
+	return `${dia}/${mes}/${anio} ${hora ?? ''}`.trim();
+}
