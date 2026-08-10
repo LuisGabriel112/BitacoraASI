@@ -376,7 +376,8 @@ export const api = {
 		return json<PaginaMesas>(`/mesas?${qs.toString()}`);
 	},
 
-	panelMesas: () => json<PanelMesasKPIs>('/mesas/panel'),
+	panelMesas: (fecha?: string) =>
+		json<PanelMesasKPIs>(fecha ? `/mesas/panel?fecha=${encodeURIComponent(fecha)}` : '/mesas/panel'),
 
 	exportMesasUrl: (formato: 'csv' | 'xlsx', params: Record<string, string | number | undefined> = {}) => {
 		const qs = new URLSearchParams({ formato });

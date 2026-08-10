@@ -275,8 +275,8 @@ async def _mesas_de_semana(session: AsyncSession, semana: str) -> list[Mesa]:
 
 
 @router.get("/panel", response_model=PanelMesasKPIs)
-async def panel_mesas(session: AsyncSession = Depends(get_session)):
-    semana = semana_de(date.today())
+async def panel_mesas(fecha: date | None = Query(None), session: AsyncSession = Depends(get_session)):
+    semana = semana_de(fecha or date.today())
     mesas_semana = await _mesas_de_semana(session, semana)
 
     por_ventana: dict[str, int] = {}

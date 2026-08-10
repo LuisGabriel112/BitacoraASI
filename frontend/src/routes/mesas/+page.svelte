@@ -8,19 +8,41 @@
 
 	let kpis = $state<PanelMesasKPIs | null>(null);
 	let cargandoKpis = $state(true);
+	let desplazamientoSemanas = $state(0);
+
+	function fechaReferencia(): Date {
+		const hoy = new Date();
+		const d = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
+		d.setUTCDate(d.getUTCDate() - desplazamientoSemanas * 7);
+		return d;
+	}
 
 	async function cargarPanel() {
 		cargandoKpis = true;
 		try {
-			kpis = await api.panelMesas();
+			const iso = fechaReferencia().toISOString().slice(0, 10);
+			kpis = await api.panelMesas(iso);
 		} finally {
 			cargandoKpis = false;
 		}
 	}
 
 	$effect(() => {
+		desplazamientoSemanas;
 		cargarPanel();
 	});
+
+	function semanaAnterior() {
+		desplazamientoSemanas += 1;
+	}
+
+	function semanaSiguiente() {
+		if (desplazamientoSemanas > 0) desplazamientoSemanas -= 1;
+	}
+
+	function semanaActual() {
+		desplazamientoSemanas = 0;
+	}
 
 	let prioritarias = $state<Mesa[]>([]);
 	let destacadas = $state<Mesa[]>([]);
@@ -54,9 +76,8 @@
 		indiceDestacada = (indiceDestacada - 1 + destacadas.length) % destacadas.length;
 	}
 
-	function lunesDeEstaSemana(): Date {
-		const hoy = new Date();
-		const d = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
+	function lunesDeSemana(ref: Date): Date {
+		const d = new Date(ref);
 		const diaIso = d.getUTCDay() || 7;
 		d.setUTCDate(d.getUTCDate() - (diaIso - 1));
 		return d;
@@ -64,7 +85,7 @@
 
 	const volumenSemanaCompleta = $derived.by(() => {
 		if (!kpis) return [];
-		const lunes = lunesDeEstaSemana();
+		const lunes = lunesDeSemana(fechaReferencia());
 		const mapa = new Map(kpis.volumen_diario.map((v) => [v.fecha, v.total]));
 		return Array.from({ length: 7 }, (_, i) => {
 			const d = new Date(lunes);
@@ -97,6 +118,26 @@
 
 <div class="cabecera">
 	<Header titulo="Panel de mesas" subtitulo={kpis ? kpis.semana : 'Cargando semana en curso…'} />
+	<div class="nav-semana">
+		<button type="button" class="btn-semana" onclick={semanaAnterior} aria-label="Semana anterior">‹</button>
+		<button
+			type="button"
+			class="btn-semana btn-semana-hoy"
+			onclick={semanaActual}
+			disabled={desplazamientoSemanas === 0}
+		>
+			Hoy
+		</button>
+		<button
+			type="button"
+			class="btn-semana"
+			onclick={semanaSiguiente}
+			disabled={desplazamientoSemanas === 0}
+			aria-label="Semana siguiente"
+		>
+			›
+		</button>
+	</div>
 	<BotonGenerarReporte semana={kpis?.semana ?? ''} />
 </div>
 
@@ -271,6 +312,40 @@
 	.cabecera :global(.header) {
 		flex: 1;
 		margin-bottom: 0;
+	}
+
+	.nav-semana {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.btn-semana {
+		background: none;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		color: var(--text);
+		cursor: pointer;
+		height: 34px;
+		min-width: 34px;
+		font-size: 15px;
+	}
+
+	.btn-semana-hoy {
+		min-width: auto;
+		padding: 0 12px;
+		font-size: 13px;
+		font-family: var(--font-display);
+	}
+
+	.btn-semana:hover:not(:disabled) {
+		border-color: var(--accent);
+		color: var(--accent-strong);
+	}
+
+	.btn-semana:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 
 	.bento {
