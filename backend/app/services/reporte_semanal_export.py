@@ -20,6 +20,7 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, 
 
 from app.models import Mesa
 from app.services.excel_charts import escribir_tabla_conteo, grafica_barras_conteo
+from app.services.exportar_seguro import celda_segura
 from app.services.semanas import rango_semana
 
 ENCABEZADOS = ["Código", "Fecha de resolución real", "Solución", "Observaciones"]
@@ -76,7 +77,7 @@ def generar_xlsx_reporte(
 
     borde_fino = Border(*[Side(style="thin", color=_COLOR_BORDE)] * 4)
     for i, (codigo, fecha, solucion) in enumerate(filas, start=fila_encabezado + 1):
-        for col, valor in enumerate((codigo, fecha, solucion, ""), start=1):
+        for col, valor in enumerate((celda_segura(codigo), fecha, celda_segura(solucion), ""), start=1):
             celda = ws.cell(i, col, valor)
             celda.font = Font(name="Calibri", color=_COLOR_TEXTO, size=10)
             celda.fill = PatternFill("solid", fgColor=_COLOR_FILA)

@@ -28,6 +28,7 @@ from app.schemas import (
 from app.services.clustering import agrupar_por_similitud, tema_representativo
 from app.services.embeddings import asegurar_embeddings
 from app.services.excel_resumen import agregar_hoja_resumen
+from app.services.exportar_seguro import celda_segura
 from app.services.gemini import GeminiError, extraer_registro, gemini_configurado
 from app.services.auth import get_usuario_actual
 from app.services.jefes import DANIO_POR_ACCION, danar_jefe
@@ -385,7 +386,11 @@ async def exportar(
 
     if formato == "csv":
         filas = [
-            [r.fecha.isoformat(), r.semana, r.empresa.nombre, r.sistema.nombre, r.medio.nombre, r.modulo.nombre, r.atendio.nombre, r.descripcion, r.trello_card_id or ""]
+            [
+                r.fecha.isoformat(), r.semana, celda_segura(r.empresa.nombre), celda_segura(r.sistema.nombre),
+                celda_segura(r.medio.nombre), celda_segura(r.modulo.nombre), celda_segura(r.atendio.nombre),
+                celda_segura(r.descripcion), celda_segura(r.trello_card_id or ""),
+            ]
             for r in registros
         ]
         buf = io.StringIO()
@@ -435,13 +440,13 @@ def _generar_xlsx(encabezados: list[str], registros: list[Registro]) -> io.Bytes
     for i, r in enumerate(registros, start=2):
         ws.cell(i, 1, r.fecha).number_format = "yyyy-mm-dd"
         ws.cell(i, 2, r.semana)
-        ws.cell(i, 3, r.empresa.nombre)
-        ws.cell(i, 4, r.sistema.nombre)
-        ws.cell(i, 5, r.medio.nombre)
-        ws.cell(i, 6, r.modulo.nombre)
-        ws.cell(i, 7, r.atendio.nombre)
-        ws.cell(i, 8, r.descripcion)
-        ws.cell(i, 9, r.trello_card_id or "—")
+        ws.cell(i, 3, celda_segura(r.empresa.nombre))
+        ws.cell(i, 4, celda_segura(r.sistema.nombre))
+        ws.cell(i, 5, celda_segura(r.medio.nombre))
+        ws.cell(i, 6, celda_segura(r.modulo.nombre))
+        ws.cell(i, 7, celda_segura(r.atendio.nombre))
+        ws.cell(i, 8, celda_segura(r.descripcion))
+        ws.cell(i, 9, celda_segura(r.trello_card_id or "—"))
         relleno_fila = PatternFill("solid", fgColor=color_fila_b if i % 2 == 0 else color_fila_a)
         for col in range(1, len(encabezados) + 1):
             celda = ws.cell(i, col)

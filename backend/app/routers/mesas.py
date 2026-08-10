@@ -29,6 +29,7 @@ from app.schemas import (
 from app.services.clustering import agrupar_por_similitud, tema_representativo
 from app.services.distribuciones import distribucion_por_categoria_solucion, distribucion_por_ventana
 from app.services.embeddings import asegurar_embeddings
+from app.services.exportar_seguro import celda_segura
 from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.gemini import GeminiError, extraer_mesa, gemini_configurado
 from app.services.jefes import DANIO_POR_ACCION, DANIO_POR_LOGRO, danar_jefe
@@ -412,16 +413,16 @@ def _generar_xlsx_mesas(encabezados: list[str], mesas_filtradas: list[Mesa]) -> 
     ws.row_dimensions[1].height = 20
 
     for i, m in enumerate(mesas_filtradas, start=2):
-        ws.cell(i, 1, m.codigo)
-        ws.cell(i, 2, m.titulo)
+        ws.cell(i, 1, celda_segura(m.codigo))
+        ws.cell(i, 2, celda_segura(m.titulo))
         ws.cell(i, 3, m.fecha_carga).number_format = "yyyy-mm-dd hh:mm"
-        ws.cell(i, 4, m.categoria.nombre)
-        ws.cell(i, 5, m.solicitante.nombre)
-        ws.cell(i, 6, m.resolutor.nombre)
-        ws.cell(i, 7, m.ventana.nombre if m.ventana else "")
-        ws.cell(i, 8, m.descripcion)
+        ws.cell(i, 4, celda_segura(m.categoria.nombre))
+        ws.cell(i, 5, celda_segura(m.solicitante.nombre))
+        ws.cell(i, 6, celda_segura(m.resolutor.nombre))
+        ws.cell(i, 7, celda_segura(m.ventana.nombre if m.ventana else ""))
+        ws.cell(i, 8, celda_segura(m.descripcion))
         ws.cell(i, 9, "Cerrada" if m.fecha_cierre_real else "Abierta")
-        ws.cell(i, 10, m.solucion or "—")
+        ws.cell(i, 10, celda_segura(m.solucion or "—"))
         relleno_fila = PatternFill("solid", fgColor=color_fila_b if i % 2 == 0 else color_fila_a)
         for col in range(1, len(encabezados) + 1):
             celda = ws.cell(i, col)
@@ -478,9 +479,11 @@ async def exportar_mesas(
     if formato == "csv":
         filas = [
             [
-                m.codigo, m.titulo, m.fecha_carga.strftime("%Y-%m-%d %H:%M"), m.categoria.nombre, m.solicitante.nombre,
-                m.resolutor.nombre, m.ventana.nombre if m.ventana else "", m.descripcion,
-                "Cerrada" if m.fecha_cierre_real else "Abierta", m.solucion or "",
+                celda_segura(m.codigo), celda_segura(m.titulo), m.fecha_carga.strftime("%Y-%m-%d %H:%M"),
+                celda_segura(m.categoria.nombre), celda_segura(m.solicitante.nombre),
+                celda_segura(m.resolutor.nombre), celda_segura(m.ventana.nombre if m.ventana else ""),
+                celda_segura(m.descripcion), "Cerrada" if m.fecha_cierre_real else "Abierta",
+                celda_segura(m.solucion or ""),
             ]
             for m in mesas_filtradas
         ]
