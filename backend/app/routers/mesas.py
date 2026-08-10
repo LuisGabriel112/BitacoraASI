@@ -27,6 +27,7 @@ from app.schemas import (
     ReporteMesasSemanal,
 )
 from app.services.clustering import agrupar_por_similitud, tema_representativo
+from app.services.distribuciones import distribucion_por_categoria_solucion, distribucion_por_ventana
 from app.services.embeddings import asegurar_embeddings
 from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.gemini import GeminiError, extraer_mesa, gemini_configurado
@@ -279,21 +280,15 @@ async def panel_mesas(fecha: date | None = Query(None), session: AsyncSession = 
     semana = semana_de(fecha or date.today())
     mesas_semana = await _mesas_de_semana(session, semana)
 
-    por_ventana: dict[str, int] = {}
     por_dia: dict[str, int] = {}
-    por_categoria_solucion: dict[str, int] = {}
     for m in mesas_semana:
-        if m.ventana:
-            por_ventana[m.ventana.nombre] = por_ventana.get(m.ventana.nombre, 0) + 1
         dia = m.fecha_carga.date().isoformat()
         por_dia[dia] = por_dia.get(dia, 0) + 1
-        if m.tipo_solucion:
-            por_categoria_solucion[m.tipo_solucion] = por_categoria_solucion.get(m.tipo_solucion, 0) + 1
 
     volumen_diario = [{"fecha": k, "total": v} for k, v in sorted(por_dia.items())]
-    distribucion_ventana = [{"ventana": k, "total": v} for k, v in sorted(por_ventana.items(), key=lambda x: -x[1])]
+    distribucion_ventana = [{"ventana": k, "total": v} for k, v in distribucion_por_ventana(mesas_semana)]
     distribucion_categoria_solucion = [
-        {"categoria_solucion": k, "total": v} for k, v in sorted(por_categoria_solucion.items(), key=lambda x: -x[1])
+        {"categoria_solucion": k, "total": v} for k, v in distribucion_por_categoria_solucion(mesas_semana)
     ]
 
     return PanelMesasKPIs(
@@ -336,16 +331,20 @@ async def exportar_reporte_semanal(
 
     titulo = titulo_reporte(semana)
     filas = filas_reporte(cerradas)
+    graficas = {
+        "Por categoría de solución": distribucion_por_categoria_solucion(cerradas),
+        "Por ventana": distribucion_por_ventana(cerradas),
+    }
     nombre_base = f"reporte_semanal_{semana.replace(' ', '').replace('-', '_')}"
 
     if formato == "xlsx":
-        out = generar_xlsx_reporte(titulo, filas)
+        out = generar_xlsx_reporte(titulo, filas, graficas)
         media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     elif formato == "pptx":
-        out = generar_pptx_reporte(titulo, filas)
+        out = generar_pptx_reporte(titulo, filas, graficas)
         media = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     else:
-        out = generar_pdf_reporte(titulo, filas)
+        out = generar_pdf_reporte(titulo, filas, graficas)
         media = "application/pdf"
 
     return StreamingResponse(
@@ -463,12 +462,14 @@ async def exportar_mesas(
     fecha_hasta: date | None = None,
     buscar: str | None = None,
     estado: str | None = None,
+    prioridad: bool | None = None,
+    destacada: bool | None = None,
 ):
     stmt = _aplicar_filtros(
         select(Mesa),
         categoria_id=categoria_id, solicitante_id=solicitante_id, resolutor_id=resolutor_id,
         ventana_id=ventana_id, semana=semana, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta,
-        buscar=buscar, estado=estado,
+        buscar=buscar, estado=estado, prioridad=prioridad, destacada=destacada,
     ).options(*_RELACIONES).order_by(Mesa.fecha_carga.desc())
 
     mesas_filtradas = (await session.execute(stmt)).scalars().all()

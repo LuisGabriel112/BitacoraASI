@@ -45,36 +45,21 @@
 	}
 
 	let prioritarias = $state<Mesa[]>([]);
-	let destacadas = $state<Mesa[]>([]);
-	let indiceDestacada = $state(0);
-	let cargandoDestacar = $state(true);
+	let cargandoPrioritarias = $state(true);
 
-	async function cargarPrioritariasYDestacadas() {
-		cargandoDestacar = true;
+	async function cargarPrioritarias() {
+		cargandoPrioritarias = true;
 		try {
-			const [pagPrioritarias, pagDestacadas] = await Promise.all([
-				api.listadoMesas({ prioridad: true, estado: 'abierta', page_size: 10 }),
-				api.listadoMesas({ destacada: true, page_size: 10 })
-			]);
-			prioritarias = pagPrioritarias.items;
-			destacadas = pagDestacadas.items;
-			indiceDestacada = 0;
+			const pagina = await api.listadoMesas({ prioridad: true, estado: 'abierta', page_size: 10 });
+			prioritarias = pagina.items;
 		} finally {
-			cargandoDestacar = false;
+			cargandoPrioritarias = false;
 		}
 	}
 
 	$effect(() => {
-		cargarPrioritariasYDestacadas();
+		cargarPrioritarias();
 	});
-
-	function siguienteDestacada() {
-		indiceDestacada = (indiceDestacada + 1) % destacadas.length;
-	}
-
-	function anteriorDestacada() {
-		indiceDestacada = (indiceDestacada - 1 + destacadas.length) % destacadas.length;
-	}
 
 	function lunesDeSemana(ref: Date): Date {
 		const d = new Date(ref);
@@ -162,17 +147,17 @@
 		<BarChartVertical items={categoriaSolucionChartItems} loading={cargandoKpis} vacio="Aún no hay mesas cerradas con categoría de solución esta semana." />
 	</section>
 
-	<section class="tarjeta tile-mitad tile-destacar">
-		<div class="bloque-prioritarias">
-			<h2 class="font-display">Prioritarias</h2>
-			{#if cargandoDestacar}
-				<p class="cargando-mini">Cargando…</p>
-			{:else if prioritarias.length === 0}
-				<p class="vacio-mini">Ninguna mesa marcada como prioritaria.</p>
-			{:else}
-				<ul class="lista-mini">
-					{#each prioritarias as m}
-						<li>
+	<section class="tarjeta tile-mitad tile-prioritarias">
+		<h2 class="font-display">Prioritarias</h2>
+		{#if cargandoPrioritarias}
+			<p class="cargando-mini">Cargando…</p>
+		{:else if prioritarias.length === 0}
+			<p class="vacio-mini">Ninguna mesa marcada como prioritaria.</p>
+		{:else}
+			<ul class="lista-prioritarias">
+				{#each prioritarias as m}
+					<li>
+						<div class="prioritaria-cabecera">
 							{#if m.enlace}
 								<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="mini-codigo" title="Abrir en Proactivanet">
 									{m.codigo}
@@ -181,51 +166,16 @@
 								<span class="mini-codigo sin-enlace">{m.codigo}</span>
 							{/if}
 							<span class="mini-titulo">{m.titulo}</span>
-						</li>
-					{/each}
-				</ul>
-			{/if}
-		</div>
-
-		<div class="bloque-destacadas">
-			<h2 class="font-display">Destacadas</h2>
-			{#if cargandoDestacar}
-				<p class="cargando-mini">Cargando…</p>
-			{:else if destacadas.length === 0}
-				<p class="vacio-mini">Ninguna mesa destacada todavía.</p>
-			{:else}
-				<div class="carrusel">
-					<button
-						type="button"
-						class="carrusel-flecha"
-						onclick={anteriorDestacada}
-						disabled={destacadas.length <= 1}
-						aria-label="Destacada anterior"
-					>
-						‹
-					</button>
-					<div class="carrusel-contenido">
-						<span class="mini-codigo">{destacadas[indiceDestacada].codigo}</span>
-						<span class="mini-titulo">{destacadas[indiceDestacada].titulo}</span>
-						<span class="mini-categoria">{destacadas[indiceDestacada].categoria.nombre}</span>
-					</div>
-					<button
-						type="button"
-						class="carrusel-flecha"
-						onclick={siguienteDestacada}
-						disabled={destacadas.length <= 1}
-						aria-label="Siguiente destacada"
-					>
-						›
-					</button>
-				</div>
-				<div class="carrusel-puntos">
-					{#each destacadas as _, i}
-						<span class="punto" class:activo={i === indiceDestacada}></span>
-					{/each}
-				</div>
-			{/if}
-		</div>
+						</div>
+						<p class="prioritaria-descripcion">{m.descripcion}</p>
+						<div class="prioritaria-meta">
+							<span class="mini-categoria">{m.categoria.nombre}</span>
+							<span class="mini-solicitante">{m.solicitante.nombre}</span>
+						</div>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</section>
 
 	<section class="tarjeta tile-barras">
@@ -423,21 +373,9 @@
 		flex-direction: column;
 	}
 
-	.tile-destacar {
+	.tile-prioritarias {
 		display: flex;
 		flex-direction: column;
-		gap: 18px;
-	}
-
-	.bloque-prioritarias,
-	.bloque-destacadas {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.bloque-destacadas {
-		border-top: 1px solid var(--border);
-		padding-top: 14px;
 	}
 
 	.cargando-mini,
@@ -446,18 +384,28 @@
 		font-size: 12px;
 	}
 
-	.lista-mini {
+	.lista-prioritarias {
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
-		max-height: 120px;
+		gap: 10px;
+		max-height: 260px;
 		overflow-y: auto;
 	}
 
-	.lista-mini li {
+	.lista-prioritarias li {
+		border-bottom: 1px solid var(--border);
+		padding-bottom: 10px;
+	}
+
+	.lista-prioritarias li:last-child {
+		border-bottom: none;
+		padding-bottom: 0;
+	}
+
+	.prioritaria-cabecera {
 		display: flex;
 		align-items: baseline;
 		gap: 8px;
@@ -481,67 +429,36 @@
 
 	.mini-titulo {
 		color: var(--text);
+		font-weight: 600;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.carrusel {
+	.prioritaria-descripcion {
+		margin: 4px 0 6px;
+		font-size: 12px;
+		color: var(--text-muted);
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.prioritaria-meta {
 		display: flex;
-		align-items: center;
 		gap: 10px;
+		flex-wrap: wrap;
 	}
 
-	.carrusel-flecha {
-		background: none;
-		border: 1px solid var(--border-strong);
-		border-radius: var(--radius);
-		width: 28px;
-		height: 28px;
-		flex-shrink: 0;
-		color: var(--text);
-		cursor: pointer;
-	}
-
-	.carrusel-flecha:hover:not(:disabled) {
-		border-color: var(--accent);
-		color: var(--accent-strong);
-	}
-
-	.carrusel-flecha:disabled {
-		opacity: 0.4;
-		cursor: default;
-	}
-
-	.carrusel-contenido {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.mini-categoria {
+	.mini-categoria,
+	.mini-solicitante {
 		font-size: 11px;
 		color: var(--text-muted);
-	}
-
-	.carrusel-puntos {
-		display: flex;
-		justify-content: center;
-		gap: 5px;
-		margin-top: 10px;
-	}
-
-	.punto {
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: var(--border-strong);
-	}
-
-	.punto.activo {
-		background: var(--accent);
+		background: var(--surface-raised);
+		border-radius: 999px;
+		padding: 2px 8px;
 	}
 
 	.tabla-wrap {

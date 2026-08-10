@@ -4,10 +4,12 @@
 	import Header from '$lib/components/Header.svelte';
 	import Celebracion from '$lib/components/Celebracion.svelte';
 	import BotonGenerarReporte from '$lib/components/BotonGenerarReporte.svelte';
+	import GestionCatalogos from '$lib/components/GestionCatalogos.svelte';
 	import { semanaActual } from '$lib/semana';
 	import { api, type Mesa } from '$lib/api/client';
 
 	let celebracion: Celebracion;
+	let gestionCatalogos: GestionCatalogos;
 	const semanaEtiqueta = semanaActual().etiqueta;
 
 	function formatearFechaHora(iso: string) {
@@ -28,6 +30,7 @@
 	let resolutorId = $state<number | null>(null);
 	let ventanaId = $state<number | null>(null);
 	let estado = $state<'' | 'abierta' | 'cerrada'>('');
+	let marca = $state<'' | 'prioridad' | 'destacada'>('');
 	let page = $state(1);
 	const pageSize = 25;
 
@@ -134,7 +137,9 @@
 				solicitante_id: solicitanteId ?? undefined,
 				resolutor_id: resolutorId ?? undefined,
 				ventana_id: ventanaId ?? undefined,
-				estado: estado || undefined
+				estado: estado || undefined,
+				prioridad: marca === 'prioridad' ? true : undefined,
+				destacada: marca === 'destacada' ? true : undefined
 			});
 			items = pagina.items;
 			total = pagina.total;
@@ -151,7 +156,7 @@
 	}
 
 	$effect(() => {
-		page; categoriaId; solicitanteId; resolutorId; ventanaId; estado;
+		page; categoriaId; solicitanteId; resolutorId; ventanaId; estado; marca;
 		cargar();
 	});
 
@@ -164,12 +169,15 @@
 			solicitante_id: solicitanteId ?? undefined,
 			resolutor_id: resolutorId ?? undefined,
 			ventana_id: ventanaId ?? undefined,
-			estado: estado || undefined
+			estado: estado || undefined,
+			prioridad: marca === 'prioridad' ? true : undefined,
+			destacada: marca === 'destacada' ? true : undefined
 		};
 	}
 </script>
 
 <Celebracion bind:this={celebracion} />
+<GestionCatalogos bind:this={gestionCatalogos} />
 
 <Header titulo="Listado de mesas" />
 
@@ -194,8 +202,19 @@
 				<option value="cerrada">Cerrada</option>
 			</select>
 		</div>
+		<div class="campo">
+			<label for="m-marca">Marca</label>
+			<select id="m-marca" bind:value={marca}>
+				<option value="">Todas</option>
+				<option value="prioridad">Solo prioritarias</option>
+				<option value="destacada">Solo destacadas</option>
+			</select>
+		</div>
 	</div>
 	<div class="exportar">
+		<button type="button" class="boton-secundario" onclick={() => gestionCatalogos.abrir()}>
+			Gestionar catálogos
+		</button>
 		<a href={api.exportMesasUrl('csv', paramsFiltros())} class="boton-secundario">Exportar CSV</a>
 		<a href={api.exportMesasUrl('xlsx', paramsFiltros())} class="boton-primario">Exportar Excel</a>
 		<BotonGenerarReporte semana={semanaEtiqueta} />

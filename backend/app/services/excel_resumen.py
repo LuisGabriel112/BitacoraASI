@@ -1,11 +1,11 @@
 from typing import Protocol
 
-from openpyxl.chart import BarChart, PieChart, Reference
-from openpyxl.styles import Font
+from openpyxl.chart import PieChart, Reference
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.services.clustering import agrupar_por_similitud, tema_representativo
+from app.services.excel_charts import escribir_tabla_conteo, grafica_barras_conteo
 from app.services.gemini import gemini_configurado
 
 _UMBRAL_SIMILITUD_TEMA = 0.86
@@ -43,38 +43,11 @@ def _temas_frecuentes(registros: list[RegistroParaResumen]) -> list[tuple[str, i
     return sorted(temas, key=lambda t: t[1], reverse=True)
 
 
-def _escribir_tabla(ws: Worksheet, titulo: str, fila_inicio: int, datos: list[tuple[str, int]]) -> tuple[int, int]:
-    """Escribe título + encabezados + filas (etiqueta, cantidad). Devuelve (fila_datos_inicio, fila_siguiente_bloque)."""
-    ws.cell(fila_inicio, 1, titulo).font = Font(bold=True)
-    ws.cell(fila_inicio + 1, 1, "Etiqueta")
-    ws.cell(fila_inicio + 1, 2, "Cantidad")
-    fila_datos = fila_inicio + 2
-    for i, (etiqueta, cantidad) in enumerate(datos, start=fila_datos):
-        ws.cell(i, 1, etiqueta)
-        ws.cell(i, 2, cantidad)
-    return fila_datos, fila_datos + len(datos)
-
-
-def _referencia_datos(ws: Worksheet, fila_inicio: int, num_filas: int) -> tuple[Reference, Reference]:
-    datos = Reference(ws, min_col=2, min_row=fila_inicio, max_row=fila_inicio + num_filas - 1)
-    categorias = Reference(ws, min_col=1, min_row=fila_inicio, max_row=fila_inicio + num_filas - 1)
-    return datos, categorias
-
-
-def _grafica_barras(ws: Worksheet, titulo: str, fila_datos: int, num_filas: int, ancla: str) -> None:
-    chart = BarChart()
-    chart.title = titulo
-    chart.y_axis.title = "Cantidad"
-    datos, categorias = _referencia_datos(ws, fila_datos, num_filas)
-    chart.add_data(datos, titles_from_data=False)
-    chart.set_categories(categorias)
-    ws.add_chart(chart, ancla)
-
-
 def _grafica_pastel(ws: Worksheet, titulo: str, fila_datos: int, num_filas: int, ancla: str) -> None:
     chart = PieChart()
     chart.title = titulo
-    datos, categorias = _referencia_datos(ws, fila_datos, num_filas)
+    datos = Reference(ws, min_col=2, min_row=fila_datos, max_row=fila_datos + num_filas - 1)
+    categorias = Reference(ws, min_col=1, min_row=fila_datos, max_row=fila_datos + num_filas - 1)
     chart.add_data(datos, titles_from_data=False)
     chart.set_categories(categorias)
     ws.add_chart(chart, ancla)
@@ -86,11 +59,11 @@ def agregar_hoja_resumen(wb: Workbook, registros: list[RegistroParaResumen]) -> 
     ws = wb.create_sheet("Resumen")
 
     por_dia = _conteo_por_dia(registros)
-    fila_datos_dia, fila_siguiente = _escribir_tabla(ws, "Registros por día", 1, por_dia)
+    fila_datos_dia, fila_siguiente = escribir_tabla_conteo(ws, "Registros por día", 1, por_dia)
     if por_dia:
-        _grafica_barras(ws, "Soportes por día", fila_datos_dia, len(por_dia), "D2")
+        grafica_barras_conteo(ws, "Soportes por día", fila_datos_dia, len(por_dia), "D2")
 
     temas = _temas_frecuentes(registros)
-    fila_datos_temas, _ = _escribir_tabla(ws, "Temas más frecuentes", fila_siguiente + 1, temas)
+    fila_datos_temas, _ = escribir_tabla_conteo(ws, "Temas más frecuentes", fila_siguiente + 1, temas)
     if temas:
         _grafica_pastel(ws, "Temas más frecuentes", fila_datos_temas, len(temas), "D20")

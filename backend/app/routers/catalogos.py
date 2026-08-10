@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +9,7 @@ from app.models import (
     CategoriaMesa,
     Empresa,
     Medio,
+    Mesa,
     Modulo,
     ResolutorMesa,
     Sistema,
@@ -22,15 +23,15 @@ from app.services.auth import get_usuario_actual
 router = APIRouter(tags=["catalogos"], dependencies=[Depends(get_usuario_actual)])
 
 
-def _catalogo_router(prefix: str, model, creatable: bool, vinculable: bool = False):
+def _catalogo_router(prefix: str, model, creatable: bool, vinculable: bool = False, columna_uso=None):
     sub = APIRouter(prefix=prefix)
 
     @sub.get("", response_model=list[CatalogoOut])
-    async def listar(q: str = "", session: AsyncSession = Depends(get_session)):
+    async def listar(q: str = "", limit: int = 20, session: AsyncSession = Depends(get_session)):
         stmt = select(model).order_by(model.nombre)
         if q:
             stmt = stmt.where(model.nombre.ilike(f"{q}%"))
-        result = await session.execute(stmt.limit(20))
+        result = await session.execute(stmt.limit(min(max(limit, 1), 500)))
         return result.scalars().all()
 
     if creatable:
@@ -83,6 +84,18 @@ def _catalogo_router(prefix: str, model, creatable: bool, vinculable: bool = Fal
                 await session.refresh(item)
             return item
 
+    if columna_uso is not None:
+        @sub.delete("/{item_id}", status_code=204)
+        async def eliminar(item_id: int, session: AsyncSession = Depends(get_session)):
+            item = await session.get(model, item_id)
+            if item is None:
+                raise HTTPException(404, "No encontrado")
+            en_uso = await session.execute(select(func.count()).select_from(Mesa).where(columna_uso == item_id))
+            if en_uso.scalar_one() > 0:
+                raise HTTPException(409, "No se puede eliminar: está en uso por alguna mesa")
+            await session.delete(item)
+            await session.commit()
+
     return sub
 
 
@@ -91,7 +104,15 @@ router.include_router(_catalogo_router("/modulos", Modulo, creatable=True))
 router.include_router(_catalogo_router("/sistemas", Sistema, creatable=False))
 router.include_router(_catalogo_router("/medios", Medio, creatable=False))
 router.include_router(_catalogo_router("/agentes", Agente, creatable=False, vinculable=True))
-router.include_router(_catalogo_router("/categorias-mesa", CategoriaMesa, creatable=True))
-router.include_router(_catalogo_router("/solicitantes-mesa", SolicitanteMesa, creatable=True))
-router.include_router(_catalogo_router("/resolutores-mesa", ResolutorMesa, creatable=True, vinculable=True))
-router.include_router(_catalogo_router("/ventanas-mesa", VentanaMesa, creatable=True))
+router.include_router(
+    _catalogo_router("/categorias-mesa", CategoriaMesa, creatable=True, columna_uso=Mesa.categoria_id)
+)
+router.include_router(
+    _catalogo_router("/solicitantes-mesa", SolicitanteMesa, creatable=True, columna_uso=Mesa.solicitante_id)
+)
+router.include_router(
+    _catalogo_router(
+        "/resolutores-mesa", ResolutorMesa, creatable=True, vinculable=True, columna_uso=Mesa.resolutor_id
+    )
+)
+router.include_router(_catalogo_router("/ventanas-mesa", VentanaMesa, creatable=True, columna_uso=Mesa.ventana_id))

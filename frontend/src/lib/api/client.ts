@@ -118,21 +118,24 @@ export type PanelMesasKPIs = {
 };
 const BASE = '/api';
 
+async function lanzarSiError(resp: Response): Promise<void> {
+	if (resp.ok) return;
+	let detail = resp.statusText;
+	try {
+		const body = await resp.json();
+		detail = body.detail ?? detail;
+	} catch {
+		/* respuesta sin cuerpo JSON */
+	}
+	throw new Error(detail);
+}
+
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
 	const resp = await fetch(`${BASE}${path}`, {
 		...init,
 		headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) }
 	});
-	if (!resp.ok) {
-		let detail = resp.statusText;
-		try {
-			const body = await resp.json();
-			detail = body.detail ?? detail;
-		} catch {
-			/* respuesta sin cuerpo JSON */
-		}
-		throw new Error(detail);
-	}
+	await lanzarSiError(resp);
 	return resp.json() as Promise<T>;
 }
 
@@ -204,8 +207,13 @@ export const api = {
 	mensajesChat: (despuesDe?: number) =>
 		json<MensajeChat[]>(`/chat/mensajes${despuesDe !== undefined ? `?despues_de=${despuesDe}` : ''}`),
 
-	catalogo: (nombre: NombreCatalogo, q = '') =>
-		json<Catalogo[]>(`/${nombre}${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+	catalogo: (nombre: NombreCatalogo, q = '', limit?: number) => {
+		const qs = new URLSearchParams();
+		if (q) qs.set('q', q);
+		if (limit) qs.set('limit', String(limit));
+		const query = qs.toString();
+		return json<Catalogo[]>(`/${nombre}${query ? `?${query}` : ''}`);
+	},
 
 	vincularCatalogo: (nombre: 'agentes' | 'resolutores-mesa', id: number) =>
 		json<Catalogo>(`/${nombre}/${id}/vincular`, { method: 'POST' }),
@@ -217,6 +225,14 @@ export const api = {
 		nombre: 'empresas' | 'modulos' | 'categorias-mesa' | 'solicitantes-mesa' | 'resolutores-mesa' | 'ventanas-mesa',
 		valor: string
 	) => json<Catalogo>(`/${nombre}`, { method: 'POST', body: JSON.stringify({ nombre: valor }) }),
+
+	eliminarCatalogo: async (
+		nombre: 'categorias-mesa' | 'solicitantes-mesa' | 'resolutores-mesa' | 'ventanas-mesa',
+		id: number
+	) => {
+		const resp = await fetch(`${BASE}/${nombre}/${id}`, { method: 'DELETE' });
+		await lanzarSiError(resp);
+	},
 
 	crearRegistro: (payload: {
 		fecha: string;
@@ -379,7 +395,7 @@ export const api = {
 	panelMesas: (fecha?: string) =>
 		json<PanelMesasKPIs>(fecha ? `/mesas/panel?fecha=${encodeURIComponent(fecha)}` : '/mesas/panel'),
 
-	exportMesasUrl: (formato: 'csv' | 'xlsx', params: Record<string, string | number | undefined> = {}) => {
+	exportMesasUrl: (formato: 'csv' | 'xlsx', params: Record<string, string | number | boolean | undefined> = {}) => {
 		const qs = new URLSearchParams({ formato });
 		for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') qs.set(k, String(v));
 		return `${BASE}/mesas/export?${qs.toString()}`;
