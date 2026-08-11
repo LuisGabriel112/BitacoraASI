@@ -2,26 +2,15 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { semanaActual } from '$lib/semana';
-	import { api, type Personaje } from '$lib/api/client';
+	import { api } from '$lib/api/client';
+	import { estadoPersonaje, limpiarPersonaje } from '$lib/personaje.svelte';
 
 	const semana = semanaActual();
-	let personaje = $state<Personaje | null>(null);
-
-	async function cargarPersonaje() {
-		try {
-			personaje = await api.miPersonaje();
-		} catch {
-			personaje = null;
-		}
-	}
-
-	$effect(() => {
-		cargarPersonaje();
-	});
+	const personaje = $derived(estadoPersonaje.actual);
 
 	async function cerrarSesion() {
 		await api.cerrarSesion();
-		personaje = null;
+		limpiarPersonaje();
 		await goto('/login');
 	}
 

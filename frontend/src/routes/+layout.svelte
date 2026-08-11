@@ -3,6 +3,7 @@
 	import '../lib/tokens.css';
 	import Nav from '$lib/components/Nav.svelte';
 	import { api } from '$lib/api/client';
+	import { cargarPersonaje } from '$lib/personaje.svelte';
 
 	const INTERVALO_HEARTBEAT_MS = 25_000;
 
@@ -10,6 +11,8 @@
 	const enLogin = $derived($page.url.pathname.startsWith('/login'));
 
 	$effect(() => {
+		if (enLogin) return;
+		cargarPersonaje();
 		api.heartbeat();
 		const id = setInterval(() => api.heartbeat(), INTERVALO_HEARTBEAT_MS);
 		return () => clearInterval(id);

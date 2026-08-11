@@ -1,18 +1,12 @@
 <script lang="ts">
 	import { semanaActual } from '$lib/semana';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import { api, type Personaje } from '$lib/api/client';
+	import { estadoPersonaje } from '$lib/personaje.svelte';
 
 	let { titulo, subtitulo = '' }: { titulo: string; subtitulo?: string } = $props();
 
 	const semana = semanaActual();
-	let personaje = $state<Personaje | null>(null);
-
-	$effect(() => {
-		api.miPersonaje()
-			.then((p) => (personaje = p))
-			.catch(() => (personaje = null));
-	});
+	const personaje = $derived(estadoPersonaje.actual);
 </script>
 
 <header class="header">

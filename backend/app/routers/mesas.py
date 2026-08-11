@@ -11,7 +11,6 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy import Row, func, select
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_session
 from app.models import CategoriaMesa, Mesa, ResolutorMesa, SolicitanteMesa, VentanaMesa
@@ -48,16 +47,14 @@ from app.services.semanas import semana_de
 
 router = APIRouter(prefix="/mesas", tags=["mesas"], dependencies=[Depends(get_usuario_actual)])
 
-_RELACIONES = (
-    selectinload(Mesa.ventana),
-    selectinload(Mesa.categoria),
-    selectinload(Mesa.solicitante),
-    selectinload(Mesa.resolutor),
-)
+# Mesa.ventana/categoria/solicitante/resolutor son lazy="joined" en el modelo
+# (siempre se cargan con JOIN): no hace falta pedir estas relaciones aquí. Un
+# selectinload explícito anularía ese default y forzaría un round-trip extra
+# por relación en cada consulta, más lento con miles de filas.
 
 
 async def _obtener_mesa(session: AsyncSession, mesa_id: int) -> Mesa:
-    stmt = select(Mesa).options(*_RELACIONES).where(Mesa.id == mesa_id)
+    stmt = select(Mesa).where(Mesa.id == mesa_id)
     return (await session.execute(stmt)).scalar_one()
 
 
@@ -268,8 +265,7 @@ async def listar_mesas(
     total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
 
     stmt = (
-        base.options(*_RELACIONES)
-        .order_by(Mesa.fecha_carga.desc(), Mesa.id.desc())
+        base.order_by(Mesa.fecha_carga.desc(), Mesa.id.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -280,7 +276,6 @@ async def listar_mesas(
 async def _mesas_de_semana(session: AsyncSession, semana: str) -> list[Mesa]:
     stmt = (
         select(Mesa)
-        .options(*_RELACIONES)
         .where(Mesa.semana == semana)
         .order_by(Mesa.fecha_carga.desc(), Mesa.id.desc())
     )
@@ -482,7 +477,7 @@ async def exportar_mesas(
         categoria_id=categoria_id, solicitante_id=solicitante_id, resolutor_id=resolutor_id,
         ventana_id=ventana_id, semana=semana, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta,
         buscar=buscar, estado=estado, prioridad=prioridad, destacada=destacada,
-    ).options(*_RELACIONES).order_by(Mesa.fecha_carga.desc())
+    ).order_by(Mesa.fecha_carga.desc())
 
     mesas_filtradas = (await session.execute(stmt)).scalars().all()
     encabezados = ["Código", "Título", "Fecha carga", "Categoría", "Solicitante", "Resolutor", "Ventana", "Descripción", "Estado", "Solución"]

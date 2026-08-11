@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import io
 import json
@@ -6,6 +7,9 @@ import httpx
 from PIL import Image, UnidentifiedImageError
 
 from app.config import settings
+
+_REINTENTOS_429 = 5
+_ESPERA_BASE_SEGUNDOS = 20
 
 
 class GeminiError(Exception):
@@ -34,10 +38,41 @@ def _lista(titulo: str, items: list) -> str:
     return f"{titulo} disponibles (id: nombre):\n{filas}"
 
 
-async def _generar_json(imagen: bytes, prompt: str, schema: dict) -> dict:
+async def _pedir_generate_content(url: str, body: dict) -> httpx.Response:
+    async with httpx.AsyncClient(timeout=30) as client:
+        try:
+            return await client.post(url, params={"key": settings.gemini_api_key}, json=body)
+        except httpx.RequestError as exc:
+            raise GeminiError(f"No se pudo conectar con Gemini: {exc}") from exc
+
+
+async def _llamar_generate_content(body: dict) -> str:
+    """Reintenta en 429 (cuota por minuto excedida): con varios grupos
+    llamando a Gemini casi al mismo tiempo (síntesis de soluciones), es
+    normal chocar con el límite de solicitudes por minuto del plan gratuito."""
     if not gemini_configurado():
         raise GeminiError("Gemini no está configurado (falta GEMINI_API_KEY)")
 
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_model}:generateContent"
+    intento = 0
+    while True:
+        resp = await _pedir_generate_content(url, body)
+        if resp.status_code != 429 or intento >= _REINTENTOS_429:
+            break
+        await asyncio.sleep(_ESPERA_BASE_SEGUNDOS * (intento + 1))
+        intento += 1
+
+    if resp.status_code >= 400:
+        raise GeminiError(f"Gemini respondió {resp.status_code}: {resp.text[:300]}")
+
+    data = resp.json()
+    try:
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError) as exc:
+        raise GeminiError("Respuesta de Gemini sin contenido") from exc
+
+
+async def _generar_json(imagen: bytes, prompt: str, schema: dict) -> dict:
     imagen_png = _normalizar_imagen(imagen)
     body = {
         "contents": [
@@ -50,23 +85,19 @@ async def _generar_json(imagen: bytes, prompt: str, schema: dict) -> dict:
         ],
         "generationConfig": {"responseMimeType": "application/json", "responseSchema": schema},
     }
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_model}:generateContent"
-    async with httpx.AsyncClient(timeout=30) as client:
-        try:
-            resp = await client.post(url, params={"key": settings.gemini_api_key}, json=body)
-        except httpx.RequestError as exc:
-            raise GeminiError(f"No se pudo conectar con Gemini: {exc}") from exc
-
-    if resp.status_code >= 400:
-        raise GeminiError(f"Gemini respondió {resp.status_code}: {resp.text[:300]}")
-
-    data = resp.json()
+    texto = await _llamar_generate_content(body)
     try:
-        texto = data["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError) as exc:
-        raise GeminiError("Respuesta de Gemini sin contenido") from exc
+        return json.loads(texto)
+    except json.JSONDecodeError as exc:
+        raise GeminiError("Gemini no devolvió JSON válido") from exc
 
+
+async def _generar_json_desde_texto(prompt: str, schema: dict) -> dict:
+    body = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"responseMimeType": "application/json", "responseSchema": schema},
+    }
+    texto = await _llamar_generate_content(body)
     try:
         return json.loads(texto)
     except json.JSONDecodeError as exc:
@@ -138,3 +169,31 @@ def _prompt_mesa(catalogos: dict[str, list]) -> str:
 
 async def extraer_mesa(imagen: bytes, catalogos: dict[str, list]) -> dict:
     return await _generar_json(imagen, _prompt_mesa(catalogos), _SCHEMA_MESA)
+
+
+_SCHEMA_SINTESIS = {
+    "type": "OBJECT",
+    "properties": {
+        "titulo": {"type": "STRING"},
+        "texto": {"type": "STRING"},
+    },
+    "required": ["titulo", "texto"],
+}
+
+
+def _prompt_sintesis(categoria: str, tipo_solucion: str | None, ejemplos: list[str]) -> str:
+    lista = "\n".join(f"- {e}" for e in ejemplos)
+    contexto_tipo = f" (tipo de solución: {tipo_solucion})" if tipo_solucion else ""
+    return (
+        "Eres soporte técnico interno. Estas son soluciones reales aplicadas a incidencias de la "
+        f"categoría \"{categoria}\"{contexto_tipo}. Sintetiza UNA sola guía de solución genérica y "
+        "clara, en español, que cubra el patrón común entre estos ejemplos. No inventes datos que no "
+        "estén en los ejemplos. Responde SOLO con JSON.\n\n"
+        "titulo: nombre corto (máximo 8 palabras) que describa el tipo de incidencia.\n"
+        "texto: la guía de solución sintetizada, 2-5 frases.\n\n"
+        f"Ejemplos de soluciones reales:\n{lista}"
+    )
+
+
+async def sintetizar_solucion(categoria: str, tipo_solucion: str | None, ejemplos: list[str]) -> dict:
+    return await _generar_json_desde_texto(_prompt_sintesis(categoria, tipo_solucion, ejemplos), _SCHEMA_SINTESIS)

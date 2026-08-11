@@ -289,3 +289,19 @@ class ReporteMesasSemanal(BaseModel):
     por_categoria: dict[str, int]
     por_solicitante: dict[str, int]
     mesas: list[MesaOut]
+
+
+class SintesisSolucionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    categoria: CatalogoOut
+    tipo_solucion: str | None
+    titulo: str
+    texto: str
+    cantidad_mesas: int
+    generado_en: datetime
+
+
+class ResumenGeneracionSintesis(BaseModel):
+    grupos_generados: int
+    mesas_cubiertas: int

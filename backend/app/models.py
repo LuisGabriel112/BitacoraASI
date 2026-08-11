@@ -140,6 +140,19 @@ class VentanaMesa(Base):
     nombre: Mapped[str] = mapped_column(Text, unique=True)
 
 
+class SintesisSolucion(Base):
+    __tablename__ = "sintesis_soluciones"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias_mesa.id"))
+    tipo_solucion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    titulo: Mapped[str] = mapped_column(Text)
+    texto: Mapped[str] = mapped_column(Text)
+    cantidad_mesas: Mapped[int] = mapped_column()
+    generado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    categoria: Mapped[CategoriaMesa] = relationship(lazy="joined")
+
+
 class Mesa(Base):
     __tablename__ = "mesas"
 

@@ -1,7 +1,10 @@
 <script lang="ts">
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import SintesisSoluciones from '$lib/components/SintesisSoluciones.svelte';
 	import { api, type Mesa } from '$lib/api/client';
+
+	let vista = $state<'sintesis' | 'detalle'>('sintesis');
 
 	let buscar = $state('');
 	let categoriaId = $state<number | null>(null);
@@ -57,6 +60,18 @@
 
 <Header titulo="Manual de soluciones" subtitulo="Busca cómo se resolvieron incidencias anteriores." />
 
+<div class="pestanas-vista">
+	<button type="button" class:activa={vista === 'sintesis'} onclick={() => (vista = 'sintesis')}>
+		Síntesis
+	</button>
+	<button type="button" class:activa={vista === 'detalle'} onclick={() => (vista = 'detalle')}>
+		Todas las mesas
+	</button>
+</div>
+
+{#if vista === 'sintesis'}
+	<SintesisSoluciones />
+{:else}
 <div class="barra-superior">
 	<input
 		type="search"
@@ -127,8 +142,36 @@
 		<button disabled={page >= totalPaginas} onclick={() => (page += 1)}>Siguiente →</button>
 	</div>
 </div>
+{/if}
 
 <style>
+	.pestanas-vista {
+		display: flex;
+		gap: 6px;
+		margin-bottom: 18px;
+	}
+
+	.pestanas-vista button {
+		background: none;
+		border: 1px solid var(--border-strong);
+		border-radius: 999px;
+		padding: 7px 16px;
+		font-size: 13px;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+
+	.pestanas-vista button:hover {
+		border-color: var(--accent);
+	}
+
+	.pestanas-vista button.activa {
+		background: var(--accent);
+		color: var(--bg);
+		border-color: var(--accent);
+		font-weight: 600;
+	}
+
 	.barra-superior {
 		display: flex;
 		flex-wrap: wrap;

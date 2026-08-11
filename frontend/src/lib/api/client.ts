@@ -108,6 +108,16 @@ export type ExtraccionMesa = {
 	solicitante: Catalogo | null;
 };
 export type PaginaMesas = { total: number; items: Mesa[] };
+export type SintesisSolucion = {
+	id: number;
+	categoria: Catalogo;
+	tipo_solucion: string | null;
+	titulo: string;
+	texto: string;
+	cantidad_mesas: number;
+	generado_en: string;
+};
+export type ResumenGeneracionSintesis = { grupos_generados: number; mesas_cubiertas: number };
 export type PanelMesasKPIs = {
 	semana: string;
 	total_semana: number;
@@ -391,6 +401,11 @@ export const api = {
 		for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') qs.set(k, String(v));
 		return json<PaginaMesas>(`/mesas?${qs.toString()}`);
 	},
+
+	sintesisSoluciones: () => json<SintesisSolucion[]>('/mesas/sintesis'),
+
+	generarSintesisSoluciones: () =>
+		json<ResumenGeneracionSintesis>('/mesas/sintesis/generar', { method: 'POST' }),
 
 	panelMesas: (fecha?: string) =>
 		json<PanelMesasKPIs>(fecha ? `/mesas/panel?fecha=${encodeURIComponent(fecha)}` : '/mesas/panel'),

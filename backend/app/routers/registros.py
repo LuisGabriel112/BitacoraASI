@@ -10,7 +10,6 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy import Row, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_session
 from app.models import Agente, Empresa, Medio, Modulo, Registro, Sistema
@@ -41,17 +40,14 @@ from app.services.xp import otorgar_xp
 router = APIRouter(prefix="/registros", tags=["registros"], dependencies=[Depends(get_usuario_actual)])
 
 
-_RELACIONES = (
-    selectinload(Registro.empresa),
-    selectinload(Registro.sistema),
-    selectinload(Registro.medio),
-    selectinload(Registro.modulo),
-    selectinload(Registro.atendio),
-)
+# Registro.empresa/sistema/medio/modulo/atendio son lazy="joined" en el
+# modelo (siempre se cargan con JOIN): no hace falta pedir estas relaciones
+# aquí. Un selectinload explícito anularía ese default y forzaría un
+# round-trip extra por relación en cada consulta.
 
 
 async def _get_registro(session: AsyncSession, registro_id: int) -> Registro:
-    stmt = select(Registro).options(*_RELACIONES).where(Registro.id == registro_id)
+    stmt = select(Registro).where(Registro.id == registro_id)
     result = await session.execute(stmt)
     return result.scalar_one()
 
@@ -251,11 +247,7 @@ async def listar_registros(
     total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
 
     stmt = (
-        base.options(
-            selectinload(Registro.empresa), selectinload(Registro.sistema),
-            selectinload(Registro.medio), selectinload(Registro.modulo), selectinload(Registro.atendio),
-        )
-        .order_by(Registro.fecha.desc(), Registro.id.desc())
+        base.order_by(Registro.fecha.desc(), Registro.id.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -266,10 +258,6 @@ async def listar_registros(
 async def _registros_de_semana(session: AsyncSession, semana: str) -> list[Registro]:
     stmt = (
         select(Registro)
-        .options(
-            selectinload(Registro.empresa), selectinload(Registro.sistema),
-            selectinload(Registro.medio), selectinload(Registro.modulo), selectinload(Registro.atendio),
-        )
         .where(Registro.semana == semana)
         .order_by(Registro.fecha.desc(), Registro.id.desc())
     )
@@ -376,9 +364,6 @@ async def exportar(
         empresa_id=empresa_id, sistema_id=sistema_id, medio_id=medio_id,
         modulo_id=modulo_id, atendio_id=atendio_id, semana=semana,
         fecha_desde=fecha_desde, fecha_hasta=fecha_hasta, buscar=buscar,
-    ).options(
-        selectinload(Registro.empresa), selectinload(Registro.sistema),
-        selectinload(Registro.medio), selectinload(Registro.modulo), selectinload(Registro.atendio),
     ).order_by(Registro.fecha.desc())
 
     registros = (await session.execute(stmt)).scalars().all()
@@ -472,7 +457,7 @@ def _generar_xlsx(encabezados: list[str], registros: list[Registro]) -> io.Bytes
 
 @router.get("/{registro_id}", response_model=RegistroOut)
 async def obtener_registro(registro_id: int, session: AsyncSession = Depends(get_session)):
-    stmt = select(Registro).options(*_RELACIONES).where(Registro.id == registro_id)
+    stmt = select(Registro).where(Registro.id == registro_id)
     registro = (await session.execute(stmt)).scalar_one_or_none()
     if registro is None:
         raise HTTPException(404, "Registro no encontrado")

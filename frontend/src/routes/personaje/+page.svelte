@@ -3,6 +3,7 @@
 	import Personaje3D from '$lib/components/Personaje3D.svelte';
 	import { ACCESORIOS } from '$lib/apariencia';
 	import { api, type Accesorio, type Catalogo, type EventoXp, type Personaje, type RankingItem } from '$lib/api/client';
+	import { actualizarPersonaje } from '$lib/personaje.svelte';
 
 	const MOTIVOS: Record<string, string> = {
 		registro_creado: 'Registro de soporte creado',
@@ -60,6 +61,7 @@
 				color_cuerpo: colorCuerpoEdit,
 				accesorio: accesorioEdit
 			});
+			actualizarPersonaje(personaje);
 			okApariencia = true;
 		} catch (e) {
 			errorApariencia = e instanceof Error ? e.message : 'No se pudo guardar la apariencia';
@@ -78,6 +80,7 @@
 				api.catalogo('agentes'),
 				api.catalogo('resolutores-mesa')
 			]);
+			actualizarPersonaje(personaje);
 		} finally {
 			cargando = false;
 		}
