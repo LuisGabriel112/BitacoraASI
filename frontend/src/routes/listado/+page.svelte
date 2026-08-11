@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import SelectCatalogo from '$lib/components/SelectCatalogo.svelte';
@@ -135,8 +136,8 @@
 			{:else if items.length === 0}
 				<tr><td colspan="10" class="vacio">Ningún registro con estos filtros. Ajusta empresa o rango de fecha.</td></tr>
 			{:else}
-				{#each items as r}
-					<tr tabindex="0">
+				{#each items as r, i}
+					<tr tabindex="0" in:fade={{ duration: 200, delay: i * 15 }}>
 						<td>{r.fecha}</td>
 						<td>{r.semana}</td>
 						<td>{r.empresa.nombre}</td>

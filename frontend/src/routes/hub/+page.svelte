@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import Header from '$lib/components/Header.svelte';
 	import { api, type RankingItem } from '$lib/api/client';
 
@@ -39,8 +40,8 @@
 	<p class="sin-datos">Nadie está en línea ahora mismo.</p>
 {:else}
 	<ul class="lista-en-linea">
-		{#each enLinea as u}
-			<li>
+		{#each enLinea as u, i}
+			<li in:fade={{ duration: 200, delay: i * 40 }}>
 				<span class="punto-en-linea" aria-hidden="true"></span>
 				<span class="avatar" aria-hidden="true">{u.avatar}</span>
 				<span class="nombre">{u.nombre}</span>

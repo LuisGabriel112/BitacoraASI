@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import Header from '$lib/components/Header.svelte';
 	import Personaje3D from '$lib/components/Personaje3D.svelte';
 	import { ACCESORIOS } from '$lib/apariencia';
@@ -131,7 +132,7 @@
 {#if cargando}
 	<p class="cargando">Cargando personaje…</p>
 {:else if personaje}
-	<div class="columnas">
+	<div class="columnas" in:fade={{ duration: 250 }}>
 		<section class="tarjeta ficha">
 			<Personaje3D colorPiel={colorPielEdit} colorCuerpo={colorCuerpoEdit} accesorio={accesorioEdit} tamano={200} />
 			<h2 class="font-display">{personaje.nombre}</h2>
@@ -177,8 +178,8 @@
 				<p class="sin-datos">Todavía no hay XP registrado.</p>
 			{:else}
 				<ul class="lista-eventos">
-					{#each historial as evento}
-						<li>
+					{#each historial as evento, i}
+						<li in:fade={{ duration: 200, delay: i * 30 }}>
 							<span class="evento-motivo">{etiquetaMotivo(evento.motivo)}</span>
 							<span class="evento-xp">+{evento.cantidad} XP</span>
 							<span class="evento-fecha">{fechaCorta(evento.created_at)}</span>
@@ -195,7 +196,7 @@
 			{:else}
 				<ol class="lista-ranking">
 					{#each ranking as item, i}
-						<li class:propio={item.nombre === personaje.nombre}>
+						<li class:propio={item.nombre === personaje.nombre} in:fade={{ duration: 200, delay: i * 30 }}>
 							<span class="ranking-puesto">{i + 1}</span>
 							<span class="ranking-avatar" aria-hidden="true">{item.avatar}</span>
 							<span class="ranking-nombre">{item.nombre}</span>

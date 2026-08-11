@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import Header from '$lib/components/Header.svelte';
 	import Enemigo3D from '$lib/components/Enemigo3D.svelte';
 	import { api, type Jefe } from '$lib/api/client';
@@ -39,7 +40,7 @@
 {#if cargando}
 	<p class="cargando">Cargando jefe…</p>
 {:else if jefe}
-	<section class="tarjeta">
+	<section class="tarjeta" in:fade={{ duration: 250 }}>
 		<Enemigo3D derrotado={jefe.derrotado} {porcentajeVida} tamano={200} />
 		<h2 class="font-display">{jefe.nombre}</h2>
 		<span class="semana">{jefe.semana}</span>

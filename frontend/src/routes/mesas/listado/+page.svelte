@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import FechaHoraInput from '$lib/components/FechaHoraInput.svelte';
 	import Header from '$lib/components/Header.svelte';
@@ -265,11 +266,12 @@
 			{:else if items.length === 0}
 				<tr><td colspan="8" class="vacio">Ninguna mesa con estos filtros.</td></tr>
 			{:else}
-				{#each items as m}
+				{#each items as m, i}
 					<tr
 						class:clicable={!!m.solucion}
 						title={m.solucion ? 'Ver solución' : undefined}
 						onclick={() => alternarSolucion(m)}
+						in:fade={{ duration: 200, delay: i * 15 }}
 					>
 						<td class="codigo" onclick={noPropagar}>
 							{#if m.enlace}

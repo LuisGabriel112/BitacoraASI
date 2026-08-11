@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import BarChartHorizontal from '$lib/components/BarChartHorizontal.svelte';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
 	import { api, type GrupoSoporte, type ReporteSemanal } from '$lib/api/client';
@@ -92,7 +93,7 @@
 		<p>No hubo registros en {semanaEtiqueta}. Elige otra semana o captura el primer registro.</p>
 	</div>
 {:else}
-	<section class="tarjeta">
+	<section class="tarjeta" in:fade={{ duration: 200 }}>
 		<h2 class="font-display">Resumen ejecutivo</h2>
 		<p>
 			Durante <strong>{semanaEtiqueta}</strong> se atendieron <strong>{reporte.total}</strong> solicitudes de soporte,
@@ -109,7 +110,7 @@
 		</div>
 	</section>
 
-	<div class="graficas">
+	<div class="graficas" in:fade={{ duration: 200, delay: 40 }}>
 		<section class="tarjeta">
 			<h2 class="font-display">Por empresa</h2>
 			<BarChartHorizontal items={empresaItems} />
@@ -120,7 +121,7 @@
 		</section>
 	</div>
 
-	<section class="tarjeta">
+	<section class="tarjeta" in:fade={{ duration: 200, delay: 80 }}>
 		<h2 class="font-display">Soportes más frecuentes</h2>
 		{#if gruposCargando}
 			<p class="cargando">Analizando similitud de descripciones…</p>
@@ -130,8 +131,8 @@
 			<p class="cargando">No se detectaron soportes que se repitan esta semana.</p>
 		{:else}
 			<ul class="lista-grupos">
-				{#each grupos as g}
-					<li class="grupo">
+				{#each grupos as g, i}
+					<li class="grupo" in:fade={{ duration: 200, delay: i * 30 }}>
 						<span class="grupo-cantidad">{g.cantidad}×</span>
 						<span class="grupo-descripcion">{g.tema}</span>
 					</li>
@@ -140,7 +141,7 @@
 		{/if}
 	</section>
 
-	<section class="tarjeta">
+	<section class="tarjeta" in:fade={{ duration: 200, delay: 120 }}>
 		<h2 class="font-display">Detalle completo — {semanaEtiqueta}</h2>
 		<div class="tabla-wrap">
 			<table>
@@ -150,8 +151,8 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each reporte.registros as r}
-						<tr>
+					{#each reporte.registros as r, i}
+						<tr in:fade={{ duration: 200, delay: Math.min(i, 20) * 15 }}>
 							<td>{r.fecha}</td>
 							<td>{r.empresa.nombre}</td>
 							<td><ChipSistema nombre={r.sistema.nombre} /></td>

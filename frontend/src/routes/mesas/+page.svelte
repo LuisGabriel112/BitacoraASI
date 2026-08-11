@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import Sparkline from '$lib/components/Sparkline.svelte';
 	import BarChartVertical from '$lib/components/BarChartVertical.svelte';
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
@@ -132,8 +133,8 @@
 		{#if cargandoKpis}
 			<span class="skeleton skeleton-hero" aria-hidden="true"></span>
 		{:else}
-			<span class="valor-hero font-display">{kpis?.total_semana ?? 0}</span>
-			<Sparkline datos={volumenSemanaCompleta} />
+			<span class="valor-hero font-display" in:fade={{ duration: 200 }}>{kpis?.total_semana ?? 0}</span>
+			<div in:fade={{ duration: 200 }}><Sparkline datos={volumenSemanaCompleta} /></div>
 		{/if}
 	</section>
 
@@ -155,8 +156,8 @@
 			<p class="vacio-mini">Ninguna mesa marcada como prioritaria.</p>
 		{:else}
 			<ul class="lista-prioritarias">
-				{#each prioritarias as m}
-					<li class:resuelta={!!m.fecha_cierre_real}>
+				{#each prioritarias as m, i}
+					<li class:resuelta={!!m.fecha_cierre_real} in:fade={{ duration: 200, delay: i * 30 }}>
 						<div class="prioritaria-cabecera">
 							{#if m.fecha_cierre_real}
 								<span class="marca-resuelta" title="Ya resuelta">✓</span>
@@ -212,8 +213,13 @@
 					{:else if (kpis?.recientes.length ?? 0) === 0}
 						<tr><td colspan="6" class="vacio">Ninguna mesa esta semana.</td></tr>
 					{:else}
-						{#each kpis?.recientes ?? [] as m}
-							<tr class:clicable={!!m.solucion} title={m.solucion ? 'Ver solución' : undefined} onclick={() => alternarSolucion(m)}>
+						{#each kpis?.recientes ?? [] as m, i}
+							<tr
+								class:clicable={!!m.solucion}
+								title={m.solucion ? 'Ver solución' : undefined}
+								onclick={() => alternarSolucion(m)}
+								in:fade={{ duration: 200, delay: i * 25 }}
+							>
 								<td class="codigo" onclick={noPropagar}>
 									{#if m.enlace}
 										<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="link-codigo" title="Abrir en Proactivanet">

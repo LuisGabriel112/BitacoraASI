@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import { api, type SintesisSolucion } from '$lib/api/client';
 
 	let sintesis = $state<SintesisSolucion[]>([]);
@@ -58,8 +59,8 @@
 	<p class="vacio">Aún no hay síntesis generada. Usa "Generar síntesis" para detectar patrones repetidos.</p>
 {:else}
 	<div class="lista-sintesis">
-		{#each sintesis as s}
-			<article class="tarjeta-sintesis">
+		{#each sintesis as s, i}
+			<article class="tarjeta-sintesis" in:fade={{ duration: 200, delay: Math.min(i, 12) * 40 }}>
 				<div class="badges-manual">
 					<span class="badge-manual">{s.categoria.nombre}</span>
 					{#if s.tipo_solucion}<span class="badge-manual badge-tipo">{s.tipo_solucion}</span>{/if}

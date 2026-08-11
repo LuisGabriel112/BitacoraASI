@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import SintesisSoluciones from '$lib/components/SintesisSoluciones.svelte';
@@ -100,8 +101,8 @@
 	{:else if items.length === 0}
 		<p class="vacio">Ninguna solución encontrada con estos filtros.</p>
 	{:else}
-		{#each items as m}
-			<article class="tarjeta-manual">
+		{#each items as m, i}
+			<article class="tarjeta-manual" in:fade={{ duration: 200, delay: i * 40 }}>
 				<div class="cabecera-manual">
 					{#if m.enlace}
 						<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="codigo-manual" title="Abrir en Proactivanet">

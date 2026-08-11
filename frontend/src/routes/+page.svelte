@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import Header from '$lib/components/Header.svelte';
 	import StatTile from '$lib/components/StatTile.svelte';
 	import Sparkline from '$lib/components/Sparkline.svelte';
@@ -119,8 +120,8 @@
 		{#if cargandoKpis}
 			<span class="skeleton skeleton-hero" aria-hidden="true"></span>
 		{:else}
-			<span class="valor-hero font-display">{kpis?.total_semana ?? 0}</span>
-			<Sparkline datos={volumenSemanaCompleta} />
+			<span class="valor-hero font-display" in:fade={{ duration: 200 }}>{kpis?.total_semana ?? 0}</span>
+			<div in:fade={{ duration: 200 }}><Sparkline datos={volumenSemanaCompleta} /></div>
 		{/if}
 	</section>
 
@@ -137,7 +138,7 @@
 		{#if cargandoKpis}
 			<p class="cargando">Cargando…</p>
 		{:else}
-			<Donut items={donutItems} />
+			<div in:fade={{ duration: 200 }}><Donut items={donutItems} /></div>
 		{/if}
 	</section>
 
@@ -189,8 +190,8 @@
 					{:else if recientes.length === 0}
 						<tr><td colspan="6" class="vacio">Ningún registro con estos filtros. Ajusta empresa, sistema o módulo.</td></tr>
 					{:else}
-						{#each recientes as r}
-							<tr>
+						{#each recientes as r, i}
+							<tr in:fade={{ duration: 200, delay: i * 25 }}>
 								<td>{r.fecha}</td>
 								<td>{r.empresa.nombre}</td>
 								<td><ChipSistema nombre={r.sistema.nombre} /></td>
