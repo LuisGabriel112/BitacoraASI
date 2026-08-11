@@ -35,7 +35,8 @@
 	const itemsAdministrativa = [
 		{ href: '/mesas', label: 'Resumen', icon: '▤' },
 		{ href: '/mesas/nueva', label: 'Nueva mesa', icon: '＋' },
-		{ href: '/mesas/listado', label: 'Listado', icon: '☰' }
+		{ href: '/mesas/listado', label: 'Listado', icon: '☰' },
+		{ href: '/mesas/manual', label: 'Manual', icon: '📖' }
 	];
 
 	const itemsRpg = [

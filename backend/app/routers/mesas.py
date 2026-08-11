@@ -193,7 +193,8 @@ async def eliminar_mesa(mesa_id: int, session: AsyncSession = Depends(get_sessio
 
 def _aplicar_filtros(
     stmt, *, categoria_id, solicitante_id, resolutor_id, ventana_id, semana, fecha_desde, fecha_hasta,
-    buscar, estado, prioridad=None, destacada=None,
+    buscar, estado, prioridad=None, destacada=None, buscar_solucion=None, con_solucion=None,
+    tipo_solucion=None,
 ):
     if prioridad:
         stmt = stmt.where(Mesa.prioridad.is_(True))
@@ -228,6 +229,12 @@ def _aplicar_filtros(
             | Mesa.codigo.ilike(like)
             | Mesa.solucion.ilike(like)
         )
+    if buscar_solucion:
+        stmt = stmt.where(Mesa.solucion.ilike(f"%{buscar_solucion}%"))
+    if con_solucion:
+        stmt = stmt.where(Mesa.solucion.isnot(None)).where(Mesa.solucion != "")
+    if tipo_solucion:
+        stmt = stmt.where(Mesa.tipo_solucion == tipo_solucion)
     return stmt
 
 
@@ -247,12 +254,16 @@ async def listar_mesas(
     estado: str | None = None,
     prioridad: bool | None = None,
     destacada: bool | None = None,
+    buscar_solucion: str | None = None,
+    con_solucion: bool | None = None,
+    tipo_solucion: str | None = None,
 ):
     base = _aplicar_filtros(
         select(Mesa),
         categoria_id=categoria_id, solicitante_id=solicitante_id, resolutor_id=resolutor_id,
         ventana_id=ventana_id, semana=semana, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta,
         buscar=buscar, estado=estado, prioridad=prioridad, destacada=destacada,
+        buscar_solucion=buscar_solucion, con_solucion=con_solucion, tipo_solucion=tipo_solucion,
     )
     total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
 

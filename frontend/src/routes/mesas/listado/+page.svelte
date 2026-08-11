@@ -25,6 +25,7 @@
 	}
 
 	let buscar = $state('');
+	let buscarSolucion = $state('');
 	let categoriaId = $state<number | null>(null);
 	let solicitanteId = $state<number | null>(null);
 	let resolutorId = $state<number | null>(null);
@@ -38,6 +39,7 @@
 	let total = $state(0);
 	let cargando = $state(true);
 	let timer: ReturnType<typeof setTimeout>;
+	let timerSolucion: ReturnType<typeof setTimeout>;
 
 	let confirmandoId = $state<number | null>(null);
 	let eliminandoId = $state<number | null>(null);
@@ -133,6 +135,7 @@
 				page,
 				page_size: pageSize,
 				buscar: buscar || undefined,
+				buscar_solucion: buscarSolucion || undefined,
 				categoria_id: categoriaId ?? undefined,
 				solicitante_id: solicitanteId ?? undefined,
 				resolutor_id: resolutorId ?? undefined,
@@ -155,6 +158,13 @@
 		timer = setTimeout(cargar, 250);
 	}
 
+	function alBuscarSolucion(e: Event) {
+		buscarSolucion = (e.target as HTMLInputElement).value;
+		page = 1;
+		clearTimeout(timerSolucion);
+		timerSolucion = setTimeout(cargar, 250);
+	}
+
 	$effect(() => {
 		page; categoriaId; solicitanteId; resolutorId; ventanaId; estado; marca;
 		cargar();
@@ -165,6 +175,7 @@
 	function paramsFiltros() {
 		return {
 			buscar: buscar || undefined,
+			buscar_solucion: buscarSolucion || undefined,
 			categoria_id: categoriaId ?? undefined,
 			solicitante_id: solicitanteId ?? undefined,
 			resolutor_id: resolutorId ?? undefined,
@@ -187,6 +198,13 @@
 		placeholder="Buscar por código, título, descripción o solución…"
 		value={buscar}
 		oninput={alBuscar}
+		class="buscador"
+	/>
+	<input
+		type="search"
+		placeholder="Buscar solo en solución…"
+		value={buscarSolucion}
+		oninput={alBuscarSolucion}
 		class="buscador"
 	/>
 	<div class="filtros">
