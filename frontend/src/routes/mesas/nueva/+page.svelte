@@ -185,6 +185,7 @@
 			celebracion?.mostrar(resultado.logros);
 			animacionExito?.mostrar();
 			aviso?.mostrar('exito', `Mesa ${resultado.codigo} guardada en la bitácora administrativa.`);
+			limpiar();
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar la mesa';
 			aviso?.mostrar('error', `No se pudo guardar la mesa: ${errorGuardado}`);
@@ -309,10 +310,14 @@
 				</div>
 			</CampoGrupo>
 
-			<label class="check-resuelta">
-				<input type="checkbox" bind:checked={yaResuelta} />
-				Ya se resolvió — capturar la solución de una vez
-			</label>
+			<button
+				type="button"
+				class="btn-info-cierre"
+				class:activo={yaResuelta}
+				onclick={() => (yaResuelta = !yaResuelta)}
+			>
+				{yaResuelta ? '✓ Información de cierre agregada' : '+ Agregar información de cierre'}
+			</button>
 
 			{#if yaResuelta}
 				<div class="bloque-cierre">
@@ -345,9 +350,6 @@
 			{/if}
 
 			<div class="acciones">
-				{#if resultado}
-					<button type="button" class="secundario" onclick={limpiar}>Capturar otra</button>
-				{/if}
 				<button type="submit" class="guardar" disabled={guardando}>
 					{guardando ? 'Guardando…' : 'Guardar mesa'}
 				</button>
@@ -357,12 +359,6 @@
 		{#if errorGuardado}
 			<div class="confirmaciones">
 				<Toast tipo="error">No se pudo guardar la mesa: {errorGuardado}</Toast>
-			</div>
-		{/if}
-
-		{#if resultado}
-			<div class="confirmaciones">
-				<Toast tipo="ok">Mesa {resultado.codigo} guardada en la bitácora administrativa.</Toast>
 			</div>
 		{/if}
 	</div>
@@ -548,13 +544,30 @@
 		outline-offset: 1px;
 	}
 
-	.check-resuelta {
-		display: flex;
-		align-items: center;
-		gap: 8px;
+	.btn-info-cierre {
+		align-self: flex-start;
+		background: none;
+		border: 1px dashed var(--border-strong);
+		border-radius: var(--radius);
+		padding: 12px 18px;
 		font-size: 13px;
+		font-weight: 600;
+		font-family: var(--font-display);
 		color: var(--text-muted);
 		cursor: pointer;
+		min-height: 44px;
+	}
+
+	.btn-info-cierre:hover {
+		border-color: var(--accent);
+		color: var(--accent-strong);
+	}
+
+	.btn-info-cierre.activo {
+		border-style: solid;
+		border-color: var(--success);
+		background: color-mix(in srgb, var(--success) 12%, transparent);
+		color: var(--success);
 	}
 
 	.bloque-cierre {
@@ -604,15 +617,6 @@
 	.guardar:disabled {
 		opacity: 0.6;
 		cursor: default;
-	}
-
-	.secundario {
-		background: none;
-		border: 1px solid var(--border-strong);
-		border-radius: var(--radius);
-		padding: 10px 16px;
-		color: var(--text);
-		cursor: pointer;
 	}
 
 	.confirmaciones {

@@ -19,6 +19,15 @@
 		return `${dia}/${mes}/${anio} ${hora?.slice(0, 5) ?? ''}`;
 	}
 
+	function claveGrupo(m: Mesa): string {
+		return m.fecha_cierre_real ? m.fecha_cierre_real.slice(0, 10) : 'abiertas';
+	}
+
+	function etiquetaGrupo(m: Mesa): string {
+		if (!m.fecha_cierre_real) return 'Abiertas';
+		return `Cerradas el ${formatearFechaHora(m.fecha_cierre_real).split(' ')[0]}`;
+	}
+
 	function ahora() {
 		const d = new Date();
 		const pad = (n: number) => String(n).padStart(2, '0');
@@ -267,6 +276,9 @@
 				<tr><td colspan="8" class="vacio">Ninguna mesa con estos filtros.</td></tr>
 			{:else}
 				{#each items as m, i}
+					{#if claveGrupo(m) !== (i > 0 ? claveGrupo(items[i - 1]) : null)}
+						<tr class="fila-grupo"><td colspan="8">{etiquetaGrupo(m)}</td></tr>
+					{/if}
 					<tr
 						class:clicable={!!m.solucion}
 						title={m.solucion ? 'Ver solución' : undefined}
@@ -614,6 +626,17 @@
 	.fila-solucion td {
 		background: var(--surface-raised);
 		border-bottom: 1px solid var(--border);
+	}
+
+	.fila-grupo td {
+		padding: 10px 10px 6px;
+		font-size: 11px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-faint);
+		border-bottom: none;
+		background: none;
 	}
 
 	.detalle-solucion {

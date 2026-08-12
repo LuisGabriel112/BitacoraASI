@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-from sqlalchemy import Row, func, select
+from sqlalchemy import Row, case, func, select
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,7 +43,7 @@ from app.services.reporte_semanal_export import (
 from app.services.auth import get_usuario_actual
 from app.services.rpg import XP_POR_ACCION, XP_POR_LOGRO
 from app.services.xp import otorgar_xp
-from app.services.semanas import semana_de
+from app.services.semanas import rango_semana, semana_de
 
 router = APIRouter(prefix="/mesas", tags=["mesas"], dependencies=[Depends(get_usuario_actual)])
 
@@ -265,7 +265,14 @@ async def listar_mesas(
     total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
 
     stmt = (
-        base.order_by(Mesa.fecha_carga.desc(), Mesa.id.desc())
+        base.order_by(
+            # abiertas primero; entre las cerradas, agrupadas por día de cierre
+            # (más reciente primero); dentro del día, por fecha de creación.
+            case((Mesa.fecha_cierre_real.is_(None), 0), else_=1),
+            Mesa.fecha_cierre_real.desc(),
+            Mesa.fecha_carga.desc(),
+            Mesa.id.desc(),
+        )
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -282,14 +289,30 @@ async def _mesas_de_semana(session: AsyncSession, semana: str) -> list[Mesa]:
     return (await session.execute(stmt)).scalars().all()
 
 
+async def _mesas_cerradas_de_semana(session: AsyncSession, semana: str) -> list[Mesa]:
+    """A diferencia de _mesas_de_semana (que agrupa por semana de CREACIÓN vía la
+    columna generada Mesa.semana), el resumen y los reportes agrupan por semana
+    de CIERRE: una mesa levantada un viernes y cerrada el lunes siguiente
+    pertenece a la semana del lunes, no a la de creación."""
+    lunes, _ = rango_semana(semana)
+    inicio = datetime.combine(lunes, time.min)
+    fin = inicio + timedelta(days=7)
+    stmt = (
+        select(Mesa)
+        .where(Mesa.fecha_cierre_real >= inicio, Mesa.fecha_cierre_real < fin)
+        .order_by(Mesa.fecha_cierre_real.desc(), Mesa.id.desc())
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
 @router.get("/panel", response_model=PanelMesasKPIs)
 async def panel_mesas(fecha: date | None = Query(None), session: AsyncSession = Depends(get_session)):
     semana = semana_de(fecha or date.today())
-    mesas_semana = await _mesas_de_semana(session, semana)
+    mesas_semana = await _mesas_cerradas_de_semana(session, semana)
 
     por_dia: dict[str, int] = {}
     for m in mesas_semana:
-        dia = m.fecha_carga.date().isoformat()
+        dia = m.fecha_cierre_real.date().isoformat()
         por_dia[dia] = por_dia.get(dia, 0) + 1
 
     volumen_diario = [{"fecha": k, "total": v} for k, v in sorted(por_dia.items())]
@@ -310,7 +333,7 @@ async def panel_mesas(fecha: date | None = Query(None), session: AsyncSession = 
 
 @router.get("/reporte", response_model=ReporteMesasSemanal)
 async def reporte_mesas_semanal(semana: str = Query(...), session: AsyncSession = Depends(get_session)):
-    mesas_semana = await _mesas_de_semana(session, semana)
+    mesas_semana = await _mesas_cerradas_de_semana(session, semana)
     if not mesas_semana:
         return ReporteMesasSemanal(semana=semana, total=0, por_categoria={}, por_solicitante={}, mesas=[])
 
@@ -333,8 +356,7 @@ async def exportar_reporte_semanal(
     formato: str = Query("xlsx", pattern="^(xlsx|pptx|pdf)$"),
     session: AsyncSession = Depends(get_session),
 ):
-    mesas_semana = await _mesas_de_semana(session, semana)
-    cerradas = [m for m in mesas_semana if m.fecha_cierre_real is not None]
+    cerradas = await _mesas_cerradas_de_semana(session, semana)
 
     titulo = titulo_reporte(semana)
     filas = filas_reporte(cerradas)
