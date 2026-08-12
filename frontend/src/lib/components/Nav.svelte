@@ -4,6 +4,7 @@
 	import { semanaActual } from '$lib/semana';
 	import { api } from '$lib/api/client';
 	import { estadoPersonaje, limpiarPersonaje } from '$lib/personaje.svelte';
+	import Reloj from '$lib/components/Reloj.svelte';
 
 	const semana = semanaActual();
 	const personaje = $derived(estadoPersonaje.actual);
@@ -64,6 +65,10 @@
 	<div class="marca">
 		<span class="marca-icono">⚓</span>
 		<span class="font-display marca-texto">Bitácora ASIPONA</span>
+	</div>
+
+	<div class="reloj-envoltura">
+		<Reloj />
 	</div>
 
 	<div class="semana-actual" title="Semana ISO en curso">
@@ -141,6 +146,11 @@
 	.marca-texto {
 		flex: 1;
 		min-width: 0;
+	}
+
+	.reloj-envoltura {
+		padding: 14px 16px;
+		border-bottom: 1px solid var(--border);
 	}
 
 	.semana-actual {
