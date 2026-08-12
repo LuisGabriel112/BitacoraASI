@@ -63,6 +63,15 @@ class JefeOut(BaseModel):
     derrotado: bool
 
 
+class DanioJefeEventoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    nombre_capturado: str
+    cantidad: int
+    motivo: str
+    created_at: datetime
+
+
 class AutorChatOut(BaseModel):
     nombre: str
     avatar: str

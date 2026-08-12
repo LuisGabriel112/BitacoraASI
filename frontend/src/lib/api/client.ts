@@ -19,6 +19,13 @@ export type Personaje = {
 export type EventoXp = { cantidad: number; motivo: string; created_at: string };
 export type RankingItem = { nombre: string; avatar: string; nivel: number; xp: number };
 export type Jefe = { semana: string; nombre: string; vida_max: number; vida_actual: number; derrotado: boolean };
+export type DanioJefeEvento = {
+	id: number;
+	nombre_capturado: string;
+	cantidad: number;
+	motivo: string;
+	created_at: string;
+};
 
 export type AutorChat = { nombre: string; avatar: string };
 export type MensajeChat = {
@@ -195,6 +202,8 @@ export const api = {
 	enLinea: () => json<RankingItem[]>('/auth/en-linea'),
 
 	jefeActual: () => json<Jefe>('/jefes/actual'),
+
+	danosAlJefeActual: () => json<DanioJefeEvento[]>('/jefes/actual/danos'),
 
 	crearUrlSubidaChat: (nombreArchivo: string, contentType: string) =>
 		json<{ url_subida: string; url_publica: string }>('/chat/subir-url', {

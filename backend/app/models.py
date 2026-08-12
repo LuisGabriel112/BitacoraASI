@@ -72,6 +72,16 @@ class JefeSemanal(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class DanioJefeEvento(Base):
+    __tablename__ = "danio_jefe_eventos"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    jefe_id: Mapped[int] = mapped_column(ForeignKey("jefes_semanales.id"))
+    nombre_capturado: Mapped[str] = mapped_column(Text)
+    cantidad: Mapped[int] = mapped_column()
+    motivo: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class MensajeChat(Base):
     __tablename__ = "mensajes_chat"
     id: Mapped[int] = mapped_column(primary_key=True)

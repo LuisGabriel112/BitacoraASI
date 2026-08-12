@@ -76,7 +76,7 @@ async def _otorgar_xp_cierre(session: AsyncSession, mesa: Mesa, logros: list[str
         usuario_id_directo=mesa.resolutor.usuario_id,
     )
     danio = DANIO_POR_ACCION + DANIO_POR_LOGRO * len(logros)
-    await danar_jefe(session, semana_de(date.today()), danio)
+    await danar_jefe(session, semana_de(date.today()), danio, mesa.resolutor.nombre, "mesa_cerrada")
 
 
 @router.post("", response_model=MesaOut, status_code=201)
@@ -94,7 +94,7 @@ async def crear_mesa(payload: MesaCreate, session: AsyncSession = Depends(get_se
         session, mesa.resolutor.nombre, XP_POR_ACCION, "mesa_creada",
         usuario_id_directo=mesa.resolutor.usuario_id,
     )
-    await danar_jefe(session, semana_de(date.today()), DANIO_POR_ACCION)
+    await danar_jefe(session, semana_de(date.today()), DANIO_POR_ACCION, mesa.resolutor.nombre, "mesa_creada")
     return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 

@@ -118,6 +118,6 @@ async def test_danar_jefe_nunca_propaga_excepcion():
     session = AsyncMock()
     session.execute.side_effect = Exception("boom")
 
-    await danar_jefe(session, "SEM 32 - 2026", 5)
+    await danar_jefe(session, "SEM 32 - 2026", 5, "Alguien", "mesa_creada")
 
     session.rollback.assert_awaited()

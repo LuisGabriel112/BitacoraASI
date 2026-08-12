@@ -74,7 +74,7 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
         session, registro.atendio.nombre, XP_POR_ACCION, "registro_creado",
         usuario_id_directo=registro.atendio.usuario_id,
     )
-    await danar_jefe(session, semana_de(date.today()), DANIO_POR_ACCION)
+    await danar_jefe(session, semana_de(date.today()), DANIO_POR_ACCION, registro.atendio.nombre, "registro_creado")
     logros = await evaluar_logros_registro(session, registro)
 
     trello_ok = False

@@ -4,7 +4,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import JefeSemanal
+from app.models import DanioJefeEvento, JefeSemanal
 
 # Constantes propias, a propósito desacopladas de XP_POR_ACCION/XP_POR_LOGRO en
 # app.services.rpg: recalibrar el nivel de personaje no debe acelerar/frenar sin
@@ -67,19 +67,30 @@ async def obtener_o_crear_jefe(session: AsyncSession, semana: str) -> JefeSemana
     return jefe
 
 
-async def danar_jefe(session: AsyncSession, semana: str, cantidad: int) -> None:
+async def danar_jefe(session: AsyncSession, semana: str, cantidad: int, nombre: str, motivo: str) -> None:
     """Best effort: un fallo aquí nunca debe tumbar la creación del registro/mesa."""
     try:
-        await _danar_jefe(session, semana, cantidad)
+        await _danar_jefe(session, semana, cantidad, nombre, motivo)
     except Exception:
         await session.rollback()
 
 
-async def _danar_jefe(session: AsyncSession, semana: str, cantidad: int) -> None:
-    await obtener_o_crear_jefe(session, semana)
+async def _danar_jefe(session: AsyncSession, semana: str, cantidad: int, nombre: str, motivo: str) -> None:
+    jefe = await obtener_o_crear_jefe(session, semana)
     await session.execute(
         update(JefeSemanal)
         .where(JefeSemanal.semana == semana)
         .values(vida_actual=func.greatest(JefeSemanal.vida_actual - cantidad, 0))
     )
+    session.add(DanioJefeEvento(jefe_id=jefe.id, nombre_capturado=nombre, cantidad=cantidad, motivo=motivo))
     await session.commit()
+
+
+async def eventos_de_dano(session: AsyncSession, jefe_id: int, limite: int = 200) -> list[DanioJefeEvento]:
+    stmt = (
+        select(DanioJefeEvento)
+        .where(DanioJefeEvento.jefe_id == jefe_id)
+        .order_by(DanioJefeEvento.created_at.desc())
+        .limit(limite)
+    )
+    return (await session.execute(stmt)).scalars().all()
