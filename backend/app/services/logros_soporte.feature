@@ -22,3 +22,8 @@ Característica: Logros de la bitácora operativa (soporte)
     Dado el mismo momento exacto
     Cuando se evalúan las reglas de horario normales (mesas) y las de soporte
     Entonces ninguna clave se repite entre ambos conjuntos
+
+  Escenario: La hora en UTC se convierte a hora local antes de evaluar
+    Dado que un soporte se registró a las 11:25am hora de Ciudad de México (17:25 UTC)
+    Cuando se evalúan las reglas de horario de soporte
+    Entonces no se dispara ningún logro de horario (es media mañana, no la recta final)

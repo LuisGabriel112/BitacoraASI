@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.services.logros import reglas_de_horario, reglas_de_horario_soporte
 
@@ -68,3 +68,19 @@ def test_claves_de_soporte_no_se_repiten_con_las_de_mesas():
     logros_mesa = set(reglas_de_horario(momento))
     logros_soporte = set(reglas_de_horario_soporte(momento))
     assert logros_mesa.isdisjoint(logros_soporte)
+
+
+def test_datetime_con_utc_se_convierte_a_hora_local_antes_de_evaluar():
+    # 11:25am en Ciudad de Mexico (UTC-6) == 17:25 UTC. Sin convertir, caia
+    # dentro de la ventana 17-18h y disparaba "recta final del dia" por error.
+    once_25_locales_en_utc = datetime(2026, 8, 12, 17, 25, tzinfo=timezone.utc)
+    assert reglas_de_horario_soporte(once_25_locales_en_utc) == []
+
+
+def test_datetime_con_utc_si_dispara_recta_final_cuando_de_verdad_es_esa_hora_local():
+    cinco_30_locales_en_utc = datetime(2026, 8, 12, 23, 30, tzinfo=timezone.utc)
+    assert reglas_de_horario_soporte(cinco_30_locales_en_utc) == ["ultimas_del_dia_soporte"]
+
+
+def test_datetime_naive_no_se_toca_sigue_siendo_hora_local():
+    assert reglas_de_horario(datetime(2026, 8, 4, 17, 30)) == ["ultimas_del_dia"]
