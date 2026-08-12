@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api, type Catalogo } from '$lib/api/client';
+	import { invalidarCache } from '$lib/catalogoCache';
 
 	type CatalogoMesa = 'categorias-mesa' | 'solicitantes-mesa' | 'resolutores-mesa' | 'ventanas-mesa';
 
@@ -52,6 +53,7 @@
 		try {
 			await api.eliminarCatalogo(pestanaActiva, id);
 			items = items.filter((i) => i.id !== id);
+			invalidarCache(pestanaActiva);
 			confirmandoId = null;
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo eliminar';

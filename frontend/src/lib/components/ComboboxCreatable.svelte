@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api, type Catalogo } from '$lib/api/client';
 	import { coincidenciaExacta } from '$lib/catalogoMatch';
+	import { agregarAlCache, catalogoCompleto } from '$lib/catalogoCache';
 
 	let {
 		catalogo,
@@ -18,32 +19,34 @@
 		nombreSeleccionado?: string;
 	} = $props();
 
-	let texto = $state('');
-	let opciones = $state<Catalogo[]>([]);
-	let abierto = $state(false);
-	let cargando = $state(false);
-	let resaltado = $state(0);
-	let inputEl: HTMLInputElement;
-	let timer: ReturnType<typeof setTimeout>;
+	const LIMITE_VISIBLE = 20;
 
-	function buscar(valor: string) {
-		clearTimeout(timer);
-		timer = setTimeout(async () => {
-			cargando = true;
-			try {
-				opciones = await api.catalogo(catalogo, valor);
-			} finally {
-				cargando = false;
-			}
-		}, 150);
-	}
+	let texto = $state('');
+	let abierto = $state(false);
+	let cargando = $state(true);
+	let resaltado = $state(0);
+	let listaCompleta = $state<Catalogo[]>([]);
+	let inputEl: HTMLInputElement;
+
+	$effect(() => {
+		cargando = true;
+		catalogoCompleto(catalogo).then((lista) => {
+			listaCompleta = lista;
+			cargando = false;
+		});
+	});
+
+	const opciones = $derived.by(() => {
+		const q = texto.trim().toLowerCase();
+		const filtradas = q ? listaCompleta.filter((o) => o.nombre.toLowerCase().startsWith(q)) : listaCompleta;
+		return filtradas.slice(0, LIMITE_VISIBLE);
+	});
 
 	function alEscribir(e: Event) {
 		texto = (e.target as HTMLInputElement).value;
 		selectedId = null;
 		abierto = true;
 		resaltado = 0;
-		buscar(texto);
 	}
 
 	const hayCoincidenciaExacta = $derived(coincidenciaExacta(opciones, texto) !== null);
@@ -60,13 +63,14 @@
 		const nombre = texto.trim();
 		if (!nombre) return;
 		const item = await api.crearCatalogo(catalogo, nombre);
+		await agregarAlCache(catalogo, item);
+		listaCompleta = await catalogoCompleto(catalogo);
 		elegir(item);
 	}
 
 	async function resolverPendiente() {
 		if (selectedId || !texto.trim()) return;
-		const encontradas = await api.catalogo(catalogo, texto.trim());
-		const exacta = coincidenciaExacta(encontradas, texto);
+		const exacta = coincidenciaExacta(listaCompleta, texto);
 		if (exacta) elegir(exacta);
 		else await crear();
 	}
@@ -74,7 +78,6 @@
 	function alTeclado(e: KeyboardEvent) {
 		if (!abierto && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
 			abierto = true;
-			buscar(texto);
 			return;
 		}
 		if (e.key === 'ArrowDown') {
@@ -116,10 +119,7 @@
 			placeholder="Escribe para buscar o crear…"
 			value={texto}
 			oninput={alEscribir}
-			onfocus={() => {
-				abierto = true;
-				buscar(texto);
-			}}
+			onfocus={() => (abierto = true)}
 			onblur={() => setTimeout(() => ((abierto = false), resolverPendiente()), 120)}
 			onkeydown={alTeclado}
 		/>

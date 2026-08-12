@@ -510,8 +510,11 @@
 	}
 
 	.boton-secundario {
+		background: none;
 		border: 1px solid var(--border-strong);
 		color: var(--text);
+		cursor: pointer;
+		font: inherit;
 	}
 
 	.boton-secundario:hover {
