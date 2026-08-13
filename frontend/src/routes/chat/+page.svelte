@@ -2,6 +2,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import { api, type MensajeChat } from '$lib/api/client';
+	import { extraerImagenDePortapapeles, extraerPrimerArchivoSoltado } from '$lib/chatAdjuntos';
 
 	const INTERVALO_MS = 4_000;
 
@@ -12,6 +13,7 @@
 	let inputArchivo: HTMLInputElement;
 	let enviando = $state(false);
 	let error = $state<string | null>(null);
+	let arrastrando = $state(false);
 	let contenedor: HTMLDivElement;
 
 	function desplazarAbajo() {
@@ -83,6 +85,25 @@
 		if (inputArchivo) inputArchivo.value = '';
 	}
 
+	function alPegar(e: ClipboardEvent) {
+		const imagen = extraerImagenDePortapapeles(Array.from(e.clipboardData?.items ?? []));
+		if (!imagen) return;
+		e.preventDefault();
+		archivo = imagen;
+	}
+
+	function alArrastrarSobre(e: DragEvent) {
+		e.preventDefault();
+		arrastrando = true;
+	}
+
+	function alSoltar(e: DragEvent) {
+		e.preventDefault();
+		arrastrando = false;
+		const soltado = extraerPrimerArchivoSoltado(e.dataTransfer?.files ?? []);
+		if (soltado) archivo = soltado;
+	}
+
 	async function subirArchivoSiHay() {
 		if (!archivo) return {};
 		const { url_subida, url_publica } = await api.crearUrlSubidaChat(archivo.name, archivo.type);
@@ -112,7 +133,15 @@
 
 <Header titulo="Chat del equipo" subtitulo="Mensajes y archivos, se actualiza solo." />
 
-<div class="chat">
+<div
+	class="chat"
+	class:arrastrando
+	role="group"
+	aria-label="Área de chat, arrastra un archivo para adjuntarlo"
+	ondragover={alArrastrarSobre}
+	ondragleave={() => (arrastrando = false)}
+	ondrop={alSoltar}
+>
 	<div class="mensajes" bind:this={contenedor}>
 		{#if cargando}
 			<p class="cargando">Cargando mensajes…</p>
@@ -163,9 +192,10 @@
 			</label>
 			<input
 				type="text"
-				placeholder="Escribe un mensaje…"
+				placeholder="Escribe o pega una captura…"
 				bind:value={texto}
 				disabled={enviando}
+				onpaste={alPegar}
 				class="campo-texto"
 			/>
 			<button type="submit" class="btn-enviar" disabled={enviando || (!texto.trim() && !archivo)}>
@@ -181,6 +211,11 @@
 		flex-direction: column;
 		height: calc(100vh - 140px);
 		max-width: 720px;
+	}
+
+	.chat.arrastrando {
+		outline: 2px dashed var(--accent);
+		outline-offset: -2px;
 	}
 
 	.mensajes {
