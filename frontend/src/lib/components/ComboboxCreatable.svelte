@@ -68,7 +68,7 @@
 		elegir(item);
 	}
 
-	async function resolverPendiente() {
+	export async function resolverPendiente() {
 		if (selectedId || !texto.trim()) return;
 		const exacta = coincidenciaExacta(listaCompleta, texto);
 		if (exacta) elegir(exacta);

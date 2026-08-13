@@ -8,11 +8,16 @@
 	import Celebracion from '$lib/components/Celebracion.svelte';
 	import AnimacionExito3D from '$lib/components/AnimacionExito3D.svelte';
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
-	import { api, type Mesa } from '$lib/api/client';
+	import { api, type Mesa, type SintesisSolucion } from '$lib/api/client';
+	import { sugerenciasParaCategoria } from '$lib/sugerenciasSolucion';
 
 	let celebracion: Celebracion;
 	let animacionExito: AnimacionExito3D;
 	let aviso: AvisoResultado;
+	let comboboxCategoria: ComboboxCreatable;
+	let comboboxSolicitante: ComboboxCreatable;
+	let comboboxResolutor: ComboboxCreatable;
+	let comboboxVentana = $state<ComboboxCreatable | undefined>(undefined);
 
 	function hoy() {
 		return new Date().toISOString().slice(0, 10);
@@ -54,6 +59,16 @@
 
 	let capturadasHoy = $state<Mesa[]>([]);
 	let cargandoCapturadas = $state(true);
+	let sintesisSoluciones = $state<SintesisSolucion[]>([]);
+
+	const sugerenciasSolucion = $derived(sugerenciasParaCategoria(sintesisSoluciones, categoriaId));
+
+	function usarSugerencia(s: SintesisSolucion) {
+		solucionTexto = s.texto;
+		if (s.tipo_solucion === 'Modificación en BD' || s.tipo_solucion === 'Seguimiento de proceso') {
+			tipoSolucion = s.tipo_solucion;
+		}
+	}
 
 	async function cargarCapturadasHoy() {
 		cargandoCapturadas = true;
@@ -67,6 +82,7 @@
 
 	$effect(() => {
 		cargarCapturadasHoy();
+		api.sintesisSoluciones().then((s) => (sintesisSoluciones = s));
 	});
 
 	function limpiar() {
@@ -152,7 +168,17 @@
 		return null;
 	}
 
+	async function resolverCombosPendientes() {
+		await Promise.all([
+			comboboxCategoria.resolverPendiente(),
+			comboboxSolicitante.resolverPendiente(),
+			comboboxResolutor.resolverPendiente(),
+			comboboxVentana?.resolverPendiente()
+		]);
+	}
+
 	async function guardar() {
+		await resolverCombosPendientes();
 		errorValidacion = validar();
 		errorGuardado = null;
 		if (errorValidacion) {
@@ -285,13 +311,13 @@
 					</div>
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
-					<ComboboxCreatable id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
+					<ComboboxCreatable bind:this={comboboxCategoria} id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
-					<ComboboxCreatable id="solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} nombreSeleccionado={solicitanteNombre} />
+					<ComboboxCreatable bind:this={comboboxSolicitante} id="solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} nombreSeleccionado={solicitanteNombre} />
 				</CampoGrupo>
 				<CampoGrupo grupo="b">
-					<ComboboxCreatable id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
+					<ComboboxCreatable bind:this={comboboxResolutor} id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
 					<FechaHoraInput
@@ -324,12 +350,21 @@
 					<CampoGrupo grupo="b">
 						<div class="campo">
 							<label for="solucion">Solución</label>
+							{#if sugerenciasSolucion.length > 0}
+								<div class="sugerencias-solucion">
+									{#each sugerenciasSolucion as s}
+										<button type="button" class="pill-sugerencia" title={s.texto} onclick={() => usarSugerencia(s)}>
+											💡 {s.titulo}
+										</button>
+									{/each}
+								</div>
+							{/if}
 							<textarea id="solucion" rows="3" bind:value={solucionTexto} placeholder="Qué se hizo para resolverlo…"></textarea>
 						</div>
 					</CampoGrupo>
 					<div class="grid-cierre">
 						<CampoGrupo grupo="b">
-							<ComboboxCreatable id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
+							<ComboboxCreatable bind:this={comboboxVentana} id="ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} nombreSeleccionado={ventanaNombre} />
 						</CampoGrupo>
 						<div class="campo">
 							<label for="tipo_solucion">Categoría de la solución</label>
@@ -542,6 +577,27 @@
 	textarea:focus-visible {
 		outline: 2px solid var(--accent);
 		outline-offset: 1px;
+	}
+
+	.sugerencias-solucion {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.pill-sugerencia {
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		border: 1px solid var(--border-strong);
+		border-radius: 999px;
+		padding: 5px 12px;
+		font-size: 12px;
+		color: var(--accent-strong);
+		cursor: pointer;
+		text-align: left;
+	}
+
+	.pill-sugerencia:hover {
+		background: color-mix(in srgb, var(--accent) 22%, transparent);
 	}
 
 	.btn-info-cierre {
