@@ -365,11 +365,9 @@
 				>
 					{yaResuelta ? '✓ Información de cierre agregada' : '+ Agregar información de cierre'}
 				</button>
-				{#if yaResuelta}
-					<button type="button" class="btn-vaciar-cierre" onclick={vaciarCierre}>
-						Vaciar cierre
-					</button>
-				{/if}
+				<button type="button" class="btn-vaciar-cierre" onclick={vaciarCierre}>
+					Vaciar cierre
+				</button>
 			</div>
 
 			{#if yaResuelta}

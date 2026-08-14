@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 from xml.sax.saxutils import escape
 
 from openpyxl import Workbook
@@ -9,6 +10,8 @@ from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.text import PP_ALIGN
+from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics.shapes import Drawing, String
@@ -30,10 +33,17 @@ _COLOR_TITULO_FONDO = "FFFF00"
 _COLOR_ENCABEZADO_FONDO = "FF9900"
 _COLOR_TEXTO = "000000"
 _COLOR_FILA = "FFFFFF"
+_COLOR_FILA_ALTERNA = "F2F2F2"
 _COLOR_BORDE = "BFBFBF"
+_COLOR_BORDE_TABLA_PPTX = "808080"
 _COLOR_ACENTO = "FF9900"
 _COLOR_PORTADA_FONDO = "4CAE9B"
 _COLOR_PORTADA_TEXTO = "FFFFFF"
+_RUTA_LOGO_PPTX = Path(__file__).resolve().parent.parent / "assets" / "logo_intersyst.png"
+
+_FILA_TITULO = 0
+_FILA_ENCABEZADO = 1
+_FILA_DATOS_INICIO = 2
 
 
 def _en_bloques(filas: list, tamano: int) -> list[list]:
@@ -103,30 +113,7 @@ def generar_xlsx_reporte(
 
 
 def _agregar_logo_pptx(slide) -> None:
-    caja = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.5), Inches(1.6), Inches(2.0), Inches(1.1))
-    caja.fill.solid()
-    caja.fill.fore_color.rgb = RGBColor.from_string("FFFFFF")
-    caja.line.color.rgb = RGBColor.from_string("2A2A2A")
-    caja.shadow.inherit = False
-    marco = caja.text_frame
-    marco.word_wrap = True
-    p1 = marco.paragraphs[0]
-    p1.text = "INTER-SYST"
-    p1.font.bold = True
-    p1.font.size = Pt(15)
-    p1.font.color.rgb = RGBColor.from_string("1A1A1A")
-    p2 = marco.add_paragraph()
-    p2.text = "SEGURIDAD Y CONTROL"
-    p2.font.size = Pt(7)
-    p2.font.color.rgb = RGBColor.from_string("1A1A1A")
-
-    for i in range(5):
-        cuadro = slide.shapes.add_shape(
-            MSO_SHAPE.RECTANGLE, Inches(0.5 + i * 0.24), Inches(2.8), Inches(0.2), Inches(0.2)
-        )
-        cuadro.fill.solid()
-        cuadro.fill.fore_color.rgb = RGBColor.from_string("FFFFFF" if i % 2 else _COLOR_PORTADA_FONDO)
-        cuadro.line.color.rgb = RGBColor.from_string("FFFFFF")
+    slide.shapes.add_picture(str(_RUTA_LOGO_PPTX), Inches(0.6), Inches(2.5), height=Inches(0.55))
 
 
 def _agregar_portada_pptx(prs: Presentation, titulo: str) -> None:
@@ -160,40 +147,97 @@ def _agregar_portada_pptx(prs: Presentation, titulo: str) -> None:
     sub.font.color.rgb = RGBColor.from_string(_COLOR_PORTADA_TEXTO)
 
 
+def _bordear_celda(celda) -> None:
+    """Bordes de celda via XML crudo: python-pptx no expone API de alto nivel para
+    esto. Debe llamarse ANTES de fill.solid() — el esquema exige lnL/lnR/lnT/lnB
+    antes que solidFill dentro de <a:tcPr>, y python-pptx no reordena hijos."""
+    tcPr = celda._tc.get_or_add_tcPr()
+    for tag in ("a:lnL", "a:lnR", "a:lnT", "a:lnB"):
+        linea = tcPr.makeelement(qn(tag), {"w": "9525", "cap": "flat", "cmpd": "sng", "algn": "ctr"})
+        relleno = linea.makeelement(qn("a:solidFill"), {})
+        relleno.append(relleno.makeelement(qn("a:srgbClr"), {"val": _COLOR_BORDE_TABLA_PPTX}))
+        linea.append(relleno)
+        tcPr.append(linea)
+
+
+def _escribir_celda(celda, texto: str, color_fondo: str, *, negrita: bool, tamano: int) -> None:
+    _bordear_celda(celda)
+    celda.text = texto
+    celda.fill.solid()
+    celda.fill.fore_color.rgb = RGBColor.from_string(color_fondo)
+    for parrafo in celda.text_frame.paragraphs:
+        parrafo.font.bold = negrita
+        parrafo.font.size = Pt(tamano)
+        parrafo.font.color.rgb = RGBColor.from_string(_COLOR_TEXTO)
+
+
+def _fila_titulo_tabla(tabla, texto: str) -> None:
+    origen = tabla.cell(_FILA_TITULO, 0)
+    origen.merge(tabla.cell(_FILA_TITULO, 3))
+    _escribir_celda(origen, texto, _COLOR_TITULO_FONDO, negrita=True, tamano=14)
+    origen.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+
+
+def _fila_encabezados_tabla(tabla) -> None:
+    for col, texto in enumerate(ENCABEZADOS):
+        _escribir_celda(tabla.cell(_FILA_ENCABEZADO, col), texto, _COLOR_ENCABEZADO_FONDO, negrita=True, tamano=12)
+
+
+def _fila_de_datos(tabla, fila: int, indice: int, datos: tuple[str, str, str]) -> None:
+    color = _COLOR_FILA if indice % 2 == 0 else _COLOR_FILA_ALTERNA
+    codigo, fecha, solucion = datos
+    for col, valor in enumerate((codigo, fecha, solucion, "")):
+        _escribir_celda(tabla.cell(fila, col), valor, color, negrita=False, tamano=12)
+
+
+def _ajustar_alturas_tabla(tabla, num_filas_datos: int) -> None:
+    tabla.rows[_FILA_TITULO].height = Pt(26)
+    tabla.rows[_FILA_ENCABEZADO].height = Pt(22)
+    for i in range(num_filas_datos):
+        tabla.rows[_FILA_DATOS_INICIO + i].height = Pt(40)
+
+
 def _agregar_diapositiva_tabla(prs: Presentation, bloque: list[tuple[str, str, str]], numero: int, total: int) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-
-    caja_titulo = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12.3), Inches(0.6))
-    parrafo = caja_titulo.text_frame.paragraphs[0]
-    parrafo.text = f"Incidencias resueltas ({numero}/{total})"
-    parrafo.font.size = Pt(20)
-    parrafo.font.bold = True
-    parrafo.font.color.rgb = RGBColor.from_string(_COLOR_TEXTO)
-
-    tabla_shape = slide.shapes.add_table(len(bloque) + 1, 4, Inches(0.5), Inches(1.1), Inches(12.3), Inches(5.9))
+    tabla_shape = slide.shapes.add_table(len(bloque) + 2, 4, Inches(0.5), Inches(0.4), Inches(12.3), Inches(6.6))
     tabla = tabla_shape.table
     for col, ancho in zip(tabla.columns, (1.8, 2.2, 5.3, 3.0)):
         col.width = Inches(ancho)
 
-    for c, texto in enumerate(ENCABEZADOS):
-        celda = tabla.cell(0, c)
-        celda.text = texto
-        celda.fill.solid()
-        celda.fill.fore_color.rgb = RGBColor.from_string(_COLOR_ENCABEZADO_FONDO)
-        for p in celda.text_frame.paragraphs:
-            p.font.bold = True
-            p.font.size = Pt(13)
-            p.font.color.rgb = RGBColor.from_string(_COLOR_TEXTO)
+    _fila_titulo_tabla(tabla, f"Incidencias resueltas ({numero}/{total})")
+    _fila_encabezados_tabla(tabla)
+    for i, fila_datos in enumerate(bloque):
+        _fila_de_datos(tabla, i + _FILA_DATOS_INICIO, i, fila_datos)
+    _ajustar_alturas_tabla(tabla, len(bloque))
 
-    for r, (codigo, fecha, solucion) in enumerate(bloque, start=1):
-        for c, valor in enumerate((codigo, fecha, solucion, "")):
-            celda = tabla.cell(r, c)
-            celda.text = valor
-            celda.fill.solid()
-            celda.fill.fore_color.rgb = RGBColor.from_string(_COLOR_FILA)
-            for p in celda.text_frame.paragraphs:
-                p.font.size = Pt(13)
-                p.font.color.rgb = RGBColor.from_string(_COLOR_TEXTO)
+
+def _agregar_grafica_pptx(slide, nombre: str, datos: list[tuple[str, int]], left, ancho) -> None:
+    chart_data = CategoryChartData()
+    chart_data.categories = [k for k, _ in datos]
+    chart_data.add_series("Cantidad", [v for _, v in datos])
+    grafico_shape = slide.shapes.add_chart(
+        XL_CHART_TYPE.COLUMN_CLUSTERED, left, Inches(0.6), ancho, Inches(6.2), chart_data
+    )
+    chart = grafico_shape.chart
+    chart.has_legend = False
+    chart.has_title = True
+    chart.chart_title.text_frame.text = nombre
+    chart.value_axis.has_title = True
+    chart.value_axis.axis_title.text_frame.text = "Cantidad"
+    plot = chart.plots[0]
+    plot.has_data_labels = True
+    plot.data_labels.font.size = Pt(11)
+    plot.data_labels.font.bold = True
+    plot.series[0].format.fill.solid()
+    plot.series[0].format.fill.fore_color.rgb = RGBColor.from_string(_COLOR_ACENTO)
+
+
+def _agregar_diapositiva_graficas(prs: Presentation, graficas: dict[str, list[tuple[str, int]]]) -> None:
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    ancho_grafica = Inches(6.0)
+    for i, (nombre, datos) in enumerate(graficas.items()):
+        left = Inches(0.5) + i * (ancho_grafica + Inches(0.3))
+        _agregar_grafica_pptx(slide, nombre, datos, left, ancho_grafica)
 
 
 def generar_pptx_reporte(
@@ -205,29 +249,13 @@ def generar_pptx_reporte(
 
     _agregar_portada_pptx(prs, titulo)
 
+    graficas_con_datos = {k: v for k, v in graficas.items() if v}
+    if graficas_con_datos:
+        _agregar_diapositiva_graficas(prs, graficas_con_datos)
+
     bloques = _en_bloques(filas, FILAS_POR_DIAPOSITIVA)
     for numero, bloque in enumerate(bloques, start=1):
         _agregar_diapositiva_tabla(prs, bloque, numero, len(bloques))
-
-    graficas_con_datos = {k: v for k, v in graficas.items() if v}
-    if graficas_con_datos:
-        slide_graficas = prs.slides.add_slide(prs.slide_layouts[6])
-        ancho_grafica = Inches(6.0)
-        for i, (nombre, datos) in enumerate(graficas_con_datos.items()):
-            chart_data = CategoryChartData()
-            chart_data.categories = [k for k, _ in datos]
-            chart_data.add_series("Cantidad", [v for _, v in datos])
-            left = Inches(0.5) + i * (ancho_grafica + Inches(0.3))
-            grafico_shape = slide_graficas.shapes.add_chart(
-                XL_CHART_TYPE.COLUMN_CLUSTERED, left, Inches(0.5), ancho_grafica, Inches(6.0), chart_data
-            )
-            chart = grafico_shape.chart
-            chart.has_legend = False
-            chart.has_title = True
-            chart.chart_title.text_frame.text = nombre
-            serie = chart.plots[0].series[0]
-            serie.format.fill.solid()
-            serie.format.fill.fore_color.rgb = RGBColor.from_string(_COLOR_ACENTO)
 
     out = io.BytesIO()
     prs.save(out)
