@@ -28,9 +28,21 @@ def nivel_y_progreso(xp_total: int) -> NivelInfo:
     )
 
 
+_TITULOS_POR_NIVEL: list[tuple[int, str]] = [
+    (500, "Divino"),
+    (300, "Trascendente"),
+    (200, "Inmortal"),
+    (150, "Mítico"),
+    (100, "Leyenda"),
+    (50, "Maestro"),
+    (25, "Experto"),
+    (10, "Veterano"),
+    (5, "Técnico"),
+]
+
+
 def titulo_para_nivel(nivel: int) -> str:
-    if nivel >= 10:
-        return "Veterano"
-    if nivel >= 5:
-        return "Técnico"
+    for umbral, titulo in _TITULOS_POR_NIVEL:
+        if nivel >= umbral:
+            return titulo
     return "Aprendiz"

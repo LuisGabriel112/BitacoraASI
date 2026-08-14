@@ -28,6 +28,9 @@ Característica: Nivel y progreso del personaje a partir del XP acumulado
     Y el XP en el nivel actual es 0
 
   Escenario: El título cambia según el nivel
-    Dado que el nivel es 1, 4, 5, 9 o 10
+    Dado que el nivel es 1, 4, 5, 9, 10, 24, 25, 49, 50, 99, 100, 149, 150,
+      199, 200, 299, 300, 499 o 500
     Cuando se calcula el título del nivel
-    Entonces los niveles 1-4 son "Aprendiz", 5-9 son "Técnico", 10+ son "Veterano"
+    Entonces los niveles 1-4 son "Aprendiz", 5-9 "Técnico", 10-24 "Veterano",
+      25-49 "Experto", 50-99 "Maestro", 100-149 "Leyenda", 150-199 "Mítico",
+      200-299 "Inmortal", 300-499 "Trascendente", 500+ "Divino"

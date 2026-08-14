@@ -44,6 +44,42 @@ def test_titulo_tecnico_niveles_medios():
 
 def test_titulo_veterano_niveles_altos():
     assert titulo_para_nivel(10) == "Veterano"
+    assert titulo_para_nivel(24) == "Veterano"
+
+
+def test_titulo_experto():
+    assert titulo_para_nivel(25) == "Experto"
+    assert titulo_para_nivel(49) == "Experto"
+
+
+def test_titulo_maestro():
+    assert titulo_para_nivel(50) == "Maestro"
+    assert titulo_para_nivel(99) == "Maestro"
+
+
+def test_titulo_leyenda():
+    assert titulo_para_nivel(100) == "Leyenda"
+    assert titulo_para_nivel(149) == "Leyenda"
+
+
+def test_titulo_mitico():
+    assert titulo_para_nivel(150) == "Mítico"
+    assert titulo_para_nivel(199) == "Mítico"
+
+
+def test_titulo_inmortal():
+    assert titulo_para_nivel(200) == "Inmortal"
+    assert titulo_para_nivel(299) == "Inmortal"
+
+
+def test_titulo_trascendente():
+    assert titulo_para_nivel(300) == "Trascendente"
+    assert titulo_para_nivel(499) == "Trascendente"
+
+
+def test_titulo_divino_niveles_extremos():
+    assert titulo_para_nivel(500) == "Divino"
+    assert titulo_para_nivel(10_000) == "Divino"
 
 
 def test_constantes_de_xp_son_positivas_y_logro_vale_mas_que_accion():
