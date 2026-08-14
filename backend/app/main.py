@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import auth, catalogos, chat, jefes, mesas, registros, sintesis_soluciones
+from app.routers import auth, catalogos, chat, jefes, juegos, mesas, registros, sintesis_soluciones
 
 app = FastAPI(
     title="Bitácora ASIPONA API",
@@ -25,6 +25,7 @@ app.include_router(mesas.router)
 app.include_router(sintesis_soluciones.router)
 app.include_router(jefes.router)
 app.include_router(chat.router)
+app.include_router(juegos.router)
 
 
 @app.get("/health")

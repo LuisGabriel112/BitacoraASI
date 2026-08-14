@@ -2,6 +2,8 @@
 	import { fade } from 'svelte/transition';
 	import Header from '$lib/components/Header.svelte';
 	import Enemigo3D from '$lib/components/Enemigo3D.svelte';
+	import JuegoGato from '$lib/components/JuegoGato.svelte';
+	import JuegoPelota from '$lib/components/JuegoPelota.svelte';
 	import { api, type DanioJefeEvento, type Jefe } from '$lib/api/client';
 
 	const INTERVALO_MS = 10_000;
@@ -97,6 +99,11 @@
 			{/if}
 		</section>
 	</div>
+
+	<div class="columnas juegos" in:fade={{ duration: 250, delay: 120 }}>
+		<JuegoGato />
+		<JuegoPelota />
+	</div>
 {/if}
 
 <style>
@@ -109,6 +116,11 @@
 		grid-template-columns: minmax(280px, 480px) 1fr;
 		gap: 20px;
 		align-items: start;
+	}
+
+	.columnas.juegos {
+		margin-top: 20px;
+		grid-template-columns: minmax(280px, 420px) minmax(280px, 420px);
 	}
 
 	.tarjeta {

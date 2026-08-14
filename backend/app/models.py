@@ -199,6 +199,34 @@ class Mesa(Base):
     resolutor: Mapped[ResolutorMesa] = relationship(lazy="joined")
 
 
+class PartidaGato(Base):
+    __tablename__ = "partidas_gato"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    jugador_x_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    jugador_o_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    tablero: Mapped[str] = mapped_column(Text, default=" " * 9)
+    turno: Mapped[str] = mapped_column(Text, default="X")
+    estado: Mapped[str] = mapped_column(Text, default="esperando")
+    ganador: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    actualizado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    jugador_x: Mapped[Usuario] = relationship(foreign_keys=[jugador_x_id], lazy="joined")
+    jugador_o: Mapped[Usuario | None] = relationship(foreign_keys=[jugador_o_id], lazy="joined")
+
+
+class IntentoPelota(Base):
+    __tablename__ = "intentos_pelota"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    posicion_correcta: Mapped[int] = mapped_column()
+    resuelto: Mapped[bool] = mapped_column(default=False)
+    acierto: Mapped[bool | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class BonusRegla(Base):
     __tablename__ = "bonus_reglas"
     id: Mapped[int] = mapped_column(primary_key=True)

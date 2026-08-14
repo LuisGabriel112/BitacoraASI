@@ -108,6 +108,18 @@ export type Mesa = {
 	logros: string[];
 };
 export type PaginaMesas = { total: number; items: Mesa[] };
+export type JugadorGato = { nombre: string; avatar: string };
+export type PartidaGato = {
+	id: number;
+	tablero: string;
+	turno: 'X' | 'O';
+	estado: 'esperando' | 'jugando' | 'terminada';
+	ganador: 'X' | 'O' | 'empate' | null;
+	jugador_x: JugadorGato;
+	jugador_o: JugadorGato | null;
+};
+export type IntentoPelota = { id: number; resuelto: boolean; acierto: boolean | null };
+export type ResultadoPelota = { acierto: boolean; posicion_correcta: number };
 export type SintesisSolucion = {
 	id: number;
 	categoria: Catalogo;
@@ -197,6 +209,22 @@ export const api = {
 	jefeActual: () => json<Jefe>('/jefes/actual'),
 
 	danosAlJefeActual: () => json<DanioJefeEvento[]>('/jefes/actual/danos'),
+
+	buscarPartidaGato: () => json<PartidaGato>('/juegos/gato/buscar', { method: 'POST' }),
+
+	obtenerPartidaGato: (id: number) => json<PartidaGato>(`/juegos/gato/${id}`),
+
+	jugarGato: (id: number, posicion: number) =>
+		json<PartidaGato>(`/juegos/gato/${id}/jugar`, { method: 'POST', body: JSON.stringify({ posicion }) }),
+
+	salirGato: async (id: number) => {
+		await fetch(`${BASE}/juegos/gato/${id}/salir`, { method: 'POST' });
+	},
+
+	iniciarPelota: () => json<IntentoPelota>('/juegos/pelota/iniciar', { method: 'POST' }),
+
+	elegirPelota: (id: number, posicion: number) =>
+		json<ResultadoPelota>(`/juegos/pelota/${id}/elegir`, { method: 'POST', body: JSON.stringify({ posicion }) }),
 
 	crearUrlSubidaChat: (nombreArchivo: string, contentType: string) =>
 		json<{ url_subida: string; url_publica: string }>('/chat/subir-url', {

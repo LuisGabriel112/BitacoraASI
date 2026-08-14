@@ -72,6 +72,43 @@ class DanioJefeEventoOut(BaseModel):
     created_at: datetime
 
 
+class JugadorGatoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    nombre: str
+    avatar: str
+
+
+class PartidaGatoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    tablero: str
+    turno: str
+    estado: str
+    ganador: str | None
+    jugador_x: JugadorGatoOut
+    jugador_o: JugadorGatoOut | None
+
+
+class MovimientoGato(BaseModel):
+    posicion: int = Field(ge=0, le=8)
+
+
+class IntentoPelotaOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    resuelto: bool
+    acierto: bool | None
+
+
+class EleccionPelota(BaseModel):
+    posicion: int = Field(ge=0, le=2)
+
+
+class ResultadoPelotaOut(BaseModel):
+    acierto: bool
+    posicion_correcta: int
+
+
 class AutorChatOut(BaseModel):
     nombre: str
     avatar: str
