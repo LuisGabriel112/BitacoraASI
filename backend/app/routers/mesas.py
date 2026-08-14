@@ -30,9 +30,10 @@ from app.services.distribuciones import distribucion_por_categoria_solucion, dis
 from app.services.embeddings import asegurar_embeddings
 from app.services.exportar_seguro import celda_segura
 from app.services.excel_resumen import agregar_hoja_resumen
+from app.services.bonus import aplicar_bono_y_critico, es_critico_por_horario, porcentaje_bono_del_momento
 from app.services.gemini import GeminiError, extraer_mesa, gemini_configurado
 from app.services.jefes import DANIO_POR_ACCION, DANIO_POR_LOGRO, danar_jefe
-from app.services.logros import evaluar_logros
+from app.services.logros import a_hora_local, evaluar_logros
 from app.services.reporte_semanal_export import (
     filas_reporte,
     generar_pdf_reporte,
@@ -70,12 +71,16 @@ def _resolver_catalogo(catalogo: list, id_elegido: int | None):
 
 async def _otorgar_xp_cierre(session: AsyncSession, mesa: Mesa, logros: list[str]) -> None:
     """Mismo XP sin importar si la mesa se cerró vía /cerrar o vía /editar."""
-    cantidad = XP_POR_ACCION + XP_POR_LOGRO * len(logros)
+    momento_local = a_hora_local(mesa.fecha_cierre_real)
+    porcentaje_bono, _ = await porcentaje_bono_del_momento(session, momento_local)
+    critico = es_critico_por_horario(momento_local)
+
+    cantidad = aplicar_bono_y_critico(XP_POR_ACCION + XP_POR_LOGRO * len(logros), porcentaje_bono, critico)
     await otorgar_xp(
         session, mesa.resolutor.nombre, cantidad, "mesa_cerrada",
         usuario_id_directo=mesa.resolutor.usuario_id,
     )
-    danio = DANIO_POR_ACCION + DANIO_POR_LOGRO * len(logros)
+    danio = aplicar_bono_y_critico(DANIO_POR_ACCION + DANIO_POR_LOGRO * len(logros), porcentaje_bono, critico)
     await danar_jefe(session, semana_de(date.today()), danio, mesa.resolutor.nombre, "mesa_cerrada")
 
 
@@ -90,11 +95,15 @@ async def crear_mesa(payload: MesaCreate, session: AsyncSession = Depends(get_se
         raise HTTPException(409, f"Código '{payload.codigo}' ya existe")
     mesa = await _obtener_mesa(session, mesa.id)
     logros = await evaluar_logros(session, mesa)
-    await otorgar_xp(
-        session, mesa.resolutor.nombre, XP_POR_ACCION, "mesa_creada",
-        usuario_id_directo=mesa.resolutor.usuario_id,
-    )
-    await danar_jefe(session, semana_de(date.today()), DANIO_POR_ACCION, mesa.resolutor.nombre, "mesa_creada")
+
+    momento_local = a_hora_local(mesa.created_at)
+    porcentaje_bono, _ = await porcentaje_bono_del_momento(session, momento_local)
+    critico = es_critico_por_horario(momento_local)
+
+    xp = aplicar_bono_y_critico(XP_POR_ACCION, porcentaje_bono, critico)
+    await otorgar_xp(session, mesa.resolutor.nombre, xp, "mesa_creada", usuario_id_directo=mesa.resolutor.usuario_id)
+    danio = aplicar_bono_y_critico(DANIO_POR_ACCION, porcentaje_bono, critico)
+    await danar_jefe(session, semana_de(date.today()), danio, mesa.resolutor.nombre, "mesa_creada")
     return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 

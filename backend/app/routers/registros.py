@@ -30,8 +30,9 @@ from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.exportar_seguro import celda_segura
 from app.services.gemini import GeminiError, extraer_registro, gemini_configurado
 from app.services.auth import get_usuario_actual
+from app.services.bonus import aplicar_bono_y_critico, es_critico_soporte, porcentaje_bono_del_momento
 from app.services.jefes import DANIO_POR_ACCION, danar_jefe
-from app.services.logros import evaluar_logros_registro
+from app.services.logros import a_hora_local, evaluar_logros_registro
 from app.services.rpg import XP_POR_ACCION
 from app.services.semanas import semana_de
 from app.services.trello import TrelloError, crear_tarjeta, trello_configurado
@@ -70,11 +71,18 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
     session.add(registro)
     await session.commit()
     registro = await _get_registro(session, registro.id)
+
+    momento_local = a_hora_local(registro.created_at)
+    porcentaje_bono, _ = await porcentaje_bono_del_momento(session, momento_local)
+    critico = await es_critico_soporte(session, momento_local)
+
+    xp = aplicar_bono_y_critico(XP_POR_ACCION, porcentaje_bono, critico)
     await otorgar_xp(
-        session, registro.atendio.nombre, XP_POR_ACCION, "registro_creado",
+        session, registro.atendio.nombre, xp, "registro_creado",
         usuario_id_directo=registro.atendio.usuario_id,
     )
-    await danar_jefe(session, semana_de(date.today()), DANIO_POR_ACCION, registro.atendio.nombre, "registro_creado")
+    danio = aplicar_bono_y_critico(DANIO_POR_ACCION, porcentaje_bono, critico)
+    await danar_jefe(session, semana_de(date.today()), danio, registro.atendio.nombre, "registro_creado")
     logros = await evaluar_logros_registro(session, registro)
 
     trello_ok = False

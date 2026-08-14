@@ -17,7 +17,7 @@ SABADO = 5
 ZONA_LOCAL = ZoneInfo("America/Mexico_City")
 
 
-def _a_hora_local(momento: datetime) -> datetime:
+def a_hora_local(momento: datetime) -> datetime:
     """Los umbrales de jornada (9am-6pm, etc.) son hora local. `Registro.created_at`
     lo pone el servidor de Postgres en UTC (`func.now()`) — sin convertir, un
     soporte de las 11am locales caía en la ventana 17-18h y se marcaba de
@@ -29,7 +29,7 @@ def _a_hora_local(momento: datetime) -> datetime:
     return momento
 
 
-def _limites_del_dia_utc(dia_local: date) -> tuple[datetime, datetime]:
+def limites_del_dia_utc(dia_local: date) -> tuple[datetime, datetime]:
     """Medianoche a medianoche de un día en hora local, en UTC — para comparar
     contra columnas timestamptz (que Postgres guarda en UTC) sin desalinear el
     día por la diferencia de huso horario."""
@@ -39,7 +39,7 @@ def _limites_del_dia_utc(dia_local: date) -> tuple[datetime, datetime]:
 
 
 def _reglas_de_horario(momento: datetime, sufijo: str = "") -> list[str]:
-    momento = _a_hora_local(momento)
+    momento = a_hora_local(momento)
     logros: list[str] = []
     hora = momento.time()
     dia_semana = momento.weekday()
@@ -124,11 +124,11 @@ async def evaluar_logros_registro(session: AsyncSession, registro: Registro) -> 
     por agente, décimo del día entre todos, primero de la semana) contra la BD."""
     logros = reglas_de_horario_soporte(registro.created_at)
 
-    momento_local = _a_hora_local(registro.created_at)
+    momento_local = a_hora_local(registro.created_at)
     dia = momento_local.date()
-    inicio_dia, fin_dia = _limites_del_dia_utc(dia)
+    inicio_dia, fin_dia = limites_del_dia_utc(dia)
     lunes = dia - timedelta(days=momento_local.weekday())
-    inicio_semana, _ = _limites_del_dia_utc(lunes)
+    inicio_semana, _ = limites_del_dia_utc(lunes)
     fin_semana = inicio_semana + timedelta(days=7)
 
     total_dia_agente = await session.scalar(

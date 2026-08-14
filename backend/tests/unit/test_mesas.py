@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -30,6 +30,17 @@ def test_get_por_id_no_tapa_las_rutas_get_estaticas():
 
 def _catalogo_item(id_: int, nombre: str, usuario_id: int | None = None) -> SimpleNamespace:
     return SimpleNamespace(id=id_, nombre=nombre, usuario_id=usuario_id)
+
+
+def _session_sin_bono() -> AsyncMock:
+    """Sesión sin reglas de bono activas y sin actividad en el día — para que
+    _otorgar_xp_cierre no sume bono ni golpe crítico y el XP sea el base."""
+    session = AsyncMock()
+    resultado_reglas = MagicMock()
+    resultado_reglas.scalars.return_value.all.return_value = []
+    session.execute.return_value = resultado_reglas
+    session.scalar = AsyncMock(return_value=0)
+    return session
 
 
 def _mesa_create(codigo: str = "TCK-001") -> MesaCreate:
@@ -151,9 +162,9 @@ async def test_otorgar_xp_cierre_da_accion_mas_logros(monkeypatch):
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
     monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
-    mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"))
+    mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"), fecha_cierre_real=datetime(2026, 8, 3, 16, 0))
 
-    await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=["primera_dia_resolutor", "decima_dia"])
+    await mesas._otorgar_xp_cierre(_session_sin_bono(), mesa, logros=["primera_dia_resolutor", "decima_dia"])
 
     nombre, cantidad, motivo, _ = llamadas[0]
     assert nombre == "Ana"
@@ -170,9 +181,9 @@ async def test_otorgar_xp_cierre_sin_logros_solo_da_xp_de_accion(monkeypatch):
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
     monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
-    mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"))
+    mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"), fecha_cierre_real=datetime(2026, 8, 3, 16, 0))
 
-    await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=[])
+    await mesas._otorgar_xp_cierre(_session_sin_bono(), mesa, logros=[])
 
     assert llamadas[0] == mesas.XP_POR_ACCION
 
@@ -186,8 +197,10 @@ async def test_otorgar_xp_cierre_pasa_el_usuario_id_vinculado(monkeypatch):
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
     monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
-    mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana", usuario_id=42))
+    mesa = SimpleNamespace(
+        resolutor=_catalogo_item(1, "Ana", usuario_id=42), fecha_cierre_real=datetime(2026, 8, 3, 16, 0)
+    )
 
-    await mesas._otorgar_xp_cierre(AsyncMock(), mesa, logros=[])
+    await mesas._otorgar_xp_cierre(_session_sin_bono(), mesa, logros=[])
 
     assert llamadas[0] == 42

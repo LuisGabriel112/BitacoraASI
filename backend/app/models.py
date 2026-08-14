@@ -197,3 +197,23 @@ class Mesa(Base):
     categoria: Mapped[CategoriaMesa] = relationship(lazy="joined")
     solicitante: Mapped[SolicitanteMesa] = relationship(lazy="joined")
     resolutor: Mapped[ResolutorMesa] = relationship(lazy="joined")
+
+
+class BonusRegla(Base):
+    __tablename__ = "bonus_reglas"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    clave: Mapped[str] = mapped_column(Text, unique=True)
+    nombre: Mapped[str] = mapped_column(Text)
+    descripcion: Mapped[str] = mapped_column(Text)
+    porcentaje: Mapped[int] = mapped_column()
+    activo: Mapped[bool] = mapped_column(default=True)
+
+
+class Sonido(Base):
+    __tablename__ = "sonidos"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    categoria: Mapped[str] = mapped_column(Text)
+    nombre: Mapped[str] = mapped_column(Text)
+    url: Mapped[str] = mapped_column(Text)
+    activo: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
