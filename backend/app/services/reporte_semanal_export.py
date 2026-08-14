@@ -27,7 +27,6 @@ from app.services.exportar_seguro import celda_segura
 from app.services.semanas import rango_semana
 
 ENCABEZADOS = ["Código", "Fecha de resolución real", "Solución", "Observaciones"]
-FILAS_POR_DIAPOSITIVA = 4
 
 _COLOR_TITULO_FONDO = "FFFF00"
 _COLOR_ENCABEZADO_FONDO = "FF9900"
@@ -37,6 +36,7 @@ _COLOR_FILA_ALTERNA = "F2F2F2"
 _COLOR_BORDE = "BFBFBF"
 _COLOR_BORDE_TABLA_PPTX = "808080"
 _COLOR_ACENTO = "FF9900"
+_COLOR_GRAFICA_PPTX = "2E75B6"
 _COLOR_PORTADA_FONDO = "4CAE9B"
 _COLOR_PORTADA_TEXTO = "FFFFFF"
 _RUTA_LOGO_PPTX = Path(__file__).resolve().parent.parent / "assets" / "logo_intersyst.png"
@@ -45,9 +45,51 @@ _FILA_TITULO = 0
 _FILA_ENCABEZADO = 1
 _FILA_DATOS_INICIO = 2
 
+# Estimación de cuántas líneas ocupa la "Solución" al hacer word-wrap en su columna
+# (5.3"), para no reservar el mismo alto de fila a un texto de una línea que a uno
+# de un párrafo — python-pptx no mide texto, así que esto es una aproximación.
+_ALTO_MIN_FILA_PT = 30
+_ALTO_POR_LINEA_PT = 16
+_CARACTERES_POR_LINEA_SOLUCION = 78
+_ALTO_DISPONIBLE_DATOS_PT = 430
 
-def _en_bloques(filas: list, tamano: int) -> list[list]:
-    return [filas[i : i + tamano] for i in range(0, len(filas), tamano)]
+_ANCHO_GRAFICA_CHICA = Inches(4.7)
+_ANCHO_GRAFICA_GRANDE = Inches(7.3)
+_NOMBRE_GRAFICA_GRANDE = "Por ventana"
+
+
+def _lineas_de_texto(texto: str) -> int:
+    if not texto:
+        return 1
+    return -(-len(texto) // _CARACTERES_POR_LINEA_SOLUCION)  # ceil sin importar math
+
+
+def _altura_fila_pt(fila: tuple[str, str, str]) -> int:
+    _, _, solucion = fila
+    return max(_ALTO_MIN_FILA_PT, _lineas_de_texto(solucion) * _ALTO_POR_LINEA_PT)
+
+
+def _paginar_filas(filas: list[tuple[str, str, str]]) -> list[list[tuple[str, str, str]]]:
+    """Reparte filas entre diapositivas según el alto estimado de cada una — más
+    filas cortas caben por diapositiva, menos si son largas. Una fila nunca se
+    descarta aunque su altura por sí sola exceda el presupuesto disponible."""
+    bloques: list[list[tuple[str, str, str]]] = []
+    bloque: list[tuple[str, str, str]] = []
+    alto_acumulado = 0
+    for fila in filas:
+        alto_fila = _altura_fila_pt(fila)
+        if bloque and alto_acumulado + alto_fila > _ALTO_DISPONIBLE_DATOS_PT:
+            bloques.append(bloque)
+            bloque, alto_acumulado = [], 0
+        bloque.append(fila)
+        alto_acumulado += alto_fila
+    if bloque:
+        bloques.append(bloque)
+    return bloques
+
+
+def _ancho_grafica(nombre: str) -> Inches:
+    return _ANCHO_GRAFICA_GRANDE if nombre == _NOMBRE_GRAFICA_GRANDE else _ANCHO_GRAFICA_CHICA
 
 
 def titulo_reporte(semana: str) -> str:
@@ -190,11 +232,11 @@ def _fila_de_datos(tabla, fila: int, indice: int, datos: tuple[str, str, str]) -
         _escribir_celda(tabla.cell(fila, col), valor, color, negrita=False, tamano=12)
 
 
-def _ajustar_alturas_tabla(tabla, num_filas_datos: int) -> None:
+def _ajustar_alturas_tabla(tabla, bloque: list[tuple[str, str, str]]) -> None:
     tabla.rows[_FILA_TITULO].height = Pt(26)
     tabla.rows[_FILA_ENCABEZADO].height = Pt(22)
-    for i in range(num_filas_datos):
-        tabla.rows[_FILA_DATOS_INICIO + i].height = Pt(40)
+    for i, fila in enumerate(bloque):
+        tabla.rows[_FILA_DATOS_INICIO + i].height = Pt(_altura_fila_pt(fila))
 
 
 def _agregar_diapositiva_tabla(prs: Presentation, bloque: list[tuple[str, str, str]], numero: int, total: int) -> None:
@@ -208,7 +250,7 @@ def _agregar_diapositiva_tabla(prs: Presentation, bloque: list[tuple[str, str, s
     _fila_encabezados_tabla(tabla)
     for i, fila_datos in enumerate(bloque):
         _fila_de_datos(tabla, i + _FILA_DATOS_INICIO, i, fila_datos)
-    _ajustar_alturas_tabla(tabla, len(bloque))
+    _ajustar_alturas_tabla(tabla, bloque)
 
 
 def _agregar_grafica_pptx(slide, nombre: str, datos: list[tuple[str, int]], left, ancho) -> None:
@@ -229,15 +271,16 @@ def _agregar_grafica_pptx(slide, nombre: str, datos: list[tuple[str, int]], left
     plot.data_labels.font.size = Pt(11)
     plot.data_labels.font.bold = True
     plot.series[0].format.fill.solid()
-    plot.series[0].format.fill.fore_color.rgb = RGBColor.from_string(_COLOR_ACENTO)
+    plot.series[0].format.fill.fore_color.rgb = RGBColor.from_string(_COLOR_GRAFICA_PPTX)
 
 
 def _agregar_diapositiva_graficas(prs: Presentation, graficas: dict[str, list[tuple[str, int]]]) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    ancho_grafica = Inches(6.0)
-    for i, (nombre, datos) in enumerate(graficas.items()):
-        left = Inches(0.5) + i * (ancho_grafica + Inches(0.3))
-        _agregar_grafica_pptx(slide, nombre, datos, left, ancho_grafica)
+    left = Inches(0.5)
+    for nombre, datos in graficas.items():
+        ancho = _ancho_grafica(nombre)
+        _agregar_grafica_pptx(slide, nombre, datos, left, ancho)
+        left += ancho + Inches(0.3)
 
 
 def generar_pptx_reporte(
@@ -253,7 +296,7 @@ def generar_pptx_reporte(
     if graficas_con_datos:
         _agregar_diapositiva_graficas(prs, graficas_con_datos)
 
-    bloques = _en_bloques(filas, FILAS_POR_DIAPOSITIVA)
+    bloques = _paginar_filas(filas)
     for numero, bloque in enumerate(bloques, start=1):
         _agregar_diapositiva_tabla(prs, bloque, numero, len(bloques))
 

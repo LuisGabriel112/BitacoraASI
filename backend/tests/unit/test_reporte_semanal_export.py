@@ -4,7 +4,13 @@ from types import SimpleNamespace
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
-from app.services.reporte_semanal_export import filas_reporte, generar_pptx_reporte, titulo_reporte
+from app.services.reporte_semanal_export import (
+    _altura_fila_pt,
+    _paginar_filas,
+    filas_reporte,
+    generar_pptx_reporte,
+    titulo_reporte,
+)
 
 
 def test_titulo_reporte_con_rango_de_dias():
@@ -45,7 +51,10 @@ def test_filas_reporte_formatea_fecha_dd_mm_yyyy_hh_mm():
 
 
 _FILAS = [("TCK-001", "03/08/2026 09:00", "Se aplicó el fix"), ("TCK-002", "04/08/2026 10:00", "Se reinició el servicio")]
-_GRAFICAS = {"Categorías de solución": [("Modificación en BD", 5), ("Seguimiento de proceso", 2)]}
+_GRAFICAS = {
+    "Por categoría de solución": [("Modificación en BD", 5), ("Seguimiento de proceso", 2)],
+    "Por ventana": [("INTEGRAL", 6), ("VIATICOS", 4), ("RECEPCION DE CFDI", 3)],
+}
 
 
 def _pptx_reporte(filas=_FILAS, graficas=_GRAFICAS):
@@ -70,7 +79,7 @@ def test_graficas_van_en_la_segunda_diapositiva_antes_que_las_tablas():
 
 
 def test_sin_graficas_la_segunda_diapositiva_ya_es_tabla():
-    prs = _pptx_reporte(graficas={"Categorías de solución": []})
+    prs = _pptx_reporte(graficas={"Por categoría de solución": [], "Por ventana": []})
 
     segunda = prs.slides[1]
 
@@ -114,3 +123,59 @@ def test_celdas_de_tabla_tienen_los_4_bordes():
 
     etiquetas = {hijo.tag.split("}")[-1] for hijo in tcPr}
     assert {"lnL", "lnR", "lnT", "lnB"} <= etiquetas
+
+
+def test_grafica_por_ventana_es_mas_grande_que_categoria_solucion():
+    prs = _pptx_reporte()
+    graficos = [s for s in prs.slides[1].shapes if s.shape_type == MSO_SHAPE_TYPE.CHART]
+    chica = next(g for g in graficos if g.chart.chart_title.text_frame.text == "Por categoría de solución")
+    grande = next(g for g in graficos if g.chart.chart_title.text_frame.text == "Por ventana")
+
+    assert grande.width > chica.width
+
+
+def test_grafica_pptx_es_azul_no_naranja():
+    prs = _pptx_reporte()
+    grafico = next(s for s in prs.slides[1].shapes if s.shape_type == MSO_SHAPE_TYPE.CHART)
+    color = grafico.chart.plots[0].series[0].format.fill.fore_color.rgb
+
+    assert str(color) != "FF9900"
+
+
+def test_altura_fila_una_linea_es_menor_que_varias_lineas():
+    corta = ("TCK-1", "01/01/2026", "Se reinició el servicio.")
+    larga = ("TCK-2", "01/01/2026", "Se aplicó un fix. " * 20)
+
+    assert _altura_fila_pt(corta) < _altura_fila_pt(larga)
+
+
+def test_paginar_soluciones_cortas_caben_en_una_diapositiva():
+    filas = [(f"TCK-{i}", "01/01/2026", "Se reinició el servicio.") for i in range(10)]
+
+    bloques = _paginar_filas(filas)
+
+    assert len(bloques) == 1
+
+
+def test_paginar_soluciones_largas_ocupan_mas_diapositivas():
+    solucion_larga = "Se corrigió un registro en base de datos tras validar la inconsistencia. " * 6
+    filas = [(f"TCK-{i}", "01/01/2026", solucion_larga) for i in range(10)]
+
+    bloques = _paginar_filas(filas)
+
+    assert len(bloques) > 1
+
+
+def test_paginar_fila_enorme_no_se_pierde():
+    enorme = "x" * 5000
+    filas = [("TCK-1", "01/01/2026", enorme), ("TCK-2", "01/01/2026", "corta")]
+
+    bloques = _paginar_filas(filas)
+
+    total_filas = sum(len(b) for b in bloques)
+    assert total_filas == 2
+    assert any(("TCK-1", "01/01/2026", enorme) in b for b in bloques)
+
+
+def test_paginar_sin_filas_da_lista_vacia():
+    assert _paginar_filas([]) == []

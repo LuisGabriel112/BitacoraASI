@@ -42,3 +42,33 @@ Característica: Estilo y orden del reporte semanal en PowerPoint
     Dado cualquier celda de la tabla
     Cuando se escribe su contenido
     Entonces tiene los 4 bordes (izquierdo, derecho, superior, inferior) con color definido
+
+  Escenario: La gráfica "Por ventana" es más grande que "Por categoría de solución"
+    Dado las dos gráficas del reporte
+    Cuando las agrego a la diapositiva
+    Entonces "Por ventana" ocupa más ancho que "Por categoría de solución"
+
+  Escenario: Las gráficas del PPTX son azules
+    Dado una gráfica con datos
+    Cuando la agrego a la diapositiva
+    Entonces el color de las barras es azul, no naranja
+
+  Escenario: Filas con soluciones cortas caben más por diapositiva
+    Dado varias incidencias con soluciones cortas de una sola línea
+    Cuando pagino las filas para las diapositivas de tabla
+    Entonces todas caben en una sola diapositiva
+
+  Escenario: Filas con soluciones largas caben menos por diapositiva
+    Dado varias incidencias con soluciones largas de varias líneas
+    Cuando pagino las filas para las diapositivas de tabla
+    Entonces se reparten en más de una diapositiva
+
+  Escenario: Una fila nunca se queda sin diapositiva aunque su solución sea enorme
+    Dado una incidencia con una solución excepcionalmente larga
+    Cuando pagino las filas
+    Entonces esa fila ocupa su propia diapositiva, no se descarta
+
+  Escenario: La altura de cada fila se ajusta a su contenido
+    Dado una solución de una sola línea y otra de varias líneas
+    Cuando calculo la altura de cada fila
+    Entonces la fila con más líneas es más alta que la de una sola línea
