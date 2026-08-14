@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import FechaHoraInput from '$lib/components/FechaHoraInput.svelte';
 	import Toast from '$lib/components/Toast.svelte';
@@ -10,6 +11,7 @@
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
 	import { api, type Mesa, type SintesisSolucion } from '$lib/api/client';
 	import { sugerenciasParaCategoria } from '$lib/sugerenciasSolucion';
+	import { ordenarPorActividadReciente } from '$lib/ordenActividadMesa';
 
 	let celebracion: Celebracion;
 	let animacionExito: AnimacionExito3D;
@@ -19,47 +21,83 @@
 	let comboboxResolutor: ComboboxCreatable;
 	let comboboxVentana = $state<ComboboxCreatable | undefined>(undefined);
 
-	function hoy() {
-		return new Date().toISOString().slice(0, 10);
-	}
-
 	function ahora() {
 		const d = new Date();
 		const pad = (n: number) => String(n).padStart(2, '0');
 		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 	}
 
-	let enlace = $state('');
-	let codigo = $state('');
-	let titulo = $state('');
-	let fechaCarga = $state(ahora());
-	let descripcion = $state('');
-	let ventanaId = $state<number | null>(null);
-	let ventanaNombre = $state('');
-	let categoriaId = $state<number | null>(null);
-	let categoriaNombre = $state('');
-	let solicitanteId = $state<number | null>(null);
-	let solicitanteNombre = $state('');
-	let resolutorId = $state<number | null>(null);
-	let resolutorNombre = $state('');
-	let fechaEstimadaResolucion = $state('');
+	function hace7Dias() {
+		const d = new Date();
+		d.setDate(d.getDate() - 7);
+		return d.toISOString().slice(0, 10);
+	}
 
-	let yaResuelta = $state(false);
-	let solucionTexto = $state('');
-	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>('Modificación en BD');
-	let fechaCierreReal = $state(ahora());
+	const CLAVE_BORRADOR = 'bitacora-nueva-mesa-borrador';
+
+	type Borrador = {
+		enlace: string; codigo: string; titulo: string; fechaCarga: string; descripcion: string;
+		ventanaId: number | null; ventanaNombre: string; categoriaId: number | null; categoriaNombre: string;
+		solicitanteId: number | null; solicitanteNombre: string; resolutorId: number | null; resolutorNombre: string;
+		fechaEstimadaResolucion: string; yaResuelta: boolean; solucionTexto: string;
+		tipoSolucion: 'Modificación en BD' | 'Seguimiento de proceso'; fechaCierreReal: string;
+	};
+
+	function leerBorrador(): Partial<Borrador> | null {
+		if (!browser) return null;
+		try {
+			const guardado = sessionStorage.getItem(CLAVE_BORRADOR);
+			return guardado ? JSON.parse(guardado) : null;
+		} catch {
+			return null;
+		}
+	}
+
+	const borrador = leerBorrador();
+
+	let enlace = $state(borrador?.enlace ?? '');
+	let codigo = $state(borrador?.codigo ?? '');
+	let titulo = $state(borrador?.titulo ?? '');
+	let fechaCarga = $state(borrador?.fechaCarga ?? ahora());
+	let descripcion = $state(borrador?.descripcion ?? '');
+	let ventanaId = $state<number | null>(borrador?.ventanaId ?? null);
+	let ventanaNombre = $state(borrador?.ventanaNombre ?? '');
+	let categoriaId = $state<number | null>(borrador?.categoriaId ?? null);
+	let categoriaNombre = $state(borrador?.categoriaNombre ?? '');
+	let solicitanteId = $state<number | null>(borrador?.solicitanteId ?? null);
+	let solicitanteNombre = $state(borrador?.solicitanteNombre ?? '');
+	let resolutorId = $state<number | null>(borrador?.resolutorId ?? null);
+	let resolutorNombre = $state(borrador?.resolutorNombre ?? '');
+	let fechaEstimadaResolucion = $state(borrador?.fechaEstimadaResolucion ?? '');
+
+	let yaResuelta = $state(borrador?.yaResuelta ?? false);
+	let solucionTexto = $state(borrador?.solucionTexto ?? '');
+	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>(
+		borrador?.tipoSolucion ?? 'Modificación en BD'
+	);
+	let fechaCierreReal = $state(borrador?.fechaCierreReal ?? ahora());
 
 	let guardando = $state(false);
 	let errorValidacion = $state<string | null>(null);
 	let resultado = $state<Mesa | null>(null);
 	let errorGuardado = $state<string | null>(null);
-	let extrayendo = $state(false);
-	let errorExtraccion = $state<string | null>(null);
-	let avisoExtraccion = $state<string | null>(null);
 
-	let capturadasHoy = $state<Mesa[]>([]);
-	let cargandoCapturadas = $state(true);
+	let mesasRecientes = $state<Mesa[]>([]);
+	let cargandoRecientes = $state(true);
+	let buscarRecientes = $state('');
+	let expandidaId = $state<number | null>(null);
+	let timerRecientes: ReturnType<typeof setTimeout>;
 	let sintesisSoluciones = $state<SintesisSolucion[]>([]);
+
+	$effect(() => {
+		if (!browser) return;
+		const datos: Borrador = {
+			enlace, codigo, titulo, fechaCarga, descripcion, ventanaId, ventanaNombre, categoriaId,
+			categoriaNombre, solicitanteId, solicitanteNombre, resolutorId, resolutorNombre,
+			fechaEstimadaResolucion, yaResuelta, solucionTexto, tipoSolucion, fechaCierreReal
+		};
+		sessionStorage.setItem(CLAVE_BORRADOR, JSON.stringify(datos));
+	});
 
 	const sugerenciasSolucion = $derived(sugerenciasParaCategoria(sintesisSoluciones, categoriaId));
 
@@ -70,20 +108,41 @@
 		}
 	}
 
-	async function cargarCapturadasHoy() {
-		cargandoCapturadas = true;
+	async function cargarMesasRecientes() {
+		cargandoRecientes = true;
 		try {
-			const pagina = await api.listadoMesas({ fecha_desde: hoy(), fecha_hasta: hoy(), page_size: 20 });
-			capturadasHoy = pagina.items;
+			const texto = buscarRecientes.trim();
+			const pagina = await api.listadoMesas(
+				texto ? { buscar: texto, page_size: 20 } : { actividad_desde: hace7Dias(), page_size: 20 }
+			);
+			mesasRecientes = ordenarPorActividadReciente(pagina.items);
 		} finally {
-			cargandoCapturadas = false;
+			cargandoRecientes = false;
 		}
 	}
 
+	function alBuscarRecientes(e: Event) {
+		buscarRecientes = (e.target as HTMLInputElement).value;
+		clearTimeout(timerRecientes);
+		timerRecientes = setTimeout(cargarMesasRecientes, 250);
+	}
+
+	function alternarExpandida(id: number) {
+		expandidaId = expandidaId === id ? null : id;
+	}
+
 	$effect(() => {
-		cargarCapturadasHoy();
+		cargarMesasRecientes();
 		api.sintesisSoluciones().then((s) => (sintesisSoluciones = s));
 	});
+
+	function vaciarCierre() {
+		ventanaId = null;
+		ventanaNombre = '';
+		solucionTexto = '';
+		tipoSolucion = 'Modificación en BD';
+		fechaCierreReal = ahora();
+	}
 
 	function limpiar() {
 		enlace = '';
@@ -105,52 +164,7 @@
 		tipoSolucion = 'Modificación en BD';
 		fechaCierreReal = ahora();
 		resultado = null;
-		errorExtraccion = null;
-		avisoExtraccion = null;
-	}
-
-	async function extraerDeImagen(archivo: File) {
-		errorExtraccion = null;
-		avisoExtraccion = null;
-		extrayendo = true;
-		try {
-			const r = await api.extraerImagenMesa(archivo);
-			if (r.codigo) codigo = r.codigo;
-			if (r.titulo) titulo = r.titulo;
-			if (r.fecha_carga) fechaCarga = r.fecha_carga.slice(0, 16);
-			if (r.descripcion) descripcion = r.descripcion;
-			if (r.solicitante) {
-				solicitanteId = r.solicitante.id;
-				solicitanteNombre = r.solicitante.nombre;
-			}
-
-			const faltantes: string[] = [];
-			if (!r.codigo) faltantes.push('Código');
-			if (!r.titulo) faltantes.push('Título');
-			if (!r.fecha_carga) faltantes.push('Fecha de carga');
-			if (!r.descripcion) faltantes.push('Descripción');
-			if (!r.solicitante) faltantes.push('Solicitante');
-			if (faltantes.length > 0) {
-				errorExtraccion = `No se pudo identificar: ${faltantes.join(', ')}. Complétalo manualmente antes de guardar.`;
-			}
-			avisoExtraccion = 'Revisa todos los campos antes de guardar — la extracción automática puede equivocarse.';
-		} catch (e) {
-			errorExtraccion = e instanceof Error ? e.message : 'No se pudo extraer información de la imagen';
-		} finally {
-			extrayendo = false;
-		}
-	}
-
-	function alSeleccionarArchivo(e: Event) {
-		const archivo = (e.target as HTMLInputElement).files?.[0];
-		if (archivo) extraerDeImagen(archivo);
-		(e.target as HTMLInputElement).value = '';
-	}
-
-	function alPegar(e: ClipboardEvent) {
-		const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'));
-		const archivo = item?.getAsFile();
-		if (archivo) extraerDeImagen(archivo);
+		if (browser) sessionStorage.removeItem(CLAVE_BORRADOR);
 	}
 
 	function validar(): string | null {
@@ -207,7 +221,7 @@
 						}
 					: {})
 			});
-			cargarCapturadasHoy();
+			cargarMesasRecientes();
 			celebracion?.mostrar(resultado.logros);
 			animacionExito?.mostrar();
 			aviso?.mostrar('exito', `Mesa ${resultado.codigo} guardada en la bitácora administrativa.`);
@@ -228,7 +242,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={alTeclado} onpaste={alPegar} />
+<svelte:window onkeydown={alTeclado} />
 
 <Celebracion bind:this={celebracion} />
 <AnimacionExito3D bind:this={animacionExito} />
@@ -238,26 +252,16 @@
 
 <div class="columnas">
 	<div class="columna-izquierda">
-		<label class="dropzone" class:deshabilitado={extrayendo}>
-			<span class="dropzone-icono" aria-hidden="true">⇪</span>
-			<span class="dropzone-texto font-display">
-				{extrayendo ? 'Analizando imagen…' : 'Adjuntar captura'}
-			</span>
-			<span class="dropzone-ayuda">o pega una captura con Ctrl+V para autocompletar código, título, fecha, solicitante y descripción</span>
-			<input type="file" accept="image/*" onchange={alSeleccionarArchivo} disabled={extrayendo} hidden />
-		</label>
-
-		{#if errorExtraccion}
-			<Toast tipo="error">{errorExtraccion}</Toast>
-		{/if}
-
-		{#if avisoExtraccion}
-			<Toast tipo="pendiente">{avisoExtraccion}</Toast>
-		{/if}
-
-		<div class="tarjeta capturados">
-			<h2 class="font-display">Capturadas hoy</h2>
-			{#if cargandoCapturadas}
+		<div class="tarjeta recientes">
+			<h2 class="font-display">Mesas recientes</h2>
+			<input
+				type="search"
+				class="buscador-recientes"
+				placeholder="Buscar código, título, solicitante, descripción o solución…"
+				value={buscarRecientes}
+				oninput={alBuscarRecientes}
+			/>
+			{#if cargandoRecientes}
 				<ul class="lista-capturados">
 					{#each Array(4) as _}
 						<li class="item-capturado">
@@ -265,18 +269,34 @@
 						</li>
 					{/each}
 				</ul>
-			{:else if capturadasHoy.length === 0}
-				<p class="sin-capturas">Ninguna mesa capturada todavía hoy.</p>
+			{:else if mesasRecientes.length === 0}
+				<p class="sin-capturas">
+					{buscarRecientes.trim() ? 'Sin resultados para esa búsqueda.' : 'Sin mesas en los últimos 7 días.'}
+				</p>
 			{:else}
 				<ul class="lista-capturados">
-					{#each capturadasHoy as m}
+					{#each mesasRecientes as m}
 						<li class="item-capturado">
-							<div class="item-cabecera">
-								<span class="item-codigo">{m.codigo}</span>
-								<span class="item-hora">{m.fecha_carga.slice(11, 16)}</span>
-							</div>
-							<span class="item-titulo">{m.titulo}</span>
-							<span class="item-solicitante">{m.solicitante.nombre}</span>
+							<button type="button" class="item-boton" onclick={() => alternarExpandida(m.id)}>
+								<div class="item-cabecera">
+									<span class="item-codigo">{m.codigo}</span>
+									<span class="chip-estado" class:cerrada={!!m.fecha_cierre_real}>
+										{m.fecha_cierre_real ? 'Cerrada' : 'Abierta'}
+									</span>
+								</div>
+								<span class="item-titulo">{m.titulo}</span>
+								<span class="item-solicitante">{m.solicitante.nombre}</span>
+							</button>
+							{#if expandidaId === m.id}
+								<div class="item-detalle">
+									<span class="detalle-etiqueta">Descripción</span>
+									<p class="detalle-texto">{m.descripcion}</p>
+									{#if m.solucion}
+										<span class="detalle-etiqueta">Solución</span>
+										<p class="detalle-texto">{m.solucion}</p>
+									{/if}
+								</div>
+							{/if}
 						</li>
 					{/each}
 				</ul>
@@ -336,14 +356,21 @@
 				</div>
 			</CampoGrupo>
 
-			<button
-				type="button"
-				class="btn-info-cierre"
-				class:activo={yaResuelta}
-				onclick={() => (yaResuelta = !yaResuelta)}
-			>
-				{yaResuelta ? '✓ Información de cierre agregada' : '+ Agregar información de cierre'}
-			</button>
+			<div class="fila-toggle-cierre">
+				<button
+					type="button"
+					class="btn-info-cierre"
+					class:activo={yaResuelta}
+					onclick={() => (yaResuelta = !yaResuelta)}
+				>
+					{yaResuelta ? '✓ Información de cierre agregada' : '+ Agregar información de cierre'}
+				</button>
+				{#if yaResuelta}
+					<button type="button" class="btn-vaciar-cierre" onclick={vaciarCierre}>
+						Vaciar cierre
+					</button>
+				{/if}
+			</div>
 
 			{#if yaResuelta}
 				<div class="bloque-cierre">
@@ -418,46 +445,6 @@
 		min-width: 0;
 	}
 
-	.dropzone {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		gap: 6px;
-		border: 1px dashed var(--border-strong);
-		border-radius: var(--radius-lg);
-		padding: 28px 16px;
-		cursor: pointer;
-		background: var(--glass-bg);
-		backdrop-filter: var(--glass-blur);
-		-webkit-backdrop-filter: var(--glass-blur);
-		transition: border-color 0.15s ease;
-	}
-
-	.dropzone:hover {
-		border-color: var(--accent);
-	}
-
-	.dropzone.deshabilitado {
-		opacity: 0.6;
-		cursor: default;
-	}
-
-	.dropzone-icono {
-		font-size: 22px;
-		color: var(--accent);
-	}
-
-	.dropzone-texto {
-		font-size: 14px;
-		font-weight: 600;
-	}
-
-	.dropzone-ayuda {
-		color: var(--text-muted);
-		font-size: 12px;
-	}
-
 	.tarjeta {
 		background: var(--surface);
 		border: 1px solid var(--border);
@@ -471,10 +458,26 @@
 		gap: 18px;
 	}
 
-	.capturados h2 {
+	.recientes h2 {
 		font-size: 14px;
 		margin: 0 0 14px;
 		color: var(--text-muted);
+	}
+
+	.buscador-recientes {
+		width: 100%;
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 8px 10px;
+		color: var(--text);
+		font-size: 13px;
+		margin-bottom: 14px;
+	}
+
+	.buscador-recientes:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 1px;
 	}
 
 	.sin-capturas {
@@ -494,14 +497,25 @@
 	.item-capturado {
 		padding-bottom: 12px;
 		border-bottom: 1px solid var(--border);
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
 	}
 
 	.item-capturado:last-child {
 		border-bottom: none;
 		padding-bottom: 0;
+	}
+
+	.item-boton {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		width: 100%;
+		background: none;
+		border: none;
+		padding: 0;
+		text-align: left;
+		cursor: pointer;
+		font: inherit;
+		color: inherit;
 	}
 
 	.item-cabecera {
@@ -517,9 +531,19 @@
 		color: var(--text-faint);
 	}
 
-	.item-hora {
-		font-size: 11px;
-		color: var(--text-faint);
+	.chip-estado {
+		display: inline-block;
+		padding: 2px 8px;
+		border-radius: var(--radius);
+		font-size: 10px;
+		font-weight: 600;
+		background: color-mix(in srgb, var(--accent) 16%, transparent);
+		color: var(--accent-strong);
+	}
+
+	.chip-estado.cerrada {
+		background: color-mix(in srgb, var(--success) 16%, transparent);
+		color: var(--success);
 	}
 
 	.item-titulo {
@@ -530,6 +554,31 @@
 	.item-solicitante {
 		font-size: 12px;
 		color: var(--text-muted);
+	}
+
+	.item-detalle {
+		margin-top: 8px;
+		padding: 8px 10px;
+		background: var(--surface-raised);
+		border-radius: var(--radius);
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.detalle-etiqueta {
+		font-size: 10px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+
+	.detalle-texto {
+		margin: 0 0 4px;
+		font-size: 12px;
+		color: var(--text);
+		white-space: pre-wrap;
 	}
 
 	.skeleton-item {
@@ -598,6 +647,28 @@
 
 	.pill-sugerencia:hover {
 		background: color-mix(in srgb, var(--accent) 22%, transparent);
+	}
+
+	.fila-toggle-cierre {
+		display: flex;
+		gap: 10px;
+		align-items: center;
+	}
+
+	.btn-vaciar-cierre {
+		background: none;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 12px 16px;
+		font-size: 13px;
+		color: var(--text-muted);
+		cursor: pointer;
+		min-height: 44px;
+	}
+
+	.btn-vaciar-cierre:hover {
+		border-color: var(--danger);
+		color: var(--danger);
 	}
 
 	.btn-info-cierre {

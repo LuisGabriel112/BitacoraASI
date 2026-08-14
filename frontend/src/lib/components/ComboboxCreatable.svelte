@@ -104,7 +104,7 @@
 	});
 
 	$effect(() => {
-		if (nombreSeleccionado) texto = nombreSeleccionado;
+		texto = nombreSeleccionado;
 	});
 </script>
 

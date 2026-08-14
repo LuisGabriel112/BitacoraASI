@@ -107,13 +107,6 @@ export type Mesa = {
 	resolutor: Catalogo;
 	logros: string[];
 };
-export type ExtraccionMesa = {
-	codigo: string | null;
-	titulo: string | null;
-	fecha_carga: string | null;
-	descripcion: string | null;
-	solicitante: Catalogo | null;
-};
 export type PaginaMesas = { total: number; items: Mesa[] };
 export type SintesisSolucion = {
 	id: number;
@@ -345,23 +338,6 @@ export const api = {
 		tipo_solucion?: string | null;
 		fecha_cierre_real?: string | null;
 	}) => json<Mesa>('/mesas', { method: 'POST', body: JSON.stringify(payload) }),
-
-	extraerImagenMesa: async (archivo: File) => {
-		const form = new FormData();
-		form.append('imagen', archivo);
-		const resp = await fetch(`${BASE}/mesas/extraer-imagen`, { method: 'POST', body: form });
-		if (!resp.ok) {
-			let detail = resp.statusText;
-			try {
-				const body = await resp.json();
-				detail = body.detail ?? detail;
-			} catch {
-				/* respuesta sin cuerpo JSON */
-			}
-			throw new Error(detail);
-		}
-		return resp.json() as Promise<ExtraccionMesa>;
-	},
 
 	mesaPorId: (id: number) => json<Mesa>(`/mesas/${id}`),
 

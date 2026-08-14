@@ -200,7 +200,7 @@ async def eliminar_mesa(mesa_id: int, session: AsyncSession = Depends(get_sessio
 def _aplicar_filtros(
     stmt, *, categoria_id, solicitante_id, resolutor_id, ventana_id, semana, fecha_desde, fecha_hasta,
     buscar, estado, prioridad=None, destacada=None, buscar_solucion=None, con_solucion=None,
-    tipo_solucion=None,
+    tipo_solucion=None, actividad_desde=None,
 ):
     if prioridad:
         stmt = stmt.where(Mesa.prioridad.is_(True))
@@ -234,6 +234,13 @@ def _aplicar_filtros(
             | Mesa.titulo.ilike(like)
             | Mesa.codigo.ilike(like)
             | Mesa.solucion.ilike(like)
+            | Mesa.solicitante.has(SolicitanteMesa.nombre.ilike(like))
+        )
+    if actividad_desde:
+        # una mesa tuvo actividad si se cargó o se cerró desde esa fecha —
+        # para "mesas recientes" en Nueva mesa (7 días), no solo por fecha_carga.
+        stmt = stmt.where(
+            (Mesa.fecha_carga >= actividad_desde) | (Mesa.fecha_cierre_real >= actividad_desde)
         )
     if buscar_solucion:
         stmt = stmt.where(Mesa.solucion.ilike(f"%{buscar_solucion}%"))
@@ -263,6 +270,7 @@ async def listar_mesas(
     buscar_solucion: str | None = None,
     con_solucion: bool | None = None,
     tipo_solucion: str | None = None,
+    actividad_desde: date | None = None,
 ):
     base = _aplicar_filtros(
         select(Mesa),
@@ -270,6 +278,7 @@ async def listar_mesas(
         ventana_id=ventana_id, semana=semana, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta,
         buscar=buscar, estado=estado, prioridad=prioridad, destacada=destacada,
         buscar_solucion=buscar_solucion, con_solucion=con_solucion, tipo_solucion=tipo_solucion,
+        actividad_desde=actividad_desde,
     )
     total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
 

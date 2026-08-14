@@ -65,8 +65,7 @@
 
 	let expandidaId = $state<number | null>(null);
 
-	function alternarSolucion(m: Mesa) {
-		if (!m.solucion) return;
+	function alternarVista(m: Mesa) {
 		expandidaId = expandidaId === m.id ? null : m.id;
 	}
 
@@ -205,7 +204,7 @@
 <div class="barra-superior">
 	<input
 		type="search"
-		placeholder="Buscar por código, título, descripción o solución…"
+		placeholder="Buscar por código, título, solicitante, descripción o solución…"
 		value={buscar}
 		oninput={alBuscar}
 		class="buscador"
@@ -280,9 +279,9 @@
 						<tr class="fila-grupo"><td colspan="8">{etiquetaGrupo(m)}</td></tr>
 					{/if}
 					<tr
-						class:clicable={!!m.solucion}
-						title={m.solucion ? 'Ver solución' : undefined}
-						onclick={() => alternarSolucion(m)}
+						class="clicable"
+						title="Ver detalle"
+						onclick={() => alternarVista(m)}
 						in:fade={{ duration: 200, delay: i * 15 }}
 					>
 						<td class="codigo" onclick={noPropagar}>
@@ -359,12 +358,43 @@
 					{#if expandidaId === m.id}
 						<tr class="fila-solucion">
 							<td colspan="8">
-								<div class="detalle-solucion">
-									<span class="detalle-etiqueta">Solución</span>
-									<p class="detalle-texto">{m.solucion}</p>
-									{#if m.tipo_solucion}
-										<span class="detalle-tipo">{m.tipo_solucion}</span>
+								<div class="detalle-mesa">
+									<div class="detalle-grid">
+										<div class="detalle-campo">
+											<span class="detalle-etiqueta">Categoría</span>
+											<p class="detalle-texto">{m.categoria.nombre}</p>
+										</div>
+										<div class="detalle-campo">
+											<span class="detalle-etiqueta">Ventana</span>
+											<p class="detalle-texto">{m.ventana?.nombre ?? '—'}</p>
+										</div>
+										<div class="detalle-campo">
+											<span class="detalle-etiqueta">Fecha estimada de resolución</span>
+											<p class="detalle-texto">{formatearFechaHora(m.fecha_estimada_resolucion)}</p>
+										</div>
+										{#if m.fecha_cierre_real}
+											<div class="detalle-campo">
+												<span class="detalle-etiqueta">Fecha real de cierre</span>
+												<p class="detalle-texto">{formatearFechaHora(m.fecha_cierre_real)}</p>
+											</div>
+										{/if}
+									</div>
+									<div class="detalle-campo">
+										<span class="detalle-etiqueta">Descripción</span>
+										<p class="detalle-texto">{m.descripcion}</p>
+									</div>
+									{#if m.solucion}
+										<div class="detalle-campo">
+											<span class="detalle-etiqueta">Solución</span>
+											<p class="detalle-texto">{m.solucion}</p>
+											{#if m.tipo_solucion}
+												<span class="detalle-tipo">{m.tipo_solucion}</span>
+											{/if}
+										</div>
 									{/if}
+									<div class="detalle-acciones">
+										<a class="btn-editar" href="/mesas/{m.id}/editar">Editar</a>
+									</div>
 								</div>
 							</td>
 						</tr>
@@ -642,11 +672,29 @@
 		background: none;
 	}
 
-	.detalle-solucion {
+	.detalle-mesa {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
-		padding: 10px 4px;
+		gap: 12px;
+		padding: 12px 4px;
+		cursor: default;
+	}
+
+	.detalle-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 12px;
+	}
+
+	.detalle-campo {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.detalle-acciones {
+		display: flex;
+		justify-content: flex-end;
 	}
 
 	.detalle-etiqueta {
