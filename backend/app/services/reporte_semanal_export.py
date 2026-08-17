@@ -9,7 +9,7 @@ from pptx import Presentation
 from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_CHART_TYPE
-from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
 from pptx.enum.text import PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
@@ -48,14 +48,42 @@ _FILA_DATOS_INICIO = 2
 # Estimación de cuántas líneas ocupa la "Solución" al hacer word-wrap en su columna
 # (5.3"), para no reservar el mismo alto de fila a un texto de una línea que a uno
 # de un párrafo — python-pptx no mide texto, así que esto es una aproximación.
+# Ambos números se recortaron a propósito (menos caracteres por línea, menos alto
+# disponible) tras ver una diapositiva impresa desbordarse por un poco: es mejor
+# pasar antes a la siguiente diapositiva que quedarse corto al imprimir.
 _ALTO_MIN_FILA_PT = 30
 _ALTO_POR_LINEA_PT = 16
-_CARACTERES_POR_LINEA_SOLUCION = 78
-_ALTO_DISPONIBLE_DATOS_PT = 430
+_CARACTERES_POR_LINEA_SOLUCION = 65
+_ALTO_DISPONIBLE_DATOS_PT = 360
 
 _ANCHO_GRAFICA_CHICA = Inches(4.7)
 _ANCHO_GRAFICA_GRANDE = Inches(7.3)
 _NOMBRE_GRAFICA_GRANDE = "Por ventana"
+
+_MESES_ES = (
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+)
+
+
+def _fecha_dia_mes(fecha) -> str:
+    return f"{fecha.day} {_MESES_ES[fecha.month - 1].capitalize()}"
+
+
+def rango_texto(semana: str) -> str:
+    lunes, viernes = rango_semana(semana)
+    return f"{_fecha_dia_mes(lunes)} - {_fecha_dia_mes(viernes)} {viernes.year}"
+
+
+_DESCRIPCION_GRAFICA = {
+    "Por categoría de solución": "Categorías de solución de incidencias resueltas por la mesa de ayuda",
+    "Por ventana": "Ventana/Característica de incidencias resueltas por la mesa de ayuda",
+}
+
+
+def _titulo_grafica_pptx(nombre: str, rango: str) -> str:
+    base = _DESCRIPCION_GRAFICA.get(nombre, nombre)
+    return f"{base} ({rango})"
 
 
 def _lineas_de_texto(texto: str) -> int:
@@ -239,9 +267,25 @@ def _ajustar_alturas_tabla(tabla, bloque: list[tuple[str, str, str]]) -> None:
         tabla.rows[_FILA_DATOS_INICIO + i].height = Pt(_altura_fila_pt(fila))
 
 
-def _agregar_diapositiva_tabla(prs: Presentation, bloque: list[tuple[str, str, str]], numero: int, total: int) -> None:
+def _agregar_encabezado_diapositiva(slide, rango: str) -> None:
+    caja = slide.shapes.add_textbox(Inches(0.5), Inches(0.12), Inches(12.3), Inches(0.45))
+    parrafo = caja.text_frame.paragraphs[0]
+    parrafo.text = f"Resumen de actividades ({rango})"
+    parrafo.font.bold = True
+    parrafo.font.size = Pt(20)
+    parrafo.font.color.rgb = RGBColor.from_string(_COLOR_TEXTO)
+
+    linea = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(0.5), Inches(0.62), Inches(12.83), Inches(0.62))
+    linea.line.color.rgb = RGBColor.from_string(_COLOR_TEXTO)
+    linea.line.width = Pt(1.5)
+
+
+def _agregar_diapositiva_tabla(
+    prs: Presentation, bloque: list[tuple[str, str, str]], numero: int, total: int, rango: str
+) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    tabla_shape = slide.shapes.add_table(len(bloque) + 2, 4, Inches(0.5), Inches(0.4), Inches(12.3), Inches(6.6))
+    _agregar_encabezado_diapositiva(slide, rango)
+    tabla_shape = slide.shapes.add_table(len(bloque) + 2, 4, Inches(0.5), Inches(0.8), Inches(12.3), Inches(6.2))
     tabla = tabla_shape.table
     for col, ancho in zip(tabla.columns, (1.8, 2.2, 5.3, 3.0)):
         col.width = Inches(ancho)
@@ -253,17 +297,17 @@ def _agregar_diapositiva_tabla(prs: Presentation, bloque: list[tuple[str, str, s
     _ajustar_alturas_tabla(tabla, bloque)
 
 
-def _agregar_grafica_pptx(slide, nombre: str, datos: list[tuple[str, int]], left, ancho) -> None:
+def _agregar_grafica_pptx(slide, nombre: str, datos: list[tuple[str, int]], left, ancho, rango: str) -> None:
     chart_data = CategoryChartData()
     chart_data.categories = [k for k, _ in datos]
     chart_data.add_series("Cantidad", [v for _, v in datos])
     grafico_shape = slide.shapes.add_chart(
-        XL_CHART_TYPE.COLUMN_CLUSTERED, left, Inches(0.6), ancho, Inches(6.2), chart_data
+        XL_CHART_TYPE.COLUMN_CLUSTERED, left, Inches(1.0), ancho, Inches(5.9), chart_data
     )
     chart = grafico_shape.chart
     chart.has_legend = False
     chart.has_title = True
-    chart.chart_title.text_frame.text = nombre
+    chart.chart_title.text_frame.text = _titulo_grafica_pptx(nombre, rango)
     chart.value_axis.has_title = True
     chart.value_axis.axis_title.text_frame.text = "Cantidad"
     plot = chart.plots[0]
@@ -274,31 +318,33 @@ def _agregar_grafica_pptx(slide, nombre: str, datos: list[tuple[str, int]], left
     plot.series[0].format.fill.fore_color.rgb = RGBColor.from_string(_COLOR_GRAFICA_PPTX)
 
 
-def _agregar_diapositiva_graficas(prs: Presentation, graficas: dict[str, list[tuple[str, int]]]) -> None:
+def _agregar_diapositiva_graficas(prs: Presentation, graficas: dict[str, list[tuple[str, int]]], rango: str) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
+    _agregar_encabezado_diapositiva(slide, rango)
     left = Inches(0.5)
     for nombre, datos in graficas.items():
         ancho = _ancho_grafica(nombre)
-        _agregar_grafica_pptx(slide, nombre, datos, left, ancho)
+        _agregar_grafica_pptx(slide, nombre, datos, left, ancho, rango)
         left += ancho + Inches(0.3)
 
 
 def generar_pptx_reporte(
-    titulo: str, filas: list[tuple[str, str, str]], graficas: dict[str, list[tuple[str, int]]]
+    titulo: str, filas: list[tuple[str, str, str]], graficas: dict[str, list[tuple[str, int]]], semana: str
 ) -> io.BytesIO:
     prs = Presentation()
     prs.slide_width = Inches(13.33)
     prs.slide_height = Inches(7.5)
+    rango = rango_texto(semana)
 
     _agregar_portada_pptx(prs, titulo)
 
     graficas_con_datos = {k: v for k, v in graficas.items() if v}
     if graficas_con_datos:
-        _agregar_diapositiva_graficas(prs, graficas_con_datos)
+        _agregar_diapositiva_graficas(prs, graficas_con_datos, rango)
 
     bloques = _paginar_filas(filas)
     for numero, bloque in enumerate(bloques, start=1):
-        _agregar_diapositiva_tabla(prs, bloque, numero, len(bloques))
+        _agregar_diapositiva_tabla(prs, bloque, numero, len(bloques), rango)
 
     out = io.BytesIO()
     prs.save(out)

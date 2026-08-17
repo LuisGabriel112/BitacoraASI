@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COOLDOWN_MS, segundosRestantesCooldown } from './cooldownPelota';
+import { COOLDOWN_MS, segundosRestantesCooldown } from './cooldownMinijuego';
 
 describe('segundosRestantesCooldown', () => {
 	it('es 0 si nunca ha jugado', () => {

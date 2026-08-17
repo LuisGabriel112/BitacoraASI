@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import IntentoPelota
+from app.services import cooldown as cooldown_service
 from app.services.jefes import danar_jefe
 from app.services.semanas import semana_de
 
@@ -14,14 +15,11 @@ COOLDOWN_PELOTA = timedelta(minutes=5)
 
 
 def tiempo_restante_cooldown(ultimo_intento: datetime | None, ahora: datetime) -> timedelta:
-    if ultimo_intento is None:
-        return timedelta(0)
-    transcurrido = ahora - ultimo_intento
-    return max(timedelta(0), COOLDOWN_PELOTA - transcurrido)
+    return cooldown_service.tiempo_restante(ultimo_intento, ahora, COOLDOWN_PELOTA)
 
 
 def puede_jugar(ultimo_intento: datetime | None, ahora: datetime) -> bool:
-    return tiempo_restante_cooldown(ultimo_intento, ahora) <= timedelta(0)
+    return cooldown_service.puede_jugar(ultimo_intento, ahora, COOLDOWN_PELOTA)
 
 
 class PelotaError(Exception):

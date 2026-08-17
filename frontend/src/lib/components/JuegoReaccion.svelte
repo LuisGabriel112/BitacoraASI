@@ -3,12 +3,17 @@
 	import { api } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
 
-	const CLAVE_ULTIMO = 'bitacora-pelota-ultimo-intento';
-	const CASILLAS = 3;
+	const CLAVE_ULTIMO = 'bitacora-reaccion-ultimo-intento';
+	const DEMORA_MIN_MS = 1000;
+	const DEMORA_MAX_MS = 4000;
 
+	type Estado = 'inactivo' | 'esperando_senal' | 'listo';
+
+	let estado = $state<Estado>('inactivo');
 	let intentoId = $state<number | null>(null);
-	let jugando = $state(false);
-	let resultado = $state<{ acierto: boolean; posicionCorrecta: number } | null>(null);
+	let tSenal = 0;
+	let temporizador: ReturnType<typeof setTimeout> | undefined;
+	let resultado = $state<{ acierto: boolean; tiempoMs: number } | null>(null);
 	let error = $state<string | null>(null);
 	let segundosRestantes = $state(0);
 
@@ -33,30 +38,46 @@
 		return () => clearInterval(id);
 	});
 
+	$effect(() => () => clearTimeout(temporizador));
+
 	async function iniciar() {
 		error = null;
 		resultado = null;
 		try {
-			const intento = await api.iniciarPelota();
+			const intento = await api.iniciarReaccion();
 			intentoId = intento.id;
-			jugando = true;
+			estado = 'esperando_senal';
+			const demora = DEMORA_MIN_MS + Math.random() * (DEMORA_MAX_MS - DEMORA_MIN_MS);
+			temporizador = setTimeout(() => {
+				estado = 'listo';
+				tSenal = performance.now();
+			}, demora);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Todavía en cooldown';
 			marcarIntentoAhora();
 		}
 	}
 
-	async function elegir(posicion: number) {
+	async function reportar(tiempoMs: number) {
 		if (!intentoId) return;
 		try {
-			const r = await api.elegirPelota(intentoId, posicion);
-			resultado = { acierto: r.acierto, posicionCorrecta: r.posicion_correcta };
+			const r = await api.reportarReaccion(intentoId, tiempoMs);
+			resultado = { acierto: r.acierto, tiempoMs };
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'No se pudo resolver el intento';
+			error = e instanceof Error ? e.message : 'No se pudo reportar el intento';
 		} finally {
-			jugando = false;
 			intentoId = null;
+			estado = 'inactivo';
 			marcarIntentoAhora();
+		}
+	}
+
+	function alClicSenal() {
+		if (estado === 'listo') {
+			reportar(performance.now() - tSenal);
+		} else if (estado === 'esperando_senal') {
+			clearTimeout(temporizador);
+			reportar(0);
 		}
 	}
 
@@ -67,26 +88,19 @@
 	}
 </script>
 
-<div class="tarjeta juego-pelota">
-	<h2 class="font-display">🎾 Encuentra la pelota</h2>
-	<p class="ayuda-juego">Acierta y le bajas vida al jefe.</p>
+<div class="tarjeta juego-reaccion">
+	<h2 class="font-display">⚡ Reacción rápida</h2>
+	<p class="ayuda-juego">Espera la señal verde y haz clic — le bajas vida al jefe.</p>
 
-	{#if jugando}
-		<div class="vasos-pelota">
-			{#each Array(CASILLAS) as _, i}
-				<button type="button" class="vaso-pelota" onclick={() => elegir(i)}>🥤</button>
-			{/each}
-		</div>
+	{#if estado === 'esperando_senal'}
+		<button type="button" class="boton-senal espera" onclick={alClicSenal}>Prepárate…</button>
+	{:else if estado === 'listo'}
+		<button type="button" class="boton-senal listo" onclick={alClicSenal}>¡CLIC!</button>
 	{:else if resultado}
-		<div class="vasos-pelota">
-			{#each Array(CASILLAS) as _, i}
-				<span class="vaso-pelota" class:correcto={i === resultado.posicionCorrecta}>
-					{i === resultado.posicionCorrecta ? '🎾' : '🥤'}
-				</span>
-			{/each}
-		</div>
-		<p class="resultado-pelota" class:acierto={resultado.acierto}>
-			{resultado.acierto ? '¡Le bajaste vida al jefe!' : 'Fallaste, era otro vaso.'}
+		<p class="resultado-reaccion" class:acierto={resultado.acierto}>
+			{resultado.acierto
+				? `¡Le bajaste vida al jefe! (${Math.round(resultado.tiempoMs)} ms)`
+				: 'No contó — muy rápido para ser real o muy lento.'}
 		</p>
 		<button type="button" class="btn-jugar" onclick={iniciar} disabled={segundosRestantes > 0}>
 			{segundosRestantes > 0 ? `Espera ${formatearTiempo(segundosRestantes)}` : 'Jugar de nuevo'}
@@ -108,7 +122,7 @@
 		padding: 24px;
 	}
 
-	.juego-pelota h2 {
+	.juego-reaccion h2 {
 		margin: 0 0 4px;
 		font-size: 16px;
 	}
@@ -119,42 +133,36 @@
 		margin: 0 0 16px;
 	}
 
-	.vasos-pelota {
+	.boton-senal {
 		display: flex;
-		gap: 14px;
-		margin-bottom: 14px;
-	}
-
-	.vaso-pelota {
-		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 64px;
-		height: 64px;
-		font-size: 28px;
-		background: var(--surface-raised);
-		border: 1px solid var(--border-strong);
+		width: 100%;
+		height: 90px;
 		border-radius: var(--radius);
+		border: none;
+		font-weight: 700;
+		font-size: 15px;
 		cursor: pointer;
+		color: var(--bg);
 	}
 
-	button.vaso-pelota:hover {
-		border-color: var(--accent);
+	.boton-senal.espera {
+		background: var(--text-faint);
 	}
 
-	span.vaso-pelota.correcto {
-		border-color: var(--success);
-		background: color-mix(in srgb, var(--success) 14%, transparent);
+	.boton-senal.listo {
+		background: var(--success);
 	}
 
-	.resultado-pelota {
+	.resultado-reaccion {
 		font-size: 13px;
 		font-weight: 600;
 		color: var(--danger);
 		margin: 0 0 14px;
 	}
 
-	.resultado-pelota.acierto {
+	.resultado-reaccion.acierto {
 		color: var(--success);
 	}
 

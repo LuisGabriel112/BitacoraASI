@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { miSimbolo } from './simboloGato';
+import { miSimbolo } from './simboloJugador';
 
 const jugador = (nombre: string) => ({ nombre, avatar: '🙂' });
 

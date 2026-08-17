@@ -388,7 +388,7 @@ async def exportar_reporte_semanal(
         out = generar_xlsx_reporte(titulo, filas, graficas)
         media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     elif formato == "pptx":
-        out = generar_pptx_reporte(titulo, filas, graficas)
+        out = generar_pptx_reporte(titulo, filas, graficas, semana)
         media = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     else:
         out = generar_pdf_reporte(titulo, filas, graficas)

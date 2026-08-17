@@ -120,6 +120,23 @@ export type PartidaGato = {
 };
 export type IntentoPelota = { id: number; resuelto: boolean; acierto: boolean | null };
 export type ResultadoPelota = { acierto: boolean; posicion_correcta: number };
+export type PreguntaTrivia = { intento_id: number; pregunta_id: number; texto: string; opciones: string[] };
+export type ResultadoTrivia = { acierto: boolean; respuesta_correcta: number };
+export type IntentoMemorama = { id: number; resuelto: boolean; acierto: boolean | null };
+export type ResultadoMemorama = { acierto: boolean };
+export type IntentoReaccion = { id: number; resuelto: boolean; acierto: boolean | null };
+export type ResultadoReaccion = { acierto: boolean };
+export type ResultadoRuleta = { gano: boolean };
+export type JugadaRPS = 'piedra' | 'papel' | 'tijera';
+export type PartidaRPS = {
+	id: number;
+	estado: 'esperando' | 'jugando' | 'terminada';
+	resultado: 'X' | 'O' | 'empate' | null;
+	jugada_x: JugadaRPS | null;
+	jugada_o: JugadaRPS | null;
+	jugador_x: JugadorGato;
+	jugador_o: JugadorGato | null;
+};
 export type SintesisSolucion = {
 	id: number;
 	categoria: Catalogo;
@@ -225,6 +242,37 @@ export const api = {
 
 	elegirPelota: (id: number, posicion: number) =>
 		json<ResultadoPelota>(`/juegos/pelota/${id}/elegir`, { method: 'POST', body: JSON.stringify({ posicion }) }),
+
+	buscarPartidaRPS: () => json<PartidaRPS>('/juegos/rps/buscar', { method: 'POST' }),
+
+	obtenerPartidaRPS: (id: number) => json<PartidaRPS>(`/juegos/rps/${id}`),
+
+	jugarRPS: (id: number, jugada: JugadaRPS) =>
+		json<PartidaRPS>(`/juegos/rps/${id}/jugar`, { method: 'POST', body: JSON.stringify({ jugada }) }),
+
+	salirRPS: async (id: number) => {
+		await fetch(`${BASE}/juegos/rps/${id}/salir`, { method: 'POST' });
+	},
+
+	iniciarTrivia: () => json<PreguntaTrivia>('/juegos/trivia/iniciar', { method: 'POST' }),
+
+	responderTrivia: (id: number, opcion: number) =>
+		json<ResultadoTrivia>(`/juegos/trivia/${id}/responder`, { method: 'POST', body: JSON.stringify({ opcion }) }),
+
+	iniciarMemorama: () => json<IntentoMemorama>('/juegos/memorama/iniciar', { method: 'POST' }),
+
+	completarMemorama: (id: number) =>
+		json<ResultadoMemorama>(`/juegos/memorama/${id}/completar`, { method: 'POST' }),
+
+	iniciarReaccion: () => json<IntentoReaccion>('/juegos/reaccion/iniciar', { method: 'POST' }),
+
+	reportarReaccion: (id: number, tiempoMs: number) =>
+		json<ResultadoReaccion>(`/juegos/reaccion/${id}/reportar`, {
+			method: 'POST',
+			body: JSON.stringify({ tiempo_ms: Math.round(tiempoMs) })
+		}),
+
+	jugarRuleta: () => json<ResultadoRuleta>('/juegos/ruleta/jugar', { method: 'POST' }),
 
 	crearUrlSubidaChat: (nombreArchivo: string, contentType: string) =>
 		json<{ url_subida: string; url_publica: string }>('/chat/subir-url', {

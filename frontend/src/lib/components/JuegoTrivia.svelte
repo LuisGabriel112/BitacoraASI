@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { api } from '$lib/api/client';
+	import { api, type PreguntaTrivia } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
 
-	const CLAVE_ULTIMO = 'bitacora-pelota-ultimo-intento';
-	const CASILLAS = 3;
+	const CLAVE_ULTIMO = 'bitacora-trivia-ultimo-intento';
 
-	let intentoId = $state<number | null>(null);
-	let jugando = $state(false);
-	let resultado = $state<{ acierto: boolean; posicionCorrecta: number } | null>(null);
+	let pregunta = $state<PreguntaTrivia | null>(null);
+	let resultado = $state<{ acierto: boolean; respuestaCorrecta: number; elegida: number } | null>(null);
 	let error = $state<string | null>(null);
 	let segundosRestantes = $state(0);
 
@@ -37,25 +35,22 @@
 		error = null;
 		resultado = null;
 		try {
-			const intento = await api.iniciarPelota();
-			intentoId = intento.id;
-			jugando = true;
+			pregunta = await api.iniciarTrivia();
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Todavía en cooldown';
 			marcarIntentoAhora();
 		}
 	}
 
-	async function elegir(posicion: number) {
-		if (!intentoId) return;
+	async function responder(opcion: number) {
+		if (!pregunta) return;
 		try {
-			const r = await api.elegirPelota(intentoId, posicion);
-			resultado = { acierto: r.acierto, posicionCorrecta: r.posicion_correcta };
+			const r = await api.responderTrivia(pregunta.intento_id, opcion);
+			resultado = { acierto: r.acierto, respuestaCorrecta: r.respuesta_correcta, elegida: opcion };
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'No se pudo resolver el intento';
+			error = e instanceof Error ? e.message : 'No se pudo responder';
 		} finally {
-			jugando = false;
-			intentoId = null;
+			pregunta = null;
 			marcarIntentoAhora();
 		}
 	}
@@ -67,26 +62,31 @@
 	}
 </script>
 
-<div class="tarjeta juego-pelota">
-	<h2 class="font-display">🎾 Encuentra la pelota</h2>
+<div class="tarjeta juego-trivia">
+	<h2 class="font-display">🧠 Trivia de soporte</h2>
 	<p class="ayuda-juego">Acierta y le bajas vida al jefe.</p>
 
-	{#if jugando}
-		<div class="vasos-pelota">
-			{#each Array(CASILLAS) as _, i}
-				<button type="button" class="vaso-pelota" onclick={() => elegir(i)}>🥤</button>
+	{#if pregunta}
+		<p class="texto-pregunta">{pregunta.texto}</p>
+		<div class="opciones-trivia">
+			{#each pregunta.opciones as opcion, i}
+				<button type="button" class="opcion-trivia" onclick={() => responder(i)}>{opcion}</button>
 			{/each}
 		</div>
 	{:else if resultado}
-		<div class="vasos-pelota">
-			{#each Array(CASILLAS) as _, i}
-				<span class="vaso-pelota" class:correcto={i === resultado.posicionCorrecta}>
-					{i === resultado.posicionCorrecta ? '🎾' : '🥤'}
+		<div class="opciones-trivia">
+			{#each Array(4) as _, i}
+				<span
+					class="opcion-trivia resultado"
+					class:correcta={i === resultado.respuestaCorrecta}
+					class:incorrecta={i === resultado.elegida && !resultado.acierto}
+				>
+					{i === resultado.respuestaCorrecta ? '✓' : i === resultado.elegida ? '✗' : ''}
 				</span>
 			{/each}
 		</div>
-		<p class="resultado-pelota" class:acierto={resultado.acierto}>
-			{resultado.acierto ? '¡Le bajaste vida al jefe!' : 'Fallaste, era otro vaso.'}
+		<p class="resultado-trivia" class:acierto={resultado.acierto}>
+			{resultado.acierto ? '¡Le bajaste vida al jefe!' : 'Fallaste, esa no era.'}
 		</p>
 		<button type="button" class="btn-jugar" onclick={iniciar} disabled={segundosRestantes > 0}>
 			{segundosRestantes > 0 ? `Espera ${formatearTiempo(segundosRestantes)}` : 'Jugar de nuevo'}
@@ -108,7 +108,7 @@
 		padding: 24px;
 	}
 
-	.juego-pelota h2 {
+	.juego-trivia h2 {
 		margin: 0 0 4px;
 		font-size: 16px;
 	}
@@ -119,42 +119,62 @@
 		margin: 0 0 16px;
 	}
 
-	.vasos-pelota {
-		display: flex;
-		gap: 14px;
+	.texto-pregunta {
+		font-size: 14px;
+		color: var(--text);
+		margin: 0 0 12px;
+	}
+
+	.opciones-trivia {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
 		margin-bottom: 14px;
 	}
 
-	.vaso-pelota {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 64px;
-		height: 64px;
-		font-size: 28px;
+	.opcion-trivia {
 		background: var(--surface-raised);
 		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
+		padding: 9px 10px;
+		font-size: 12px;
+		color: var(--text);
 		cursor: pointer;
+		text-align: left;
 	}
 
-	button.vaso-pelota:hover {
+	button.opcion-trivia:hover {
 		border-color: var(--accent);
 	}
 
-	span.vaso-pelota.correcto {
-		border-color: var(--success);
-		background: color-mix(in srgb, var(--success) 14%, transparent);
+	span.opcion-trivia.resultado {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 700;
+		cursor: default;
 	}
 
-	.resultado-pelota {
+	span.opcion-trivia.correcta {
+		border-color: var(--success);
+		background: color-mix(in srgb, var(--success) 14%, transparent);
+		color: var(--success);
+	}
+
+	span.opcion-trivia.incorrecta {
+		border-color: var(--danger);
+		background: color-mix(in srgb, var(--danger) 14%, transparent);
+		color: var(--danger);
+	}
+
+	.resultado-trivia {
 		font-size: 13px;
 		font-weight: 600;
 		color: var(--danger);
 		margin: 0 0 14px;
 	}
 
-	.resultado-pelota.acierto {
+	.resultado-trivia.acierto {
 		color: var(--success);
 	}
 

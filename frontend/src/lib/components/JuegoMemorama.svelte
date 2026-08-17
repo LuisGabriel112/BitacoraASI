@@ -2,13 +2,18 @@
 	import { browser } from '$app/environment';
 	import { api } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
+	import { generarMazo } from '$lib/memorama';
 
-	const CLAVE_ULTIMO = 'bitacora-pelota-ultimo-intento';
-	const CASILLAS = 3;
+	const CLAVE_ULTIMO = 'bitacora-memorama-ultimo-intento';
+	const SIMBOLOS = ['🐱', '🐶', '🐭', '🦊', '🐼', '🐸'];
+	const DEMORA_VOLTEAR_MS = 700;
 
 	let intentoId = $state<number | null>(null);
-	let jugando = $state(false);
-	let resultado = $state<{ acierto: boolean; posicionCorrecta: number } | null>(null);
+	let mazo = $state<string[]>([]);
+	let volteadas = $state<number[]>([]);
+	let resueltas = $state<Set<number>>(new Set());
+	let bloqueado = $state(false);
+	let resultado = $state<{ acierto: boolean } | null>(null);
 	let error = $state<string | null>(null);
 	let segundosRestantes = $state(0);
 
@@ -37,26 +42,47 @@
 		error = null;
 		resultado = null;
 		try {
-			const intento = await api.iniciarPelota();
+			const intento = await api.iniciarMemorama();
 			intentoId = intento.id;
-			jugando = true;
+			mazo = generarMazo(SIMBOLOS);
+			volteadas = [];
+			resueltas = new Set();
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Todavía en cooldown';
 			marcarIntentoAhora();
 		}
 	}
 
-	async function elegir(posicion: number) {
+	async function completar() {
 		if (!intentoId) return;
 		try {
-			const r = await api.elegirPelota(intentoId, posicion);
-			resultado = { acierto: r.acierto, posicionCorrecta: r.posicion_correcta };
+			const r = await api.completarMemorama(intentoId);
+			resultado = { acierto: r.acierto };
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'No se pudo resolver el intento';
+			error = e instanceof Error ? e.message : 'No se pudo completar el intento';
 		} finally {
-			jugando = false;
 			intentoId = null;
 			marcarIntentoAhora();
+		}
+	}
+
+	function voltear(indice: number) {
+		if (bloqueado || volteadas.includes(indice) || resueltas.has(indice)) return;
+		volteadas = [...volteadas, indice];
+		if (volteadas.length < 2) return;
+
+		bloqueado = true;
+		const [a, b] = volteadas;
+		if (mazo[a] === mazo[b]) {
+			resueltas = new Set([...resueltas, a, b]);
+			volteadas = [];
+			bloqueado = false;
+			if (resueltas.size === mazo.length) completar();
+		} else {
+			setTimeout(() => {
+				volteadas = [];
+				bloqueado = false;
+			}, DEMORA_VOLTEAR_MS);
 		}
 	}
 
@@ -67,26 +93,28 @@
 	}
 </script>
 
-<div class="tarjeta juego-pelota">
-	<h2 class="font-display">🎾 Encuentra la pelota</h2>
-	<p class="ayuda-juego">Acierta y le bajas vida al jefe.</p>
+<div class="tarjeta juego-memorama">
+	<h2 class="font-display">🃏 Memorama relámpago</h2>
+	<p class="ayuda-juego">Encuentra los 6 pares y le bajas vida al jefe.</p>
 
-	{#if jugando}
-		<div class="vasos-pelota">
-			{#each Array(CASILLAS) as _, i}
-				<button type="button" class="vaso-pelota" onclick={() => elegir(i)}>🥤</button>
+	{#if intentoId}
+		<div class="tablero-memorama">
+			{#each mazo as simbolo, i}
+				<button
+					type="button"
+					class="carta-memorama"
+					class:volteada={volteadas.includes(i) || resueltas.has(i)}
+					class:resuelta={resueltas.has(i)}
+					disabled={resueltas.has(i)}
+					onclick={() => voltear(i)}
+				>
+					{volteadas.includes(i) || resueltas.has(i) ? simbolo : '❔'}
+				</button>
 			{/each}
 		</div>
 	{:else if resultado}
-		<div class="vasos-pelota">
-			{#each Array(CASILLAS) as _, i}
-				<span class="vaso-pelota" class:correcto={i === resultado.posicionCorrecta}>
-					{i === resultado.posicionCorrecta ? '🎾' : '🥤'}
-				</span>
-			{/each}
-		</div>
-		<p class="resultado-pelota" class:acierto={resultado.acierto}>
-			{resultado.acierto ? '¡Le bajaste vida al jefe!' : 'Fallaste, era otro vaso.'}
+		<p class="resultado-memorama" class:acierto={resultado.acierto}>
+			{resultado.acierto ? '¡Le bajaste vida al jefe!' : 'Muy rápido para ser real — no contó.'}
 		</p>
 		<button type="button" class="btn-jugar" onclick={iniciar} disabled={segundosRestantes > 0}>
 			{segundosRestantes > 0 ? `Espera ${formatearTiempo(segundosRestantes)}` : 'Jugar de nuevo'}
@@ -108,7 +136,7 @@
 		padding: 24px;
 	}
 
-	.juego-pelota h2 {
+	.juego-memorama h2 {
 		margin: 0 0 4px;
 		font-size: 16px;
 	}
@@ -119,42 +147,48 @@
 		margin: 0 0 16px;
 	}
 
-	.vasos-pelota {
-		display: flex;
-		gap: 14px;
+	.tablero-memorama {
+		display: grid;
+		grid-template-columns: repeat(4, 48px);
+		gap: 6px;
 		margin-bottom: 14px;
 	}
 
-	.vaso-pelota {
-		display: inline-flex;
+	.carta-memorama {
+		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 64px;
-		height: 64px;
-		font-size: 28px;
+		width: 48px;
+		height: 48px;
+		font-size: 20px;
 		background: var(--surface-raised);
 		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
 		cursor: pointer;
 	}
 
-	button.vaso-pelota:hover {
+	.carta-memorama:not(:disabled):hover {
 		border-color: var(--accent);
 	}
 
-	span.vaso-pelota.correcto {
-		border-color: var(--success);
-		background: color-mix(in srgb, var(--success) 14%, transparent);
+	.carta-memorama.volteada {
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
 	}
 
-	.resultado-pelota {
+	.carta-memorama.resuelta {
+		border-color: var(--success);
+		background: color-mix(in srgb, var(--success) 14%, transparent);
+		cursor: default;
+	}
+
+	.resultado-memorama {
 		font-size: 13px;
 		font-weight: 600;
 		color: var(--danger);
 		margin: 0 0 14px;
 	}
 
-	.resultado-pelota.acierto {
+	.resultado-memorama.acierto {
 		color: var(--success);
 	}
 

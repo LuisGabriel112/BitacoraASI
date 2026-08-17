@@ -72,3 +72,31 @@ Característica: Estilo y orden del reporte semanal en PowerPoint
     Dado una solución de una sola línea y otra de varias líneas
     Cuando calculo la altura de cada fila
     Entonces la fila con más líneas es más alta que la de una sola línea
+
+  Escenario: El rango de fechas se muestra con nombre de mes en español
+    Dado la semana "SEM 29 - 2026" (13 al 17 de julio de 2026)
+    Cuando pido el texto del rango
+    Entonces obtengo "13 Julio - 17 Julio 2026"
+
+  Escenario: Cada diapositiva de tabla lleva el encabezado "Resumen de actividades"
+    Dado un reporte con varios bloques de incidencias
+    Cuando genero el PPTX
+    Entonces cada diapositiva de tabla incluye el texto "Resumen de actividades (13 Julio - 17 Julio 2026)"
+
+  Escenario: La diapositiva de gráficas también lleva el encabezado
+    Dado un reporte con datos de gráficas
+    Cuando genero el PPTX
+    Entonces la diapositiva de gráficas incluye el texto "Resumen de actividades (13 Julio - 17 Julio 2026)"
+
+  Escenario: Las gráficas usan el título largo descriptivo con el rango de fechas
+    Dado las dos gráficas del reporte
+    Cuando genero el PPTX
+    Entonces el título de "Por categoría de solución" incluye
+      "Categorías de solución de incidencias resueltas por la mesa de ayuda (13 Julio - 17 Julio 2026)"
+    Y el título de "Por ventana" incluye
+      "Ventana/Característica de incidencias resueltas por la mesa de ayuda (13 Julio - 17 Julio 2026)"
+
+  Escenario: La paginación quedó más conservadora para no desbordar al imprimir
+    Dado un bloque de filas que antes cabía justo en una diapositiva
+    Cuando pagino las filas con la nueva tolerancia
+    Entonces cabe menos contenido por diapositiva que antes, con más margen de sobra

@@ -4,6 +4,11 @@
 	import Enemigo3D from '$lib/components/Enemigo3D.svelte';
 	import JuegoGato from '$lib/components/JuegoGato.svelte';
 	import JuegoPelota from '$lib/components/JuegoPelota.svelte';
+	import JuegoRPS from '$lib/components/JuegoRPS.svelte';
+	import JuegoTrivia from '$lib/components/JuegoTrivia.svelte';
+	import JuegoMemorama from '$lib/components/JuegoMemorama.svelte';
+	import JuegoReaccion from '$lib/components/JuegoReaccion.svelte';
+	import JuegoRuleta from '$lib/components/JuegoRuleta.svelte';
 	import { api, type DanioJefeEvento, type Jefe } from '$lib/api/client';
 
 	const INTERVALO_MS = 10_000;
@@ -11,13 +16,23 @@
 	const ETIQUETA_MOTIVO: Record<string, string> = {
 		mesa_creada: 'Mesa creada',
 		mesa_cerrada: 'Mesa cerrada',
-		registro_creado: 'Soporte registrado'
+		registro_creado: 'Soporte registrado',
+		minijuego_pelota: 'Encuentra la pelota',
+		minijuego_trivia: 'Trivia de soporte',
+		minijuego_memorama: 'Memorama relámpago',
+		minijuego_reaccion: 'Reacción rápida',
+		minijuego_ruleta: 'Ruleta rusa'
 	};
 
 	const ICONO_MOTIVO: Record<string, string> = {
 		mesa_creada: '🎫',
 		mesa_cerrada: '✅',
-		registro_creado: '📋'
+		registro_creado: '📋',
+		minijuego_pelota: '🎾',
+		minijuego_trivia: '🧠',
+		minijuego_memorama: '🃏',
+		minijuego_reaccion: '⚡',
+		minijuego_ruleta: '🎲'
 	};
 
 	let jefe = $state<Jefe | null>(null);
@@ -102,7 +117,12 @@
 
 	<div class="columnas juegos" in:fade={{ duration: 250, delay: 120 }}>
 		<JuegoGato />
+		<JuegoRPS />
 		<JuegoPelota />
+		<JuegoTrivia />
+		<JuegoMemorama />
+		<JuegoReaccion />
+		<JuegoRuleta />
 	</div>
 {/if}
 
@@ -120,7 +140,7 @@
 
 	.columnas.juegos {
 		margin-top: 20px;
-		grid-template-columns: minmax(280px, 420px) minmax(280px, 420px);
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 	}
 
 	.tarjeta {

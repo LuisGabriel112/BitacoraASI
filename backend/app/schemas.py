@@ -109,6 +109,72 @@ class ResultadoPelotaOut(BaseModel):
     posicion_correcta: int
 
 
+class JugadorRPSOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    nombre: str
+    avatar: str
+
+
+class PartidaRPSOut(BaseModel):
+    id: int
+    estado: str
+    resultado: str | None
+    jugada_x: str | None
+    jugada_o: str | None
+    jugador_x: JugadorRPSOut
+    jugador_o: JugadorRPSOut | None
+
+
+class JugadaRPS(BaseModel):
+    jugada: Literal["piedra", "papel", "tijera"]
+
+
+class PreguntaTriviaOut(BaseModel):
+    intento_id: int
+    pregunta_id: int
+    texto: str
+    opciones: list[str]
+
+
+class RespuestaTrivia(BaseModel):
+    opcion: int = Field(ge=0, le=3)
+
+
+class ResultadoTriviaOut(BaseModel):
+    acierto: bool
+    respuesta_correcta: int
+
+
+class IntentoMemoramaOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    resuelto: bool
+    acierto: bool | None
+
+
+class ResultadoMemoramaOut(BaseModel):
+    acierto: bool
+
+
+class IntentoReaccionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    resuelto: bool
+    acierto: bool | None
+
+
+class ReporteReaccion(BaseModel):
+    tiempo_ms: int = Field(ge=0, le=60_000)
+
+
+class ResultadoReaccionOut(BaseModel):
+    acierto: bool
+
+
+class ResultadoRuletaOut(BaseModel):
+    gano: bool
+
+
 class AutorChatOut(BaseModel):
     nombre: str
     avatar: str

@@ -1,11 +1,16 @@
 <script lang="ts">
-	import { api, type PartidaGato } from '$lib/api/client';
+	import { api, type JugadaRPS, type PartidaRPS } from '$lib/api/client';
 	import { miSimbolo } from '$lib/simboloJugador';
 
 	const INTERVALO_MS = 1500;
+	const OPCIONES: { jugada: JugadaRPS; icono: string }[] = [
+		{ jugada: 'piedra', icono: '🪨' },
+		{ jugada: 'papel', icono: '📄' },
+		{ jugada: 'tijera', icono: '✂️' }
+	];
 
 	let miNombre = $state('');
-	let partida = $state<PartidaGato | null>(null);
+	let partida = $state<PartidaRPS | null>(null);
 	let buscando = $state(false);
 	let error = $state<string | null>(null);
 	let timer: ReturnType<typeof setInterval> | undefined;
@@ -21,7 +26,7 @@
 
 	async function refrescar(id: number) {
 		try {
-			partida = await api.obtenerPartidaGato(id);
+			partida = await api.obtenerPartidaRPS(id);
 			if (partida.estado === 'terminada') detenerPolling();
 		} catch {
 			// un fallo de un ciclo de polling no debe romper la UI
@@ -32,7 +37,7 @@
 		error = null;
 		buscando = true;
 		try {
-			partida = await api.buscarPartidaGato();
+			partida = await api.buscarPartidaRPS();
 			detenerPolling();
 			timer = setInterval(() => refrescar(partida!.id), INTERVALO_MS);
 		} catch (e) {
@@ -45,7 +50,7 @@
 	async function salir() {
 		if (!partida) return;
 		detenerPolling();
-		await api.salirGato(partida.id);
+		await api.salirRPS(partida.id);
 		partida = null;
 	}
 
@@ -54,17 +59,17 @@
 		partida = null;
 	}
 
-	async function jugar(posicion: number) {
+	async function jugar(jugada: JugadaRPS) {
 		if (!partida) return;
 		try {
-			partida = await api.jugarGato(partida.id, posicion);
+			partida = await api.jugarRPS(partida.id, jugada);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Movimiento inválido';
+			error = e instanceof Error ? e.message : 'No se pudo registrar tu jugada';
 		}
 	}
 
 	const simbolo = $derived(partida ? miSimbolo(partida, miNombre) : null);
-	const esMiTurno = $derived(!!partida && partida.estado === 'jugando' && partida.turno === simbolo);
+	const miJugada = $derived(!partida ? null : simbolo === 'X' ? partida.jugada_x : partida.jugada_o);
 	const rival = $derived(
 		!partida ? null : simbolo === 'X' ? (partida.jugador_o?.nombre ?? 'esperando…') : partida.jugador_x.nombre
 	);
@@ -72,11 +77,11 @@
 	$effect(() => () => detenerPolling());
 </script>
 
-<div class="tarjeta juego-gato">
-	<h2 class="font-display">❌⭕ Gato</h2>
+<div class="tarjeta juego-rps">
+	<h2 class="font-display">🪨📄✂️ Piedra, papel o tijera</h2>
 
 	{#if !partida}
-		<p class="ayuda-juego">Reta a quien esté en línea a una partida rápida.</p>
+		<p class="ayuda-juego">Reta a quien esté en línea a una ronda rápida.</p>
 		<button type="button" class="btn-jugar" onclick={buscarPartida} disabled={buscando}>
 			{buscando ? 'Buscando…' : 'Buscar partida'}
 		</button>
@@ -86,21 +91,24 @@
 	{:else}
 		<p class="ayuda-juego">
 			{#if partida.estado === 'terminada'}
-				{partida.ganador === 'empate' ? 'Empate' : partida.ganador === simbolo ? '¡Ganaste!' : 'Perdiste'}
+				{partida.resultado === 'empate' ? 'Empate' : partida.resultado === simbolo ? '¡Ganaste!' : 'Perdiste'}
+			{:else if miJugada}
+				Esperando al rival…
 			{:else}
-				{esMiTurno ? 'Tu turno' : 'Turno del rival'}
+				Elige tu jugada
 			{/if}
 			· vs {rival}
 		</p>
-		<div class="tablero-gato">
-			{#each Array(9) as _, i}
+		<div class="opciones-rps">
+			{#each OPCIONES as o}
 				<button
 					type="button"
-					class="casilla-gato"
-					disabled={!esMiTurno || partida.tablero[i] !== ' '}
-					onclick={() => jugar(i)}
+					class="opcion-rps"
+					class:elegida={miJugada === o.jugada}
+					disabled={!!miJugada || partida.estado === 'terminada'}
+					onclick={() => jugar(o.jugada)}
 				>
-					{partida.tablero[i] === ' ' ? '' : partida.tablero[i]}
+					{o.icono}
 				</button>
 			{/each}
 		</div>
@@ -120,7 +128,7 @@
 		padding: 24px;
 	}
 
-	.juego-gato h2 {
+	.juego-rps h2 {
 		margin: 0 0 4px;
 		font-size: 16px;
 	}
@@ -131,33 +139,36 @@
 		margin: 0 0 16px;
 	}
 
-	.tablero-gato {
-		display: grid;
-		grid-template-columns: repeat(3, 56px);
-		grid-template-rows: repeat(3, 56px);
-		gap: 6px;
+	.opciones-rps {
+		display: flex;
+		gap: 10px;
 		margin-bottom: 14px;
 	}
 
-	.casilla-gato {
-		display: flex;
+	.opcion-rps {
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 22px;
-		font-weight: 700;
+		width: 56px;
+		height: 56px;
+		font-size: 26px;
 		background: var(--surface-raised);
 		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);
-		color: var(--text);
 		cursor: pointer;
 	}
 
-	.casilla-gato:not(:disabled):hover {
+	.opcion-rps:not(:disabled):hover {
 		border-color: var(--accent);
 	}
 
-	.casilla-gato:disabled {
+	.opcion-rps:disabled {
 		cursor: default;
+	}
+
+	.opcion-rps.elegida {
+		border-color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 16%, transparent);
 	}
 
 	.btn-jugar {

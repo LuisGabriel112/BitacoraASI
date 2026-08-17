@@ -9,6 +9,7 @@ from app.services.reporte_semanal_export import (
     _paginar_filas,
     filas_reporte,
     generar_pptx_reporte,
+    rango_texto,
     titulo_reporte,
 )
 
@@ -55,10 +56,20 @@ _GRAFICAS = {
     "Por categoría de solución": [("Modificación en BD", 5), ("Seguimiento de proceso", 2)],
     "Por ventana": [("INTEGRAL", 6), ("VIATICOS", 4), ("RECEPCION DE CFDI", 3)],
 }
+_SEMANA = "SEM 29 - 2026"
+_RANGO = "13 Julio - 17 Julio 2026"
 
 
-def _pptx_reporte(filas=_FILAS, graficas=_GRAFICAS):
-    return Presentation(generar_pptx_reporte("Reporte de prueba", filas, graficas))
+def _pptx_reporte(filas=_FILAS, graficas=_GRAFICAS, semana=_SEMANA):
+    return Presentation(generar_pptx_reporte("Reporte de prueba", filas, graficas, semana))
+
+
+def _texto_de_slide(slide) -> str:
+    partes = []
+    for shape in slide.shapes:
+        if shape.has_text_frame:
+            partes.append(shape.text_frame.text)
+    return " ".join(partes)
 
 
 def test_portada_usa_imagen_de_logo():
@@ -128,10 +139,23 @@ def test_celdas_de_tabla_tienen_los_4_bordes():
 def test_grafica_por_ventana_es_mas_grande_que_categoria_solucion():
     prs = _pptx_reporte()
     graficos = [s for s in prs.slides[1].shapes if s.shape_type == MSO_SHAPE_TYPE.CHART]
-    chica = next(g for g in graficos if g.chart.chart_title.text_frame.text == "Por categoría de solución")
-    grande = next(g for g in graficos if g.chart.chart_title.text_frame.text == "Por ventana")
+    chica = next(g for g in graficos if "Categorías de solución" in g.chart.chart_title.text_frame.text)
+    grande = next(g for g in graficos if "Ventana/Característica" in g.chart.chart_title.text_frame.text)
 
     assert grande.width > chica.width
+
+
+def test_graficas_usan_titulo_largo_con_rango_de_fechas():
+    prs = _pptx_reporte()
+    graficos = [s for s in prs.slides[1].shapes if s.shape_type == MSO_SHAPE_TYPE.CHART]
+    titulos = [g.chart.chart_title.text_frame.text for g in graficos]
+
+    assert any(
+        t == f"Categorías de solución de incidencias resueltas por la mesa de ayuda ({_RANGO})" for t in titulos
+    )
+    assert any(
+        t == f"Ventana/Característica de incidencias resueltas por la mesa de ayuda ({_RANGO})" for t in titulos
+    )
 
 
 def test_grafica_pptx_es_azul_no_naranja():
@@ -179,3 +203,36 @@ def test_paginar_fila_enorme_no_se_pierde():
 
 def test_paginar_sin_filas_da_lista_vacia():
     assert _paginar_filas([]) == []
+
+
+def test_rango_texto_con_nombre_de_mes_en_espanol():
+    assert rango_texto(_SEMANA) == _RANGO
+
+
+def test_cada_diapositiva_de_tabla_tiene_el_encabezado_resumen():
+    filas_largas = [(f"TCK-{i}", "01/01/2026", "Se corrigió un registro. " * 15) for i in range(6)]
+    prs = _pptx_reporte(filas=filas_largas)
+
+    slides_tabla = [
+        s for s in prs.slides if any(sh.shape_type == MSO_SHAPE_TYPE.TABLE for sh in s.shapes)
+    ]
+    assert len(slides_tabla) > 1  # nos aseguramos de cubrir mas de una diapositiva de tabla
+    for slide in slides_tabla:
+        assert f"Resumen de actividades ({_RANGO})" in _texto_de_slide(slide)
+
+
+def test_diapositiva_de_graficas_tiene_el_encabezado_resumen():
+    prs = _pptx_reporte()
+    slide_graficas = prs.slides[1]
+
+    assert f"Resumen de actividades ({_RANGO})" in _texto_de_slide(slide_graficas)
+
+
+def test_paginacion_es_mas_conservadora_que_antes():
+    # bloque que con la tolerancia original (78 car/linea, 430pt) cabia entero en
+    # una sola diapositiva; con la tolerancia reducida debe repartirse en mas.
+    filas = [(f"TCK-{i}", "01/01/2026", "Se aplicó un ajuste en el registro correspondiente. " * 4) for i in range(8)]
+
+    bloques = _paginar_filas(filas)
+
+    assert len(bloques) > 1

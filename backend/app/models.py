@@ -217,6 +217,24 @@ class PartidaGato(Base):
     jugador_o: Mapped[Usuario | None] = relationship(foreign_keys=[jugador_o_id], lazy="joined")
 
 
+class PartidaRPS(Base):
+    __tablename__ = "partidas_rps"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    jugador_x_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    jugador_o_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    jugada_x: Mapped[str | None] = mapped_column(Text, nullable=True)
+    jugada_o: Mapped[str | None] = mapped_column(Text, nullable=True)
+    estado: Mapped[str] = mapped_column(Text, default="esperando")
+    resultado: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    actualizado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    jugador_x: Mapped[Usuario] = relationship(foreign_keys=[jugador_x_id], lazy="joined")
+    jugador_o: Mapped[Usuario | None] = relationship(foreign_keys=[jugador_o_id], lazy="joined")
+
+
 class IntentoPelota(Base):
     __tablename__ = "intentos_pelota"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -224,6 +242,43 @@ class IntentoPelota(Base):
     posicion_correcta: Mapped[int] = mapped_column()
     resuelto: Mapped[bool] = mapped_column(default=False)
     acierto: Mapped[bool | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class IntentoTrivia(Base):
+    __tablename__ = "intentos_trivia"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    pregunta_id: Mapped[int] = mapped_column()
+    resuelto: Mapped[bool] = mapped_column(default=False)
+    acierto: Mapped[bool | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class IntentoMemorama(Base):
+    __tablename__ = "intentos_memorama"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    resuelto: Mapped[bool] = mapped_column(default=False)
+    acierto: Mapped[bool | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class IntentoReaccion(Base):
+    __tablename__ = "intentos_reaccion"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    tiempo_ms: Mapped[int | None] = mapped_column(nullable=True)
+    resuelto: Mapped[bool] = mapped_column(default=False)
+    acierto: Mapped[bool | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class IntentoRuleta(Base):
+    __tablename__ = "intentos_ruleta"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    gano: Mapped[bool] = mapped_column()
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
