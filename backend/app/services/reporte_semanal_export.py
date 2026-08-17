@@ -5,6 +5,7 @@ from xml.sax.saxutils import escape
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
 from pptx import Presentation
 from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
@@ -26,7 +27,15 @@ from app.services.excel_charts import escribir_tabla_conteo, grafica_barras_cont
 from app.services.exportar_seguro import celda_segura
 from app.services.semanas import rango_semana
 
-ENCABEZADOS = ["Código", "Fecha de resolución real", "Solución", "Observaciones"]
+ENCABEZADOS = ["Código", "Fecha de resolución real", "Solución", "Medidas realizadas para disminuir el impacto"]
+
+OPCIONES_MEDIDAS = (
+    "Ninguna.",
+    "En progreso la validación de la correctez de la información ingresada por el proveedor. "
+    "Esto determinará la acción correctiva: a) ajustar la validación para rechazar la info o  "
+    "b) ajustar el sistema para aceptarla y procesarla.",
+)
+_COLUMNA_OPCIONES_MEDIDAS = "F"
 
 _COLOR_TITULO_FONDO = "FFFF00"
 _COLOR_ENCABEZADO_FONDO = "FF9900"
@@ -134,6 +143,21 @@ def filas_reporte(mesas_cerradas: list[Mesa]) -> list[tuple[str, str, str]]:
     return [(m.codigo, m.fecha_cierre_real.strftime("%d/%m/%Y %H:%M"), m.solucion or "") for m in ordenadas]
 
 
+def _agregar_lista_medidas(ws, fila_datos_inicio: int, num_filas: int) -> None:
+    """Opciones en celdas ocultas fuera del área imprimible: un formula1 inline
+    (`"op1,op2"`) tiene un límite de 255 caracteres en Excel y el texto largo lo
+    excede, así que se referencia un rango de celdas en su lugar."""
+    col = _COLUMNA_OPCIONES_MEDIDAS
+    ws[f"{col}1"] = OPCIONES_MEDIDAS[0]
+    ws[f"{col}2"] = OPCIONES_MEDIDAS[1]
+    ws.column_dimensions[col].hidden = True
+
+    fila_fin = fila_datos_inicio + num_filas - 1
+    dv = DataValidation(type="list", formula1=f"${col}$1:${col}$2", allow_blank=True)
+    dv.add(f"D{fila_datos_inicio}:D{fila_fin}")
+    ws.add_data_validation(dv)
+
+
 def generar_xlsx_reporte(
     titulo: str, filas: list[tuple[str, str, str]], graficas: dict[str, list[tuple[str, int]]]
 ) -> io.BytesIO:
@@ -166,6 +190,9 @@ def generar_xlsx_reporte(
 
     for col, ancho in enumerate((16, 20, 55, 32), start=1):
         ws.column_dimensions[get_column_letter(col)].width = ancho
+
+    if filas:
+        _agregar_lista_medidas(ws, fila_encabezado + 1, len(filas))
 
     ws_graficas = wb.create_sheet("Gráficas")
     fila = 1
