@@ -7,14 +7,16 @@
 	import CampoGrupo from '$lib/components/CampoGrupo.svelte';
 	import LeyendaGrupos from '$lib/components/LeyendaGrupos.svelte';
 	import Celebracion from '$lib/components/Celebracion.svelte';
-	import AnimacionExito3D from '$lib/components/AnimacionExito3D.svelte';
+	import type AnimacionExito3D from '$lib/components/AnimacionExito3D.svelte';
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
 	import { api, type Mesa, type SintesisSolucion } from '$lib/api/client';
 	import { sugerenciasParaCategoria } from '$lib/sugerenciasSolucion';
 	import { ordenarPorActividadReciente } from '$lib/ordenActividadMesa';
+	import { tick } from 'svelte';
 
 	let celebracion: Celebracion;
-	let animacionExito: AnimacionExito3D;
+	let ComponenteAnimacionExito = $state<typeof AnimacionExito3D | null>(null);
+	let animacionExito = $state<AnimacionExito3D | undefined>(undefined);
 	let aviso: AvisoResultado;
 	let comboboxCategoria: ComboboxCreatable;
 	let comboboxSolicitante: ComboboxCreatable;
@@ -182,6 +184,16 @@
 		return null;
 	}
 
+	// AnimacionExito3D carga three.js (500+ KB) — se difiere hasta el primer
+	// guardado exitoso en vez de pesar en cada carga de esta pantalla.
+	async function mostrarAnimacionExito() {
+		if (!ComponenteAnimacionExito) {
+			ComponenteAnimacionExito = (await import('$lib/components/AnimacionExito3D.svelte')).default;
+			await tick();
+		}
+		animacionExito?.mostrar();
+	}
+
 	async function resolverCombosPendientes() {
 		await Promise.all([
 			comboboxCategoria.resolverPendiente(),
@@ -223,7 +235,7 @@
 			});
 			cargarMesasRecientes();
 			celebracion?.mostrar(resultado.logros);
-			animacionExito?.mostrar();
+			mostrarAnimacionExito();
 			aviso?.mostrar('exito', `Mesa ${resultado.codigo} guardada en la bitácora administrativa.`);
 			limpiar();
 		} catch (e) {
@@ -245,7 +257,9 @@
 <svelte:window onkeydown={alTeclado} />
 
 <Celebracion bind:this={celebracion} />
-<AnimacionExito3D bind:this={animacionExito} />
+{#if ComponenteAnimacionExito}
+	<ComponenteAnimacionExito bind:this={animacionExito} />
+{/if}
 <AvisoResultado bind:this={aviso} />
 
 <Header titulo="Nueva mesa" subtitulo="Bitácora administrativa — Ctrl+Enter para guardar sin usar el mouse." />

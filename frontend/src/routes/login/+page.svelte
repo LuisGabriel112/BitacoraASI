@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Toast from '$lib/components/Toast.svelte';
-	import Personaje3D from '$lib/components/Personaje3D.svelte';
+	import type Personaje3D from '$lib/components/Personaje3D.svelte';
 	import { ACCESORIOS, COLOR_CUERPO_DEFECTO, COLOR_PIEL_DEFECTO } from '$lib/apariencia';
 	import { api, type Accesorio } from '$lib/api/client';
 
@@ -21,6 +21,16 @@
 
 	$effect(() => {
 		inputNombre?.focus();
+	});
+
+	// Personaje3D carga three.js (500+ KB) — se difiere hasta que alguien
+	// realmente entra al paso de crear personaje, no en cada visita a /login.
+	let ComponentePersonaje3D = $state<typeof Personaje3D | null>(null);
+
+	$effect(() => {
+		if (modo === 'registro' && !ComponentePersonaje3D) {
+			import('$lib/components/Personaje3D.svelte').then((m) => (ComponentePersonaje3D = m.default));
+		}
 	});
 
 	function alternarModo() {
@@ -91,7 +101,11 @@
 			</div>
 
 			<div class="preview-3d">
-				<Personaje3D {colorPiel} {colorCuerpo} {accesorio} tamano={160} />
+				{#if ComponentePersonaje3D}
+					<ComponentePersonaje3D {colorPiel} {colorCuerpo} {accesorio} tamano={160} />
+				{:else}
+					<div class="skeleton preview-3d-cargando" aria-hidden="true"></div>
+				{/if}
 				<div class="controles-3d">
 					<label>
 						Piel
@@ -211,6 +225,12 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 10px;
+	}
+
+	.preview-3d-cargando {
+		width: 160px;
+		height: 160px;
+		border-radius: var(--radius-lg);
 	}
 
 	.controles-3d {
