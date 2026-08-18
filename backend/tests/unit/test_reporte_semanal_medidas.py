@@ -1,13 +1,21 @@
+from datetime import datetime
 from io import BytesIO
+from types import SimpleNamespace
 
 from openpyxl import load_workbook
 
-from app.services.reporte_semanal_export import ENCABEZADOS, OPCIONES_MEDIDAS, generar_xlsx_reporte
+from app.services.reporte_semanal_export import (
+    ENCABEZADOS,
+    OPCIONES_MEDIDAS,
+    filas_reporte,
+    generar_xlsx_reporte,
+    texto_medidas,
+)
 
 _FILAS = [
-    ("TCK-001", "03/08/2026 09:00", "Se aplicó el fix"),
-    ("TCK-002", "04/08/2026 10:00", "Se reinició el servicio"),
-    ("TCK-003", "05/08/2026 11:00", "Se corrigió el registro"),
+    ("TCK-001", "03/08/2026 09:00", "Se aplicó el fix", OPCIONES_MEDIDAS[0]),
+    ("TCK-002", "04/08/2026 10:00", "Se reinició el servicio", OPCIONES_MEDIDAS[0]),
+    ("TCK-003", "05/08/2026 11:00", "Se corrigió el registro", OPCIONES_MEDIDAS[0]),
 ]
 
 
@@ -48,3 +56,44 @@ def test_sin_filas_no_agrega_validacion():
     validaciones = wb["Reporte"].data_validations.dataValidation
 
     assert len(validaciones) == 0
+
+
+def test_texto_medidas_sin_marcar_es_ninguna():
+    assert texto_medidas(False) == OPCIONES_MEDIDAS[0]
+
+
+def test_texto_medidas_marcada_es_el_texto_largo():
+    assert texto_medidas(True) == OPCIONES_MEDIDAS[1]
+
+
+def _mesa(codigo: str, medidas_impacto: bool) -> SimpleNamespace:
+    return SimpleNamespace(
+        codigo=codigo,
+        fecha_cierre_real=datetime(2026, 8, 4, 10, 0),
+        solucion="listo",
+        medidas_impacto=medidas_impacto,
+    )
+
+
+def test_filas_reporte_sin_checkbox_marcado_pone_ninguna():
+    filas = filas_reporte([_mesa("TCK-010", medidas_impacto=False)])
+
+    assert filas[0][3] == "Ninguna."
+
+
+def test_filas_reporte_con_checkbox_marcado_pone_texto_largo():
+    filas = filas_reporte([_mesa("TCK-011", medidas_impacto=True)])
+
+    assert filas[0][3] == OPCIONES_MEDIDAS[1]
+
+
+def test_xlsx_columna_medidas_trae_el_texto_de_cada_fila_no_solo_la_lista():
+    filas = [
+        ("TCK-001", "03/08/2026 09:00", "Se aplicó el fix", OPCIONES_MEDIDAS[0]),
+        ("TCK-002", "04/08/2026 10:00", "Se reinició el servicio", OPCIONES_MEDIDAS[1]),
+    ]
+    wb = _xlsx(filas=filas)
+    ws = wb["Reporte"]
+
+    assert ws["D4"].value == OPCIONES_MEDIDAS[0]
+    assert ws["D5"].value == OPCIONES_MEDIDAS[1]

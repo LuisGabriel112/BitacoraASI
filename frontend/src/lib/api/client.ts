@@ -98,6 +98,7 @@ export type Mesa = {
 	solucion: string | null;
 	tipo_solucion: string | null;
 	fecha_cierre_real: string | null;
+	medidas_impacto: boolean;
 	prioridad: boolean;
 	destacada: boolean;
 	created_at: string;
@@ -413,6 +414,7 @@ export const api = {
 		solucion?: string | null;
 		tipo_solucion?: string | null;
 		fecha_cierre_real?: string | null;
+		medidas_impacto?: boolean;
 	}) => json<Mesa>('/mesas', { method: 'POST', body: JSON.stringify(payload) }),
 
 	mesaPorId: (id: number) => json<Mesa>(`/mesas/${id}`),
@@ -433,6 +435,7 @@ export const api = {
 			solucion: string | null;
 			tipo_solucion: string | null;
 			fecha_cierre_real: string | null;
+			medidas_impacto: boolean;
 			prioridad: boolean;
 			destacada: boolean;
 		}>
@@ -440,7 +443,13 @@ export const api = {
 
 	cerrarMesa: (
 		id: number,
-		payload: { ventana_id: number; solucion: string; tipo_solucion: string; fecha_cierre_real: string }
+		payload: {
+			ventana_id: number;
+			solucion: string;
+			tipo_solucion: string;
+			fecha_cierre_real: string;
+			medidas_impacto?: boolean;
+		}
 	) => json<Mesa>(`/mesas/${id}/cerrar`, { method: 'POST', body: JSON.stringify(payload) }),
 
 	eliminarMesa: async (id: number) => {

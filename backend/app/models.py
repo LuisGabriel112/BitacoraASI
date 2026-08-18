@@ -188,6 +188,7 @@ class Mesa(Base):
     solucion: Mapped[str | None] = mapped_column(Text, nullable=True)
     tipo_solucion: Mapped[str | None] = mapped_column(Text, nullable=True)
     fecha_cierre_real: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    medidas_impacto: Mapped[bool] = mapped_column(default=False)
     prioridad: Mapped[bool] = mapped_column(default=False)
     destacada: Mapped[bool] = mapped_column(default=False)
     embedding: Mapped[list[float] | None] = mapped_column(ARRAY(Float), nullable=True)

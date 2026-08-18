@@ -60,6 +60,7 @@
 	let solucionTexto = $state('');
 	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>('Modificación en BD');
 	let fechaCierreReal = $state(ahora());
+	let medidasImpactoCierre = $state(false);
 	let guardandoCierre = $state(false);
 	let errorCierre = $state<string | null>(null);
 
@@ -113,6 +114,7 @@
 		solucionTexto = '';
 		tipoSolucion = 'Modificación en BD';
 		fechaCierreReal = ahora();
+		medidasImpactoCierre = false;
 	}
 
 	async function confirmarCierre(id: number) {
@@ -125,7 +127,8 @@
 				ventana_id: ventanaCierreId,
 				solucion: solucionTexto.trim(),
 				tipo_solucion: tipoSolucion,
-				fecha_cierre_real: fechaCierreReal
+				fecha_cierre_real: fechaCierreReal,
+				medidas_impacto: medidasImpactoCierre
 			});
 			items = items.map((m) => (m.id === id ? actualizada : m));
 			cerrandoId = null;
@@ -416,6 +419,10 @@
 										</select>
 									</div>
 									<FechaHoraInput id="fecha-cierre-{m.id}" label="Fecha y hora real de cierre" bind:value={fechaCierreReal} />
+									<label class="check-medidas">
+										<input type="checkbox" bind:checked={medidasImpactoCierre} />
+										Medidas para disminuir el impacto
+									</label>
 									<div class="acciones-cierre">
 										<button class="btn-guardar-cierre" disabled={guardandoCierre} onclick={() => confirmarCierre(m.id)}>
 											{guardandoCierre ? 'Guardando…' : 'Guardar cierre'}
@@ -908,6 +915,16 @@
 		gap: 12px;
 		align-items: start;
 		padding: 8px 4px;
+	}
+
+	.check-medidas {
+		grid-column: 1 / -1;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		color: var(--text-muted);
+		cursor: pointer;
 	}
 
 	.acciones-cierre {

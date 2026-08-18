@@ -153,6 +153,7 @@ async def cerrar_mesa(mesa_id: int, payload: MesaCerrar, session: AsyncSession =
     mesa.solucion = payload.solucion
     mesa.tipo_solucion = payload.tipo_solucion
     mesa.fecha_cierre_real = payload.fecha_cierre_real
+    mesa.medidas_impacto = payload.medidas_impacto
     await session.commit()
     mesa = await _obtener_mesa(session, mesa_id)
     logros = await evaluar_logros(session, mesa)

@@ -22,8 +22,8 @@ def test_titulo_reporte_semana_de_un_solo_digito_sin_cero_a_la_izquierda():
     assert "Semana 5 " in titulo_reporte("SEM 05 - 2026")
 
 
-def _mesa(codigo: str, cierre: datetime, solucion: str | None) -> SimpleNamespace:
-    return SimpleNamespace(codigo=codigo, fecha_cierre_real=cierre, solucion=solucion)
+def _mesa(codigo: str, cierre: datetime, solucion: str | None, medidas_impacto: bool = False) -> SimpleNamespace:
+    return SimpleNamespace(codigo=codigo, fecha_cierre_real=cierre, solucion=solucion, medidas_impacto=medidas_impacto)
 
 
 def test_filas_reporte_ordena_por_fecha_de_cierre():
@@ -51,7 +51,10 @@ def test_filas_reporte_formatea_fecha_dd_mm_yyyy_hh_mm():
     assert filas[0][1] == "04/08/2026 17:05"
 
 
-_FILAS = [("TCK-001", "03/08/2026 09:00", "Se aplicó el fix"), ("TCK-002", "04/08/2026 10:00", "Se reinició el servicio")]
+_FILAS = [
+    ("TCK-001", "03/08/2026 09:00", "Se aplicó el fix", "Ninguna."),
+    ("TCK-002", "04/08/2026 10:00", "Se reinició el servicio", "Ninguna."),
+]
 _GRAFICAS = {
     "Por categoría de solución": [("Modificación en BD", 5), ("Seguimiento de proceso", 2)],
     "Por ventana": [("INTEGRAL", 6), ("VIATICOS", 4), ("RECEPCION DE CFDI", 3)],
@@ -167,14 +170,14 @@ def test_grafica_pptx_es_azul_no_naranja():
 
 
 def test_altura_fila_una_linea_es_menor_que_varias_lineas():
-    corta = ("TCK-1", "01/01/2026", "Se reinició el servicio.")
-    larga = ("TCK-2", "01/01/2026", "Se aplicó un fix. " * 20)
+    corta = ("TCK-1", "01/01/2026", "Se reinició el servicio.", "Ninguna.")
+    larga = ("TCK-2", "01/01/2026", "Se aplicó un fix. " * 20, "Ninguna.")
 
     assert _altura_fila_pt(corta) < _altura_fila_pt(larga)
 
 
 def test_paginar_soluciones_cortas_caben_en_una_diapositiva():
-    filas = [(f"TCK-{i}", "01/01/2026", "Se reinició el servicio.") for i in range(10)]
+    filas = [(f"TCK-{i}", "01/01/2026", "Se reinició el servicio.", "Ninguna.") for i in range(10)]
 
     bloques = _paginar_filas(filas)
 
@@ -183,7 +186,7 @@ def test_paginar_soluciones_cortas_caben_en_una_diapositiva():
 
 def test_paginar_soluciones_largas_ocupan_mas_diapositivas():
     solucion_larga = "Se corrigió un registro en base de datos tras validar la inconsistencia. " * 6
-    filas = [(f"TCK-{i}", "01/01/2026", solucion_larga) for i in range(10)]
+    filas = [(f"TCK-{i}", "01/01/2026", solucion_larga, "Ninguna.") for i in range(10)]
 
     bloques = _paginar_filas(filas)
 
@@ -192,13 +195,13 @@ def test_paginar_soluciones_largas_ocupan_mas_diapositivas():
 
 def test_paginar_fila_enorme_no_se_pierde():
     enorme = "x" * 5000
-    filas = [("TCK-1", "01/01/2026", enorme), ("TCK-2", "01/01/2026", "corta")]
+    filas = [("TCK-1", "01/01/2026", enorme, "Ninguna."), ("TCK-2", "01/01/2026", "corta", "Ninguna.")]
 
     bloques = _paginar_filas(filas)
 
     total_filas = sum(len(b) for b in bloques)
     assert total_filas == 2
-    assert any(("TCK-1", "01/01/2026", enorme) in b for b in bloques)
+    assert any(("TCK-1", "01/01/2026", enorme, "Ninguna.") in b for b in bloques)
 
 
 def test_paginar_sin_filas_da_lista_vacia():
@@ -210,7 +213,7 @@ def test_rango_texto_con_nombre_de_mes_en_espanol():
 
 
 def test_cada_diapositiva_de_tabla_tiene_el_encabezado_resumen():
-    filas_largas = [(f"TCK-{i}", "01/01/2026", "Se corrigió un registro. " * 15) for i in range(6)]
+    filas_largas = [(f"TCK-{i}", "01/01/2026", "Se corrigió un registro. " * 15, "Ninguna.") for i in range(6)]
     prs = _pptx_reporte(filas=filas_largas)
 
     slides_tabla = [
@@ -231,7 +234,10 @@ def test_diapositiva_de_graficas_tiene_el_encabezado_resumen():
 def test_paginacion_es_mas_conservadora_que_antes():
     # bloque que con la tolerancia original (78 car/linea, 430pt) cabia entero en
     # una sola diapositiva; con la tolerancia reducida debe repartirse en mas.
-    filas = [(f"TCK-{i}", "01/01/2026", "Se aplicó un ajuste en el registro correspondiente. " * 4) for i in range(8)]
+    filas = [
+        (f"TCK-{i}", "01/01/2026", "Se aplicó un ajuste en el registro correspondiente. " * 4, "Ninguna.")
+        for i in range(8)
+    ]
 
     bloques = _paginar_filas(filas)
 

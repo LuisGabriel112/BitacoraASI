@@ -311,6 +311,7 @@ class MesaCreate(BaseModel):
     solucion: str | None = None
     tipo_solucion: TipoSolucion | None = None
     fecha_cierre_real: datetime | None = None
+    medidas_impacto: bool = False
 
     @model_validator(mode="after")
     def _cierre_todo_o_nada(self) -> "MesaCreate":
@@ -330,6 +331,7 @@ class MesaCerrar(BaseModel):
     solucion: str
     tipo_solucion: TipoSolucion
     fecha_cierre_real: datetime
+    medidas_impacto: bool = False
 
 
 class MesaUpdate(BaseModel):
@@ -346,6 +348,7 @@ class MesaUpdate(BaseModel):
     solucion: str | None = None
     tipo_solucion: TipoSolucion | None = None
     fecha_cierre_real: datetime | None = None
+    medidas_impacto: bool | None = None
     prioridad: bool | None = None
     destacada: bool | None = None
 
@@ -363,6 +366,7 @@ class MesaOut(BaseModel):
     solucion: str | None
     tipo_solucion: str | None
     fecha_cierre_real: datetime | None
+    medidas_impacto: bool
     prioridad: bool
     destacada: bool
     created_at: datetime

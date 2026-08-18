@@ -25,3 +25,18 @@ Característica: Columna de medidas para disminuir el impacto en el reporte sema
     Dado que genero el XLSX del reporte sin incidencias
     Cuando reviso la validación de datos de la hoja
     Entonces no hay ninguna lista desplegable agregada
+
+  Escenario: Mesa sin el checkbox "Medidas para disminuir el impacto" marcado
+    Dado que una mesa cerrada no tiene marcado "Medidas para disminuir el impacto"
+    Cuando se arma su fila para el reporte
+    Entonces el valor de la columna de medidas es "Ninguna."
+
+  Escenario: Mesa con el checkbox "Medidas para disminuir el impacto" marcado
+    Dado que una mesa cerrada tiene marcado "Medidas para disminuir el impacto"
+    Cuando se arma su fila para el reporte
+    Entonces el valor de la columna de medidas es el texto largo de seguimiento de validación
+
+  Escenario: El valor ya viene escrito en la celda del XLSX, no solo como opción de la lista
+    Dado que genero el XLSX del reporte con una mesa marcada y otra sin marcar
+    Cuando reviso el contenido de la columna de medidas
+    Entonces cada fila muestra el texto correspondiente a su checkbox

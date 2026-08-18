@@ -43,6 +43,7 @@
 	let solucionTexto = $state('');
 	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>('Modificación en BD');
 	let fechaCierreReal = $state('');
+	let medidasImpacto = $state(false);
 
 	let guardando = $state(false);
 	let errorValidacion = $state<string | null>(null);
@@ -70,6 +71,7 @@
 		solucionTexto = m.solucion ?? '';
 		tipoSolucion = (m.tipo_solucion as 'Modificación en BD' | 'Seguimiento de proceso') ?? 'Modificación en BD';
 		fechaCierreReal = m.fecha_cierre_real?.slice(0, 16) ?? ahora();
+		medidasImpacto = m.medidas_impacto;
 	}
 
 	async function cargar() {
@@ -124,7 +126,8 @@
 				destacada,
 				solucion: cerrada ? solucionTexto.trim() : null,
 				tipo_solucion: cerrada ? tipoSolucion : null,
-				fecha_cierre_real: cerrada ? fechaCierreReal : null
+				fecha_cierre_real: cerrada ? fechaCierreReal : null,
+				medidas_impacto: cerrada ? medidasImpacto : false
 			});
 			guardadoOk = true;
 			celebracion?.mostrar(actualizada.logros);
@@ -244,6 +247,10 @@
 						<FechaHoraInput id="fecha_cierre" label="Fecha y hora real de cierre" bind:value={fechaCierreReal} />
 					</CampoGrupo>
 				</div>
+				<label class="check-resuelta">
+					<input type="checkbox" bind:checked={medidasImpacto} />
+					Medidas para disminuir el impacto
+				</label>
 			</div>
 		{/if}
 

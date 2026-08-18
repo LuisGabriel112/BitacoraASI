@@ -37,6 +37,10 @@ OPCIONES_MEDIDAS = (
 )
 _COLUMNA_OPCIONES_MEDIDAS = "F"
 
+
+def texto_medidas(marcada: bool) -> str:
+    return OPCIONES_MEDIDAS[1] if marcada else OPCIONES_MEDIDAS[0]
+
 _COLOR_TITULO_FONDO = "FFFF00"
 _COLOR_ENCABEZADO_FONDO = "FF9900"
 _COLOR_TEXTO = "000000"
@@ -101,17 +105,17 @@ def _lineas_de_texto(texto: str) -> int:
     return -(-len(texto) // _CARACTERES_POR_LINEA_SOLUCION)  # ceil sin importar math
 
 
-def _altura_fila_pt(fila: tuple[str, str, str]) -> int:
-    _, _, solucion = fila
+def _altura_fila_pt(fila: tuple[str, str, str, str]) -> int:
+    _, _, solucion, _ = fila
     return max(_ALTO_MIN_FILA_PT, _lineas_de_texto(solucion) * _ALTO_POR_LINEA_PT)
 
 
-def _paginar_filas(filas: list[tuple[str, str, str]]) -> list[list[tuple[str, str, str]]]:
+def _paginar_filas(filas: list[tuple[str, str, str, str]]) -> list[list[tuple[str, str, str, str]]]:
     """Reparte filas entre diapositivas según el alto estimado de cada una — más
     filas cortas caben por diapositiva, menos si son largas. Una fila nunca se
     descarta aunque su altura por sí sola exceda el presupuesto disponible."""
-    bloques: list[list[tuple[str, str, str]]] = []
-    bloque: list[tuple[str, str, str]] = []
+    bloques: list[list[tuple[str, str, str, str]]] = []
+    bloque: list[tuple[str, str, str, str]] = []
     alto_acumulado = 0
     for fila in filas:
         alto_fila = _altura_fila_pt(fila)
@@ -138,9 +142,12 @@ def titulo_reporte(semana: str) -> str:
     )
 
 
-def filas_reporte(mesas_cerradas: list[Mesa]) -> list[tuple[str, str, str]]:
+def filas_reporte(mesas_cerradas: list[Mesa]) -> list[tuple[str, str, str, str]]:
     ordenadas = sorted(mesas_cerradas, key=lambda m: m.fecha_cierre_real)
-    return [(m.codigo, m.fecha_cierre_real.strftime("%d/%m/%Y %H:%M"), m.solucion or "") for m in ordenadas]
+    return [
+        (m.codigo, m.fecha_cierre_real.strftime("%d/%m/%Y %H:%M"), m.solucion or "", texto_medidas(m.medidas_impacto))
+        for m in ordenadas
+    ]
 
 
 def _agregar_lista_medidas(ws, fila_datos_inicio: int, num_filas: int) -> None:
@@ -159,7 +166,7 @@ def _agregar_lista_medidas(ws, fila_datos_inicio: int, num_filas: int) -> None:
 
 
 def generar_xlsx_reporte(
-    titulo: str, filas: list[tuple[str, str, str]], graficas: dict[str, list[tuple[str, int]]]
+    titulo: str, filas: list[tuple[str, str, str, str]], graficas: dict[str, list[tuple[str, int]]]
 ) -> io.BytesIO:
     wb = Workbook()
     ws = wb.active
@@ -180,8 +187,8 @@ def generar_xlsx_reporte(
     ws.row_dimensions[fila_encabezado].height = 20
 
     borde_fino = Border(*[Side(style="thin", color=_COLOR_BORDE)] * 4)
-    for i, (codigo, fecha, solucion) in enumerate(filas, start=fila_encabezado + 1):
-        for col, valor in enumerate((celda_segura(codigo), fecha, celda_segura(solucion), ""), start=1):
+    for i, (codigo, fecha, solucion, medidas) in enumerate(filas, start=fila_encabezado + 1):
+        for col, valor in enumerate((celda_segura(codigo), fecha, celda_segura(solucion), medidas), start=1):
             celda = ws.cell(i, col, valor)
             celda.font = Font(name="Calibri", color=_COLOR_TEXTO, size=10)
             celda.fill = PatternFill("solid", fgColor=_COLOR_FILA)
@@ -280,14 +287,14 @@ def _fila_encabezados_tabla(tabla) -> None:
         _escribir_celda(tabla.cell(_FILA_ENCABEZADO, col), texto, _COLOR_ENCABEZADO_FONDO, negrita=True, tamano=12)
 
 
-def _fila_de_datos(tabla, fila: int, indice: int, datos: tuple[str, str, str]) -> None:
+def _fila_de_datos(tabla, fila: int, indice: int, datos: tuple[str, str, str, str]) -> None:
     color = _COLOR_FILA if indice % 2 == 0 else _COLOR_FILA_ALTERNA
-    codigo, fecha, solucion = datos
-    for col, valor in enumerate((codigo, fecha, solucion, "")):
+    codigo, fecha, solucion, medidas = datos
+    for col, valor in enumerate((codigo, fecha, solucion, medidas)):
         _escribir_celda(tabla.cell(fila, col), valor, color, negrita=False, tamano=12)
 
 
-def _ajustar_alturas_tabla(tabla, bloque: list[tuple[str, str, str]]) -> None:
+def _ajustar_alturas_tabla(tabla, bloque: list[tuple[str, str, str, str]]) -> None:
     tabla.rows[_FILA_TITULO].height = Pt(26)
     tabla.rows[_FILA_ENCABEZADO].height = Pt(22)
     for i, fila in enumerate(bloque):
@@ -308,7 +315,7 @@ def _agregar_encabezado_diapositiva(slide, rango: str) -> None:
 
 
 def _agregar_diapositiva_tabla(
-    prs: Presentation, bloque: list[tuple[str, str, str]], numero: int, total: int, rango: str
+    prs: Presentation, bloque: list[tuple[str, str, str, str]], numero: int, total: int, rango: str
 ) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _agregar_encabezado_diapositiva(slide, rango)
@@ -356,7 +363,7 @@ def _agregar_diapositiva_graficas(prs: Presentation, graficas: dict[str, list[tu
 
 
 def generar_pptx_reporte(
-    titulo: str, filas: list[tuple[str, str, str]], graficas: dict[str, list[tuple[str, int]]], semana: str
+    titulo: str, filas: list[tuple[str, str, str, str]], graficas: dict[str, list[tuple[str, int]]], semana: str
 ) -> io.BytesIO:
     prs = Presentation()
     prs.slide_width = Inches(13.33)
@@ -401,7 +408,7 @@ def _grafica_pdf(titulo: str, datos: list[tuple[str, int]], ancho: float, alto: 
 
 
 def generar_pdf_reporte(
-    titulo: str, filas: list[tuple[str, str, str]], graficas: dict[str, list[tuple[str, int]]]
+    titulo: str, filas: list[tuple[str, str, str, str]], graficas: dict[str, list[tuple[str, int]]]
 ) -> io.BytesIO:
     out = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -413,7 +420,8 @@ def generar_pdf_reporte(
     estilo_celda = ParagraphStyle("celda", fontName="Helvetica", fontSize=9, textColor=color_texto, leading=12)
 
     datos_tabla = [ENCABEZADOS] + [
-        [codigo, fecha, Paragraph(escape(solucion), estilo_celda), ""] for codigo, fecha, solucion in filas
+        [codigo, fecha, Paragraph(escape(solucion), estilo_celda), medidas]
+        for codigo, fecha, solucion, medidas in filas
     ]
 
     tabla = Table(datos_tabla, colWidths=[1.3 * inch, 1.6 * inch, 5.2 * inch, 2.2 * inch], repeatRows=1)
