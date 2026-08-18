@@ -2,12 +2,7 @@ import httpx
 import pytest
 
 from app.services import storage as storage_module
-from app.services.storage import (
-    StorageError,
-    content_type_permitido,
-    crear_url_subida,
-    generar_key_archivo,
-)
+from app.services.storage import StorageError, crear_url_subida, generar_key_archivo
 
 
 class _ClienteFalso:
@@ -33,14 +28,6 @@ def _config_supabase(monkeypatch):
     monkeypatch.setattr(storage_module.settings, "chat_bucket", "chat-adjuntos")
 
 
-def test_content_type_de_imagen_esta_permitido():
-    assert content_type_permitido("image/png") is True
-
-
-def test_content_type_html_no_esta_permitido():
-    assert content_type_permitido("text/html") is False
-
-
 def test_key_conserva_la_extension_original():
     key = generar_key_archivo("captura de pantalla áéí.PNG")
     assert key.endswith(".PNG")
@@ -52,14 +39,15 @@ def test_dos_keys_del_mismo_nombre_no_colisionan():
 
 
 @pytest.mark.asyncio
-async def test_content_type_no_permitido_no_llama_a_supabase(monkeypatch):
-    cliente = _ClienteFalso(httpx.Response(200, json={"url": "/no-debería-usarse"}))
+async def test_cualquier_content_type_genera_url_de_subida(monkeypatch):
+    respuesta = httpx.Response(200, json={"url": "/object/upload/sign/chat-adjuntos/abc123.html?token=xyz"})
+    cliente = _ClienteFalso(respuesta)
     monkeypatch.setattr(storage_module.httpx, "AsyncClient", lambda **_kwargs: cliente)
 
-    with pytest.raises(StorageError):
-        await crear_url_subida("virus.html", "text/html")
+    url_subida, url_publica = await crear_url_subida("notas.html", "text/html")
 
-    assert cliente.llamadas == 0
+    assert url_subida.endswith("abc123.html?token=xyz")
+    assert cliente.llamadas == 1
 
 
 @pytest.mark.asyncio
