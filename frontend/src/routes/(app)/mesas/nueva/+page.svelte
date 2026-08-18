@@ -43,6 +43,7 @@
 		solicitanteId: number | null; solicitanteNombre: string; resolutorId: number | null; resolutorNombre: string;
 		fechaEstimadaResolucion: string; yaResuelta: boolean; solucionTexto: string;
 		tipoSolucion: 'Modificación en BD' | 'Seguimiento de proceso'; fechaCierreReal: string;
+		medidasImpacto: boolean;
 	};
 
 	function leerBorrador(): Partial<Borrador> | null {
@@ -78,6 +79,7 @@
 		borrador?.tipoSolucion ?? 'Modificación en BD'
 	);
 	let fechaCierreReal = $state(borrador?.fechaCierreReal ?? ahora());
+	let medidasImpacto = $state(borrador?.medidasImpacto ?? false);
 
 	let guardando = $state(false);
 	let errorValidacion = $state<string | null>(null);
@@ -96,7 +98,7 @@
 		const datos: Borrador = {
 			enlace, codigo, titulo, fechaCarga, descripcion, ventanaId, ventanaNombre, categoriaId,
 			categoriaNombre, solicitanteId, solicitanteNombre, resolutorId, resolutorNombre,
-			fechaEstimadaResolucion, yaResuelta, solucionTexto, tipoSolucion, fechaCierreReal
+			fechaEstimadaResolucion, yaResuelta, solucionTexto, tipoSolucion, fechaCierreReal, medidasImpacto
 		};
 		sessionStorage.setItem(CLAVE_BORRADOR, JSON.stringify(datos));
 	});
@@ -144,6 +146,7 @@
 		solucionTexto = '';
 		tipoSolucion = 'Modificación en BD';
 		fechaCierreReal = ahora();
+		medidasImpacto = false;
 	}
 
 	function limpiar() {
@@ -165,6 +168,7 @@
 		solucionTexto = '';
 		tipoSolucion = 'Modificación en BD';
 		fechaCierreReal = ahora();
+		medidasImpacto = false;
 		resultado = null;
 		if (browser) sessionStorage.removeItem(CLAVE_BORRADOR);
 	}
@@ -229,7 +233,8 @@
 							ventana_id: ventanaId!,
 							solucion: solucionTexto.trim(),
 							tipo_solucion: tipoSolucion,
-							fecha_cierre_real: fechaCierreReal
+							fecha_cierre_real: fechaCierreReal,
+							medidas_impacto: medidasImpacto
 						}
 					: {})
 			});
@@ -416,6 +421,10 @@
 							<FechaHoraInput id="fecha_cierre" label="Fecha y hora real de cierre" bind:value={fechaCierreReal} />
 						</CampoGrupo>
 					</div>
+					<label class="check-medidas">
+						<input type="checkbox" bind:checked={medidasImpacto} />
+						Medidas para disminuir el impacto
+					</label>
 				</div>
 			{/if}
 
@@ -707,6 +716,15 @@
 		border-color: var(--success);
 		background: color-mix(in srgb, var(--success) 12%, transparent);
 		color: var(--success);
+	}
+
+	.check-medidas {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		color: var(--text-muted);
+		cursor: pointer;
 	}
 
 	.bloque-cierre {
