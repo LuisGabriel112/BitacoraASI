@@ -3,6 +3,7 @@
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import SintesisSoluciones from '$lib/components/SintesisSoluciones.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Mesa } from '$lib/api/client';
 
 	let vista = $state<'sintesis' | 'detalle'>('sintesis');
@@ -120,7 +121,8 @@
 				</div>
 
 				<button type="button" class="btn-descripcion" onclick={() => alternarDescripcion(m.id)}>
-					{expandidaId === m.id ? '▾ Ocultar descripción original' : '▸ Ver descripción original'}
+					<Icon nombre={expandidaId === m.id ? 'chevron-down' : 'chevron-right'} tamano={13} />
+					{expandidaId === m.id ? 'Ocultar descripción original' : 'Ver descripción original'}
 				</button>
 				{#if expandidaId === m.id}
 					<p class="descripcion-manual">{m.descripcion}</p>
@@ -138,9 +140,9 @@
 <div class="paginacion">
 	<span>{total} soluciones</span>
 	<div class="botones">
-		<button disabled={page <= 1} onclick={() => (page -= 1)}>← Anterior</button>
+		<button disabled={page <= 1} onclick={() => (page -= 1)}><Icon nombre="chevron-left" tamano={14} /> Anterior</button>
 		<span>Página {page} de {totalPaginas}</span>
-		<button disabled={page >= totalPaginas} onclick={() => (page += 1)}>Siguiente →</button>
+		<button disabled={page >= totalPaginas} onclick={() => (page += 1)}>Siguiente <Icon nombre="chevron-right" tamano={14} /></button>
 	</div>
 </div>
 {/if}
@@ -216,13 +218,17 @@
 
 	.filtros :global(.campo)::after,
 	.filtros .campo::after {
-		content: '▾';
+		content: '';
 		position: absolute;
 		right: 12px;
 		top: 50%;
+		width: 10px;
+		height: 10px;
 		transform: translateY(-50%);
-		font-size: 10px;
-		color: var(--text-faint);
+		background-color: var(--text-faint);
+		mask-image: var(--icono-chevron-down);
+		mask-size: contain;
+		mask-repeat: no-repeat;
 		pointer-events: none;
 	}
 
@@ -316,6 +322,9 @@
 	}
 
 	.btn-descripcion {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		margin-top: 10px;
 		background: none;
 		border: none;
@@ -373,6 +382,9 @@
 	}
 
 	.botones button {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 		background: var(--surface);
 		border: 1px solid var(--border-strong);
 		border-radius: 999px;

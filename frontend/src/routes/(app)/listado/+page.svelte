@@ -4,6 +4,7 @@
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import SelectCatalogo from '$lib/components/SelectCatalogo.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Registro } from '$lib/api/client';
 
 	let buscar = $state('');
@@ -154,7 +155,7 @@
 								rel="noopener noreferrer"
 								class="link-trello"
 							>
-								Ver tarjeta ↗
+								Ver tarjeta <Icon nombre="external-link" tamano={12} />
 							</a>
 						{:else}
 							—
@@ -182,7 +183,7 @@
 										aria-label="Eliminar registro"
 										onclick={() => (confirmandoId = r.id)}
 									>
-										🗑
+										<Icon nombre="trash-2" tamano={14} />
 									</button>
 								</div>
 							{/if}
@@ -201,9 +202,9 @@
 <div class="paginacion">
 	<span>{total} registros</span>
 	<div class="botones">
-		<button disabled={page <= 1} onclick={() => (page -= 1)}>← Anterior</button>
+		<button disabled={page <= 1} onclick={() => (page -= 1)}><Icon nombre="chevron-left" tamano={14} /> Anterior</button>
 		<span>Página {page} de {totalPaginas}</span>
-		<button disabled={page >= totalPaginas} onclick={() => (page += 1)}>Siguiente →</button>
+		<button disabled={page >= totalPaginas} onclick={() => (page += 1)}>Siguiente <Icon nombre="chevron-right" tamano={14} /></button>
 	</div>
 </div>
 
@@ -252,13 +253,17 @@
 	}
 
 	.filtros :global(.campo)::after {
-		content: '▾';
+		content: '';
 		position: absolute;
 		right: 12px;
 		top: 50%;
+		width: 10px;
+		height: 10px;
 		transform: translateY(-50%);
-		font-size: 10px;
-		color: var(--text-faint);
+		background-color: var(--text-faint);
+		mask-image: var(--icono-chevron-down);
+		mask-size: contain;
+		mask-repeat: no-repeat;
 		pointer-events: none;
 	}
 
@@ -498,6 +503,9 @@
 	}
 
 	.botones button {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 		background: var(--surface);
 		border: 1px solid var(--border-strong);
 		border-radius: 999px;

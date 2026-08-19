@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { rutaSonidoParaAviso, type TipoAviso } from '$lib/notificaciones';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let visible = $state(false);
 	let tipo = $state<TipoAviso>('exito');
@@ -28,9 +29,9 @@
 
 {#if visible}
 	<div class="popup-aviso" class:exito={tipo === 'exito'} class:error={tipo === 'error'} role="status">
-		<span class="icono" aria-hidden="true">{tipo === 'exito' ? '✓' : '✕'}</span>
+		<span class="icono"><Icon nombre={tipo === 'exito' ? 'check' : 'x'} tamano={16} /></span>
 		<span class="mensaje">{mensaje}</span>
-		<button class="cerrar" onclick={cerrar} aria-label="Cerrar">✕</button>
+		<button class="cerrar" onclick={cerrar} aria-label="Cerrar"><Icon nombre="x" tamano={14} /></button>
 	</div>
 {/if}
 
@@ -62,7 +63,8 @@
 	}
 
 	.icono {
-		font-size: 16px;
+		display: flex;
+		flex-shrink: 0;
 	}
 
 	.mensaje {
@@ -70,6 +72,7 @@
 	}
 
 	.cerrar {
+		display: flex;
 		position: absolute;
 		top: 8px;
 		right: 10px;
@@ -78,7 +81,6 @@
 		color: white;
 		opacity: 0.8;
 		cursor: pointer;
-		font-size: 12px;
 		padding: 4px;
 	}
 

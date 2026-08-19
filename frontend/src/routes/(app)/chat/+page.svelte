@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { api, type MensajeChat } from '$lib/api/client';
 	import { extraerImagenDePortapapeles, extraerPrimerArchivoSoltado } from '$lib/chatAdjuntos';
 
@@ -164,7 +165,7 @@
 								</a>
 							{:else}
 								<a class="adjunto-archivo" href={m.archivo_url} target="_blank" rel="noopener noreferrer">
-									📎 {m.archivo_nombre ?? 'Archivo adjunto'}
+									<Icon nombre="paperclip" tamano={13} /> {m.archivo_nombre ?? 'Archivo adjunto'}
 								</a>
 							{/if}
 						{/if}
@@ -181,13 +182,13 @@
 	<form class="form-envio" onsubmit={(e) => (e.preventDefault(), enviar())}>
 		{#if archivo}
 			<span class="archivo-elegido">
-				📎 {archivo.name}
-				<button type="button" onclick={quitarArchivo} aria-label="Quitar archivo">✕</button>
+				<Icon nombre="paperclip" tamano={13} /> {archivo.name}
+				<button type="button" onclick={quitarArchivo} aria-label="Quitar archivo"><Icon nombre="x" tamano={13} /></button>
 			</span>
 		{/if}
 		<div class="fila-envio">
 			<label class="btn-adjuntar" title="Adjuntar archivo">
-				📎
+				<Icon nombre="paperclip" tamano={17} />
 				<input bind:this={inputArchivo} type="file" onchange={alElegirArchivo} hidden />
 			</label>
 			<input

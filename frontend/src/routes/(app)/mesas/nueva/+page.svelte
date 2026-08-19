@@ -9,6 +9,7 @@
 	import Celebracion from '$lib/components/Celebracion.svelte';
 	import type AnimacionExito3D from '$lib/components/AnimacionExito3D.svelte';
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Mesa, type SintesisSolucion } from '$lib/api/client';
 	import { sugerenciasParaCategoria } from '$lib/sugerenciasSolucion';
 	import { ordenarPorActividadReciente } from '$lib/ordenActividadMesa';
@@ -382,7 +383,8 @@
 					class:activo={yaResuelta}
 					onclick={() => (yaResuelta = !yaResuelta)}
 				>
-					{yaResuelta ? '✓ Información de cierre agregada' : '+ Agregar información de cierre'}
+					{#if yaResuelta}<Icon nombre="check" tamano={13} />{/if}
+					{yaResuelta ? 'Información de cierre agregada' : '+ Agregar información de cierre'}
 				</button>
 				<button type="button" class="btn-vaciar-cierre" onclick={vaciarCierre}>
 					Vaciar cierre
@@ -398,7 +400,7 @@
 								<div class="sugerencias-solucion">
 									{#each sugerenciasSolucion as s}
 										<button type="button" class="pill-sugerencia" title={s.texto} onclick={() => usarSugerencia(s)}>
-											💡 {s.titulo}
+											<Icon nombre="lightbulb" tamano={12} /> {s.titulo}
 										</button>
 									{/each}
 								</div>
@@ -693,6 +695,9 @@
 	}
 
 	.btn-info-cierre {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 		align-self: flex-start;
 		background: none;
 		border: 1px dashed var(--border-strong);

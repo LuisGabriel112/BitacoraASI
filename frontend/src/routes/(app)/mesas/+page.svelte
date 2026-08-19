@@ -5,6 +5,7 @@
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import BotonGenerarReporte from '$lib/components/BotonGenerarReporte.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Mesa, type PanelMesasKPIs } from '$lib/api/client';
 
 	let kpis = $state<PanelMesasKPIs | null>(null);
@@ -160,7 +161,7 @@
 					<li class:resuelta={!!m.fecha_cierre_real} in:fade={{ duration: 200, delay: i * 30 }}>
 						<div class="prioritaria-cabecera">
 							{#if m.fecha_cierre_real}
-								<span class="marca-resuelta" title="Ya resuelta">✓</span>
+								<span class="marca-resuelta" title="Ya resuelta"><Icon nombre="check" tamano={13} /></span>
 							{/if}
 							{#if m.enlace}
 								<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="mini-codigo" title="Abrir en Proactivanet">
@@ -223,7 +224,7 @@
 								<td class="codigo" onclick={noPropagar}>
 									{#if m.enlace}
 										<a href={m.enlace} target="_blank" rel="noopener noreferrer" class="link-codigo" title="Abrir en Proactivanet">
-											{m.codigo} ↗
+											{m.codigo} <Icon nombre="external-link" tamano={12} />
 										</a>
 									{:else}
 										<span class="sin-enlace">{m.codigo}</span>
@@ -427,8 +428,8 @@
 	}
 
 	.marca-resuelta {
+		display: inline-flex;
 		color: var(--success);
-		font-weight: 700;
 		flex-shrink: 0;
 	}
 

@@ -2,6 +2,7 @@
 	import { api, type Catalogo } from '$lib/api/client';
 	import { coincidenciaExacta } from '$lib/catalogoMatch';
 	import { agregarAlCache, catalogoCompleto } from '$lib/catalogoCache';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		catalogo,
@@ -123,7 +124,7 @@
 			onblur={() => setTimeout(() => ((abierto = false), resolverPendiente()), 120)}
 			onkeydown={alTeclado}
 		/>
-		{#if selectedId}<span class="marca-ok" title="Seleccionado">✓</span>{/if}
+		{#if selectedId}<span class="marca-ok" title="Seleccionado"><Icon nombre="check" tamano={13} /></span>{/if}
 
 		{#if abierto && (opciones.length > 0 || (texto.trim() && !cargando))}
 			<ul class="lista" role="listbox">
@@ -187,6 +188,7 @@
 	}
 
 	.marca-ok {
+		display: flex;
 		position: absolute;
 		right: 10px;
 		top: 50%;

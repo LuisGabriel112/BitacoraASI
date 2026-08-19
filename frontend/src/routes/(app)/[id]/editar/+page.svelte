@@ -3,6 +3,7 @@
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import SelectCatalogo from '$lib/components/SelectCatalogo.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Registro } from '$lib/api/client';
 
 	const registroId = $derived(Number($page.params.id));
@@ -101,7 +102,7 @@
 <svelte:window onkeydown={alTeclado} />
 
 <h1 class="font-display">Editar registro</h1>
-<p class="subtitulo"><a href="/listado">← Volver al listado</a></p>
+<p class="subtitulo"><a href="/listado"><Icon nombre="chevron-left" tamano={14} /> Volver al listado</a></p>
 
 {#if cargando}
 	<p class="cargando">Cargando registro…</p>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
+
 	function temaActual(): 'light' | 'dark' {
 		const guardado = localStorage.getItem('tema');
 		if (guardado === 'light' || guardado === 'dark') return guardado;
@@ -24,7 +26,7 @@
 	aria-label={tema === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
 	title={tema === 'light' ? 'Modo oscuro' : 'Modo claro'}
 >
-	{tema === 'light' ? '☾' : '☀'}
+	<Icon nombre={tema === 'light' ? 'moon' : 'sun'} tamano={16} />
 </button>
 
 <style>
@@ -39,7 +41,6 @@
 		justify-content: center;
 		color: var(--text);
 		cursor: pointer;
-		font-size: 14px;
 		flex-shrink: 0;
 	}
 

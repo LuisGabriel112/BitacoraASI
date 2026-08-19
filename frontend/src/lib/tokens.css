@@ -46,6 +46,10 @@
 	--nav-width: 240px;
 	--glass-blur: blur(20px) saturate(160%);
 	--blob-opacity: 0.35;
+
+	/* icono chevron-down (Lucide) para indicadores CSS ::after — se pinta con
+	   mask-image + background-color para heredar el color del tema */
+	--icono-chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 /* modo claro — sigue la preferencia del sistema por default */

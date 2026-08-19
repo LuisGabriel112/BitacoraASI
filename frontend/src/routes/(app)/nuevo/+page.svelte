@@ -6,6 +6,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
 	import Celebracion from '$lib/components/Celebracion.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import type AnimacionExito3D from '$lib/components/AnimacionExito3D.svelte';
 	import { RUTA_SONIDO_EE_ATZIMBA, esPrimerSoporteDelDiaDeAtzimba } from '$lib/easterEggs';
 	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
@@ -150,7 +151,7 @@
 
 	function revisarEasterEggAtzimba(registro: Registro, logros: string[]): boolean {
 		if (!esPrimerSoporteDelDiaDeAtzimba(registro.atendio.nombre, logros)) return false;
-		aviso?.mostrar('exito', `¡Primer soporte de hoy de ${registro.atendio.nombre}! 🎉`, RUTA_SONIDO_EE_ATZIMBA);
+		aviso?.mostrar('exito', `¡Primer soporte de hoy de ${registro.atendio.nombre}!`, RUTA_SONIDO_EE_ATZIMBA);
 		return true;
 	}
 
@@ -217,7 +218,7 @@
 <div class="columnas">
 	<div class="columna-izquierda">
 		<label class="dropzone" class:deshabilitado={extrayendo}>
-			<span class="dropzone-icono" aria-hidden="true">⇪</span>
+			<span class="dropzone-icono"><Icon nombre="upload" tamano={22} /></span>
 			<span class="dropzone-texto font-display">
 				{extrayendo ? 'Analizando imagen…' : 'Adjuntar captura'}
 			</span>
@@ -378,7 +379,7 @@
 	}
 
 	.dropzone-icono {
-		font-size: 22px;
+		display: flex;
 		color: var(--accent);
 	}
 

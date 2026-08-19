@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
+
 	let {
 		tipo,
 		children,
@@ -11,8 +13,8 @@
 </script>
 
 <div class="toast" data-tipo={tipo} role="status">
-	<span class="icono" aria-hidden="true">
-		{#if tipo === 'ok'}✓{:else if tipo === 'error'}✕{:else}…{/if}
+	<span class="icono">
+		{#if tipo === 'ok'}<Icon nombre="check" tamano={14} />{:else if tipo === 'error'}<Icon nombre="x" tamano={14} />{:else}…{/if}
 	</span>
 	<span class="mensaje">{@render children()}</span>
 	{#if accion}
@@ -30,6 +32,11 @@
 		border: 1px solid var(--border-strong);
 		background: var(--surface-raised);
 		font-size: 13px;
+	}
+
+	.icono {
+		display: flex;
+		flex-shrink: 0;
 	}
 
 	.toast[data-tipo='ok'] {

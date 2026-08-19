@@ -5,6 +5,8 @@
 	import { api } from '$lib/api/client';
 	import { estadoPersonaje, limpiarPersonaje } from '$lib/personaje.svelte';
 	import Reloj from '$lib/components/Reloj.svelte';
+	import Icon from '$lib/components/Icon.svelte';
+	import type { NombreIcono } from '$lib/icons';
 
 	const semana = semanaActual();
 	const personaje = $derived(estadoPersonaje.actual);
@@ -15,26 +17,26 @@
 		await goto('/login');
 	}
 
-	const itemsOperativa = [
-		{ href: '/', label: 'Panel', icon: '▤' },
-		{ href: '/nuevo', label: 'Nuevo registro', icon: '＋' },
-		{ href: '/listado', label: 'Listado', icon: '☰' },
-		{ href: '/reporte', label: 'Reporte semanal', icon: '▥' }
+	const itemsOperativa: { href: string; label: string; icon: NombreIcono }[] = [
+		{ href: '/', label: 'Panel', icon: 'layout-dashboard' },
+		{ href: '/nuevo', label: 'Nuevo registro', icon: 'plus' },
+		{ href: '/listado', label: 'Listado', icon: 'list' },
+		{ href: '/reporte', label: 'Reporte semanal', icon: 'bar-chart-2' }
 	];
 
-	const itemsAdministrativa = [
-		{ href: '/mesas', label: 'Resumen', icon: '▤' },
-		{ href: '/mesas/nueva', label: 'Nueva mesa', icon: '＋' },
-		{ href: '/mesas/listado', label: 'Listado', icon: '☰' },
-		{ href: '/mesas/manual', label: 'Manual', icon: '📖' }
+	const itemsAdministrativa: { href: string; label: string; icon: NombreIcono }[] = [
+		{ href: '/mesas', label: 'Resumen', icon: 'layout-dashboard' },
+		{ href: '/mesas/nueva', label: 'Nueva mesa', icon: 'plus' },
+		{ href: '/mesas/listado', label: 'Listado', icon: 'list' },
+		{ href: '/mesas/manual', label: 'Manual', icon: 'book-open' }
 	];
 
-	const itemsRpg = [
-		{ href: '/personaje', label: 'Mi personaje', icon: '🛡' },
-		{ href: '/jefe', label: 'Jefe semanal', icon: '👹' },
-		{ href: '/mascotas', label: 'Mascotas', icon: '🏆' },
-		{ href: '/hub', label: 'En línea', icon: '🟢' },
-		{ href: '/chat', label: 'Chat', icon: '💬' }
+	const itemsRpg: { href: string; label: string; icon: NombreIcono }[] = [
+		{ href: '/personaje', label: 'Mi personaje', icon: 'shield' },
+		{ href: '/jefe', label: 'Jefe semanal', icon: 'skull' },
+		{ href: '/mascotas', label: 'Mascotas', icon: 'trophy' },
+		{ href: '/hub', label: 'En línea', icon: 'circle' },
+		{ href: '/chat', label: 'Chat', icon: 'message-circle' }
 	];
 
 	const grupos = [
@@ -64,7 +66,7 @@
 
 <aside class="nav">
 	<div class="marca">
-		<span class="marca-icono">⚓</span>
+		<span class="marca-icono"><Icon nombre="anchor" tamano={18} /></span>
 		<span class="font-display marca-texto">Bitácora ASIPONA</span>
 	</div>
 
@@ -87,7 +89,7 @@
 				<span class="personaje-nivel">Nv. {personaje.nivel} · {personaje.titulo}</span>
 			</div>
 			<button type="button" class="cerrar-sesion" onclick={cerrarSesion} title="Cerrar sesión" aria-label="Cerrar sesión">
-				⏻
+				<Icon nombre="power" tamano={16} />
 			</button>
 		</div>
 	{/if}
@@ -101,13 +103,15 @@
 				aria-expanded={!colapsadas[grupo.clave]}
 			>
 				<span>{grupo.titulo}</span>
-				<span class="chevron" class:girado={colapsadas[grupo.clave]} aria-hidden="true">▾</span>
+				<span class="chevron" class:girado={colapsadas[grupo.clave]} aria-hidden="true">
+					<Icon nombre="chevron-down" tamano={12} />
+				</span>
 			</button>
 			{#if !colapsadas[grupo.clave]}
 				<nav>
 					{#each grupo.items as item}
 						<a href={item.href} class:activo={$page.url.pathname === item.href}>
-							<span class="icono" aria-hidden="true">{item.icon}</span>
+							<span class="icono"><Icon nombre={item.icon} tamano={16} /></span>
 							{item.label}
 						</a>
 					{/each}
@@ -272,7 +276,7 @@
 	}
 
 	.chevron {
-		font-size: 9px;
+		display: flex;
 		transition: transform 0.15s ease;
 	}
 
@@ -311,8 +315,10 @@
 	}
 
 	.icono {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		width: 16px;
-		text-align: center;
 		color: var(--text-faint);
 	}
 

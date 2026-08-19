@@ -6,6 +6,7 @@
 	import Celebracion from '$lib/components/Celebracion.svelte';
 	import BotonGenerarReporte from '$lib/components/BotonGenerarReporte.svelte';
 	import GestionCatalogos from '$lib/components/GestionCatalogos.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { semanaActual } from '$lib/semana';
 	import { api, type Mesa } from '$lib/api/client';
 
@@ -296,15 +297,15 @@
 									class="link-codigo"
 									title="Abrir en Proactivanet"
 								>
-									{m.codigo} ↗
+									{m.codigo} <Icon nombre="external-link" tamano={12} />
 								</a>
 							{:else}
 								<span class="sin-enlace">{m.codigo}</span>
 							{/if}
 						</td>
 						<td class="titulo-col">
-							{#if m.prioridad}<span class="badge-prioridad" title="Prioritaria">❗</span>{/if}
-							{#if m.destacada}<span class="badge-destacada" title="Destacada">⭐</span>{/if}
+							{#if m.prioridad}<span class="badge-prioridad" title="Prioritaria"><Icon nombre="flag" tamano={13} /></span>{/if}
+							{#if m.destacada}<span class="badge-destacada" title="Destacada"><Icon nombre="star" tamano={13} /></span>{/if}
 							{m.titulo}
 						</td>
 						<td>{formatearFechaHora(m.fecha_carga)}</td>
@@ -335,7 +336,7 @@
 										aria-label={m.prioridad ? 'Quitar prioridad' : 'Marcar como prioritaria'}
 										onclick={() => alternarPrioridad(m)}
 									>
-										❗
+										<Icon nombre="flag" tamano={14} />
 									</button>
 									<button
 										type="button"
@@ -345,14 +346,14 @@
 										aria-label={m.destacada ? 'Quitar de destacadas' : 'Marcar como destacada'}
 										onclick={() => alternarDestacada(m)}
 									>
-										⭐
+										<Icon nombre="star" tamano={14} />
 									</button>
 									{#if !m.fecha_cierre_real}
 										<button class="btn-cerrar" onclick={() => abrirCierre(m.id)}>Cerrar</button>
 									{/if}
 									<a class="btn-editar" href="/mesas/{m.id}/editar">Editar</a>
 									<button class="btn-eliminar" title="Eliminar mesa" aria-label="Eliminar mesa" onclick={() => (confirmandoId = m.id)}>
-										🗑
+										<Icon nombre="trash-2" tamano={14} />
 									</button>
 								</div>
 							{/if}
@@ -447,9 +448,9 @@
 <div class="paginacion">
 	<span>{total} mesas</span>
 	<div class="botones">
-		<button disabled={page <= 1} onclick={() => (page -= 1)}>← Anterior</button>
+		<button disabled={page <= 1} onclick={() => (page -= 1)}><Icon nombre="chevron-left" tamano={14} /> Anterior</button>
 		<span>Página {page} de {totalPaginas}</span>
-		<button disabled={page >= totalPaginas} onclick={() => (page += 1)}>Siguiente →</button>
+		<button disabled={page >= totalPaginas} onclick={() => (page += 1)}>Siguiente <Icon nombre="chevron-right" tamano={14} /></button>
 	</div>
 </div>
 
@@ -503,13 +504,17 @@
 
 	.filtros :global(.campo)::after,
 	.filtros .campo::after {
-		content: '▾';
+		content: '';
 		position: absolute;
 		right: 12px;
 		top: 50%;
+		width: 10px;
+		height: 10px;
 		transform: translateY(-50%);
-		font-size: 10px;
-		color: var(--text-faint);
+		background-color: var(--text-faint);
+		mask-image: var(--icono-chevron-down);
+		mask-size: contain;
+		mask-repeat: no-repeat;
 		pointer-events: none;
 	}
 
@@ -738,7 +743,8 @@
 
 	.badge-prioridad,
 	.badge-destacada {
-		font-size: 11px;
+		display: inline-flex;
+		vertical-align: middle;
 		margin-right: 4px;
 	}
 
@@ -986,6 +992,9 @@
 	}
 
 	.botones button {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 		background: var(--surface);
 		border: 1px solid var(--border-strong);
 		border-radius: 999px;

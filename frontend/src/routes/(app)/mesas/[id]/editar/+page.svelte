@@ -6,6 +6,7 @@
 	import CampoGrupo from '$lib/components/CampoGrupo.svelte';
 	import LeyendaGrupos from '$lib/components/LeyendaGrupos.svelte';
 	import Celebracion from '$lib/components/Celebracion.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Mesa } from '$lib/api/client';
 
 	let celebracion: Celebracion;
@@ -152,9 +153,9 @@
 
 <h1 class="font-display">Editar mesa</h1>
 <p class="subtitulo">
-	<a href="/mesas/listado">← Volver al listado</a>
+	<a href="/mesas/listado"><Icon nombre="chevron-left" tamano={14} /> Volver al listado</a>
 	{#if enlace}
-		· <a href={enlace} target="_blank" rel="noopener noreferrer">Abrir en Proactivanet ↗</a>
+		· <a href={enlace} target="_blank" rel="noopener noreferrer">Abrir en Proactivanet <Icon nombre="external-link" tamano={13} /></a>
 	{/if}
 </p>
 
@@ -289,6 +290,9 @@
 	}
 
 	.subtitulo a {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		color: var(--accent-strong);
 	}
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api, type Catalogo } from '$lib/api/client';
 	import { invalidarCache } from '$lib/catalogoCache';
+	import Icon from '$lib/components/Icon.svelte';
 
 	type CatalogoMesa = 'categorias-mesa' | 'solicitantes-mesa' | 'resolutores-mesa' | 'ventanas-mesa';
 
@@ -81,7 +82,7 @@
 		>
 			<div class="modal-cabecera">
 				<h2 class="font-display">Gestionar catálogos</h2>
-				<button class="cerrar" onclick={cerrar} aria-label="Cerrar">✕</button>
+				<button class="cerrar" onclick={cerrar} aria-label="Cerrar"><Icon nombre="x" tamano={16} /></button>
 			</div>
 
 			<div class="pestanas">
@@ -128,7 +129,7 @@
 										aria-label="Eliminar opción"
 										onclick={() => (confirmandoId = item.id)}
 									>
-										🗑
+										<Icon nombre="trash-2" tamano={14} />
 									</button>
 								{/if}
 							</li>
@@ -180,11 +181,13 @@
 	}
 
 	.cerrar {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		background: none;
 		border: none;
 		color: var(--text-faint);
 		cursor: pointer;
-		font-size: 14px;
 	}
 
 	.cerrar:hover {
@@ -251,12 +254,14 @@
 	}
 
 	.btn-eliminar {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		background: none;
 		border: 1px solid transparent;
 		border-radius: var(--radius);
 		color: var(--text-faint);
 		cursor: pointer;
-		font-size: 13px;
 		padding: 4px 8px;
 		flex-shrink: 0;
 	}

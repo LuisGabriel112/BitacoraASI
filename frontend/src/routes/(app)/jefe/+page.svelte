@@ -9,6 +9,8 @@
 	import JuegoMemorama from '$lib/components/JuegoMemorama.svelte';
 	import JuegoReaccion from '$lib/components/JuegoReaccion.svelte';
 	import JuegoRuleta from '$lib/components/JuegoRuleta.svelte';
+	import Icon from '$lib/components/Icon.svelte';
+	import type { NombreIcono } from '$lib/icons';
 	import { api, type DanioJefeEvento, type Jefe } from '$lib/api/client';
 
 	const INTERVALO_MS = 10_000;
@@ -24,15 +26,15 @@
 		minijuego_ruleta: 'Ruleta rusa'
 	};
 
-	const ICONO_MOTIVO: Record<string, string> = {
-		mesa_creada: '🎫',
-		mesa_cerrada: '✅',
-		registro_creado: '📋',
-		minijuego_pelota: '🎾',
-		minijuego_trivia: '🧠',
-		minijuego_memorama: '🃏',
-		minijuego_reaccion: '⚡',
-		minijuego_ruleta: '🎲'
+	const ICONO_MOTIVO: Record<string, NombreIcono> = {
+		mesa_creada: 'ticket',
+		mesa_cerrada: 'check-circle-2',
+		registro_creado: 'clipboard-list',
+		minijuego_pelota: 'target',
+		minijuego_trivia: 'brain',
+		minijuego_memorama: 'grid-3x3',
+		minijuego_reaccion: 'zap',
+		minijuego_ruleta: 'dices'
 	};
 
 	let jefe = $state<Jefe | null>(null);
@@ -89,7 +91,10 @@
 			<span class="vida-detalle">{jefe.vida_actual} / {jefe.vida_max} de vida</span>
 
 			{#if jefe.derrotado}
-				<p class="mensaje-derrota">¡El equipo derrotó al jefe de esta semana! 🎉</p>
+				<p class="mensaje-derrota">
+					<Icon nombre="party-popper" tamano={16} />
+					¡El equipo derrotó al jefe de esta semana!
+				</p>
 			{/if}
 		</section>
 
@@ -101,7 +106,7 @@
 				<ul class="lista-danos">
 					{#each danos as d, i (d.id)}
 						<li in:fade={{ duration: 200, delay: Math.min(i, 15) * 20 }}>
-							<span class="icono-dano" aria-hidden="true">{ICONO_MOTIVO[d.motivo] ?? '⚔️'}</span>
+							<span class="icono-dano"><Icon nombre={ICONO_MOTIVO[d.motivo] ?? 'swords'} tamano={16} /></span>
 							<div class="dano-info">
 								<span class="dano-motivo">{ETIQUETA_MOTIVO[d.motivo] ?? d.motivo}</span>
 								<span class="dano-autor">{d.nombre_capturado}</span>
@@ -193,6 +198,9 @@
 	}
 
 	.mensaje-derrota {
+		display: flex;
+		align-items: center;
+		gap: 8px;
 		margin-top: 16px;
 		font-weight: 600;
 		color: var(--success);
@@ -238,7 +246,7 @@
 	}
 
 	.icono-dano {
-		font-size: 16px;
+		display: flex;
 		flex-shrink: 0;
 	}
 

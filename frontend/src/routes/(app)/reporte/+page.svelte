@@ -2,6 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import BarChartHorizontal from '$lib/components/BarChartHorizontal.svelte';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { api, type GrupoSoporte, type ReporteSemanal } from '$lib/api/client';
 
 	function semanaISOActual() {
@@ -80,9 +81,13 @@
 <h1 class="font-display">Reporte semanal</h1>
 
 <div class="selector-semana">
-	<button onclick={() => (semanaInput = sumarSemanas(semanaInput, -1))} aria-label="Semana anterior">←</button>
+	<button onclick={() => (semanaInput = sumarSemanas(semanaInput, -1))} aria-label="Semana anterior">
+		<Icon nombre="chevron-left" tamano={16} />
+	</button>
 	<input type="week" bind:value={semanaInput} />
-	<button onclick={() => (semanaInput = sumarSemanas(semanaInput, 1))} aria-label="Semana siguiente">→</button>
+	<button onclick={() => (semanaInput = sumarSemanas(semanaInput, 1))} aria-label="Semana siguiente">
+		<Icon nombre="chevron-right" tamano={16} />
+	</button>
 	<a href={api.exportUrl('xlsx', { semana: semanaEtiqueta })} class="boton-excel">Exportar Excel</a>
 </div>
 
@@ -177,6 +182,9 @@
 	}
 
 	.selector-semana button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		background: var(--surface);
 		border: 1px solid var(--border-strong);
 		border-radius: var(--radius);

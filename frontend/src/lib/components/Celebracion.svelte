@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { MENSAJES_LOGRO } from '$lib/logros';
+	import Icon from '$lib/components/Icon.svelte';
 
 	type Particula = {
 		id: number;
@@ -61,7 +62,7 @@
 		{/each}
 	</div>
 	<div class="banner-logro" role="status">
-		<button class="cerrar" onclick={cerrar} aria-label="Cerrar">✕</button>
+		<button class="cerrar" onclick={cerrar} aria-label="Cerrar"><Icon nombre="x" tamano={16} /></button>
 		<ul class="lista-logros">
 			{#each logrosActivos as clave (clave)}
 				<li>
@@ -160,6 +161,7 @@
 	}
 
 	.cerrar {
+		display: flex;
 		position: absolute;
 		top: 8px;
 		right: 10px;
@@ -167,7 +169,6 @@
 		border: none;
 		color: var(--text-faint);
 		cursor: pointer;
-		font-size: 12px;
 		padding: 4px;
 	}
 
