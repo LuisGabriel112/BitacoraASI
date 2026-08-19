@@ -11,7 +11,7 @@
 	import JuegoRuleta from '$lib/components/JuegoRuleta.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { NombreIcono } from '$lib/icons';
-	import { api, type DanioJefeEvento, type Jefe } from '$lib/api/client';
+	import { api, type DanioJefeEvento, type Jefe, type JefeBonus } from '$lib/api/client';
 
 	const INTERVALO_MS = 10_000;
 
@@ -39,6 +39,7 @@
 
 	let jefe = $state<Jefe | null>(null);
 	let danos = $state<DanioJefeEvento[]>([]);
+	let jefesBonus = $state<JefeBonus[]>([]);
 	let cargando = $state(true);
 
 	function formatearHora(iso: string) {
@@ -50,10 +51,15 @@
 
 		async function tick() {
 			try {
-				const [respuestaJefe, respuestaDanos] = await Promise.all([api.jefeActual(), api.danosAlJefeActual()]);
+				const [respuestaJefe, respuestaDanos, respuestaBonus] = await Promise.all([
+					api.jefeActual(),
+					api.danosAlJefeActual(),
+					api.jefesBonusActuales()
+				]);
 				if (!cancelado) {
 					jefe = respuestaJefe;
 					danos = respuestaDanos;
+					jefesBonus = respuestaBonus;
 				}
 			} catch {
 				// un fallo de un ciclo de polling no debe romper la UI
@@ -120,6 +126,23 @@
 		</section>
 	</div>
 
+	{#if jefe.derrotado && jefesBonus.length > 0}
+		<section class="tarjeta bloque-bonus" in:fade={{ duration: 250, delay: 90 }}>
+			<h2 class="font-display">Jefes bonus — dan XP extra al derrotarlos</h2>
+			<div class="rejilla-bonus">
+				{#each jefesBonus as b}
+					<div class="tarjeta-bonus">
+						<Enemigo3D derrotado={b.derrotado} porcentajeVida={Math.max(0, (b.vida_actual / b.vida_max) * 100)} tamano={100} />
+						<span class="bonus-nombre">{b.nombre}</span>
+						<div class="barra-vida barra-vida-chica" title="{b.vida_actual} / {b.vida_max}">
+							<div class="barra-vida-relleno" class:derrotado={b.derrotado} style="width: {Math.max(0, (b.vida_actual / b.vida_max) * 100)}%"></div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
 	<div class="columnas juegos" in:fade={{ duration: 250, delay: 120 }}>
 		<JuegoGato />
 		<JuegoRPS />
@@ -146,6 +169,40 @@
 	.columnas.juegos {
 		margin-top: 20px;
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	}
+
+	.bloque-bonus {
+		margin-top: 20px;
+	}
+
+	.bloque-bonus h2 {
+		font-size: 14px;
+		margin: 0 0 16px;
+		color: var(--text-muted);
+	}
+
+	.rejilla-bonus {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		gap: 16px;
+	}
+
+	.tarjeta-bonus {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 6px;
+	}
+
+	.bonus-nombre {
+		font-size: 12px;
+		font-weight: 600;
+	}
+
+	.barra-vida-chica {
+		width: 100%;
+		height: 8px;
 	}
 
 	.tarjeta {

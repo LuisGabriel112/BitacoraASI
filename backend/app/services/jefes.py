@@ -4,7 +4,8 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import DanioJefeEvento, JefeSemanal
+from app.models import DanioJefeEvento, JefeBonus, JefeSemanal
+from app.services.xp import otorgar_xp
 
 # Constantes propias, a propósito desacopladas de XP_POR_ACCION/XP_POR_LOGRO en
 # app.services.rpg: recalibrar el nivel de personaje no debe acelerar/frenar sin
@@ -14,6 +15,12 @@ DANIO_POR_LOGRO = 25
 VIDA_MAX_SEMANAL = 1000
 FACTOR_DIFICULTAD = 1.2
 VIDA_MAX_TOPE = 5000
+
+# Jefes bonus: aparecen apenas el jefe principal de la semana cae. Más chicos
+# y rápidos de tumbar — el premio es XP extra, no alargar la semana.
+CANTIDAD_JEFES_BONUS = 2
+FACTOR_VIDA_JEFE_BONUS = 0.25
+XP_BONUS_JEFE_BONUS = 60
 
 NOMBRES_JEFE = [
     "Backlog Infinito",
@@ -26,11 +33,38 @@ NOMBRES_JEFE = [
     "El Reinicio Eterno",
 ]
 
+NOMBRES_JEFE_BONUS = [
+    "El Ticket Duplicado",
+    "El Falso Positivo",
+    "La Fuga de Memoria",
+    "El Deploy de Viernes",
+    "El Merge Conflict",
+    "La Caché Corrupta",
+]
+
 
 def nombre_del_jefe(semana: str) -> str:
     """Determinista por semana (mismo nombre toda la semana), varía entre semanas."""
     indice = int(hashlib.sha256(semana.encode()).hexdigest(), 16) % len(NOMBRES_JEFE)
     return NOMBRES_JEFE[indice]
+
+
+def nombre_del_jefe_bonus(semana: str, indice: int) -> str:
+    """Determinista por semana + índice, para que cada jefe bonus tenga nombre fijo."""
+    posicion = int(hashlib.sha256(f"{semana}-bonus-{indice}".encode()).hexdigest(), 16) % len(NOMBRES_JEFE_BONUS)
+    return NOMBRES_JEFE_BONUS[posicion]
+
+
+def vida_jefe_bonus(vida_max_semana: int) -> int:
+    return max(1, round(vida_max_semana * FACTOR_VIDA_JEFE_BONUS))
+
+
+def siguiente_jefe_bonus_activo(bonus: list[JefeBonus]) -> JefeBonus | None:
+    return next((b for b in bonus if b.vida_actual > 0), None)
+
+
+def cruzo_a_derrotado(vida_antes: int, vida_despues: int) -> bool:
+    return vida_antes > 0 and vida_despues <= 0
 
 
 def calcular_vida_max_siguiente(vida_max_anterior: int | None, derrotado_anterior: bool) -> int:
@@ -77,6 +111,7 @@ async def danar_jefe(session: AsyncSession, semana: str, cantidad: int, nombre: 
 
 async def _danar_jefe(session: AsyncSession, semana: str, cantidad: int, nombre: str, motivo: str) -> None:
     jefe = await obtener_o_crear_jefe(session, semana)
+    vida_antes = jefe.vida_actual
     await session.execute(
         update(JefeSemanal)
         .where(JefeSemanal.semana == semana)
@@ -84,6 +119,36 @@ async def _danar_jefe(session: AsyncSession, semana: str, cantidad: int, nombre:
     )
     session.add(DanioJefeEvento(jefe_id=jefe.id, nombre_capturado=nombre, cantidad=cantidad, motivo=motivo))
     await session.commit()
+
+    if cruzo_a_derrotado(vida_antes, max(0, vida_antes - cantidad)):
+        await _crear_jefes_bonus(session, jefe.id, semana, jefe.vida_max)
+    elif vida_antes <= 0:
+        await _danar_jefes_bonus(session, jefe.id, cantidad, nombre)
+
+
+async def _crear_jefes_bonus(session: AsyncSession, jefe_id: int, semana: str, vida_max_semana: int) -> None:
+    vida = vida_jefe_bonus(vida_max_semana)
+    for indice in range(CANTIDAD_JEFES_BONUS):
+        session.add(JefeBonus(jefe_id=jefe_id, nombre=nombre_del_jefe_bonus(semana, indice), vida_max=vida, vida_actual=vida))
+    await session.commit()
+
+
+async def bonus_jefes_de_semana(session: AsyncSession, jefe_id: int) -> list[JefeBonus]:
+    stmt = select(JefeBonus).where(JefeBonus.jefe_id == jefe_id).order_by(JefeBonus.id)
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def _danar_jefes_bonus(session: AsyncSession, jefe_id: int, cantidad: int, nombre: str) -> None:
+    objetivo = siguiente_jefe_bonus_activo(await bonus_jefes_de_semana(session, jefe_id))
+    if objetivo is None:
+        return
+
+    vida_despues = max(0, objetivo.vida_actual - cantidad)
+    await session.execute(update(JefeBonus).where(JefeBonus.id == objetivo.id).values(vida_actual=vida_despues))
+    await session.commit()
+
+    if cruzo_a_derrotado(objetivo.vida_actual, vida_despues):
+        await otorgar_xp(session, nombre, XP_BONUS_JEFE_BONUS, "jefe_bonus_derrotado")
 
 
 def _filtrar_derrotados(jefes: list[JefeSemanal]) -> list[JefeSemanal]:

@@ -4,9 +4,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
-from app.schemas import DanioJefeEventoOut, JefeOut, MascotaOut
+from app.schemas import DanioJefeEventoOut, JefeBonusOut, JefeOut, MascotaOut
 from app.services.auth import get_usuario_actual
-from app.services.jefes import eventos_de_dano, mascotas_derrotadas, nombre_del_jefe, obtener_o_crear_jefe
+from app.services.jefes import (
+    bonus_jefes_de_semana,
+    eventos_de_dano,
+    mascotas_derrotadas,
+    nombre_del_jefe,
+    obtener_o_crear_jefe,
+)
 from app.services.semanas import semana_de
 
 router = APIRouter(prefix="/jefes", tags=["jefes"], dependencies=[Depends(get_usuario_actual)])
@@ -30,6 +36,14 @@ async def danos_al_jefe_actual(session: AsyncSession = Depends(get_session)):
     semana = semana_de(date.today())
     jefe = await obtener_o_crear_jefe(session, semana)
     return await eventos_de_dano(session, jefe.id)
+
+
+@router.get("/actual/bonus", response_model=list[JefeBonusOut])
+async def jefes_bonus_actuales(session: AsyncSession = Depends(get_session)):
+    semana = semana_de(date.today())
+    jefe = await obtener_o_crear_jefe(session, semana)
+    bonus = await bonus_jefes_de_semana(session, jefe.id)
+    return [JefeBonusOut(nombre=b.nombre, vida_max=b.vida_max, vida_actual=b.vida_actual, derrotado=b.vida_actual <= 0) for b in bonus]
 
 
 @router.get("/mascotas", response_model=list[MascotaOut])

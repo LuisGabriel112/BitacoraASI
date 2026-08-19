@@ -7,13 +7,18 @@ from app.services.jefes import (
     DANIO_POR_ACCION,
     DANIO_POR_LOGRO,
     NOMBRES_JEFE,
+    NOMBRES_JEFE_BONUS,
     VIDA_MAX_SEMANAL,
     VIDA_MAX_TOPE,
     _filtrar_derrotados,
     calcular_vida_max_siguiente,
+    cruzo_a_derrotado,
     danar_jefe,
     nombre_del_jefe,
+    nombre_del_jefe_bonus,
     obtener_o_crear_jefe,
+    siguiente_jefe_bonus_activo,
+    vida_jefe_bonus,
 )
 
 
@@ -142,3 +147,45 @@ def test_filtra_solo_los_derrotados_entre_varias_semanas():
     derrotado_2 = SimpleNamespace(semana="SEM 32 - 2026", vida_actual=0)
 
     assert _filtrar_derrotados([derrotado_1, con_vida, derrotado_2]) == [derrotado_1, derrotado_2]
+
+
+def test_nombre_del_jefe_bonus_es_consistente():
+    assert nombre_del_jefe_bonus("SEM 32 - 2026", 0) == nombre_del_jefe_bonus("SEM 32 - 2026", 0)
+
+
+def test_nombre_del_jefe_bonus_sale_de_su_lista():
+    assert nombre_del_jefe_bonus("SEM 32 - 2026", 1) in NOMBRES_JEFE_BONUS
+
+
+def test_vida_jefe_bonus_es_25_por_ciento_redondeada():
+    assert vida_jefe_bonus(1000) == 250
+
+
+def test_vida_jefe_bonus_nunca_es_cero():
+    assert vida_jefe_bonus(2) >= 1
+
+
+def test_siguiente_jefe_bonus_activo_salta_al_derrotado():
+    derrotado = SimpleNamespace(id=1, vida_actual=0)
+    con_vida = SimpleNamespace(id=2, vida_actual=100)
+
+    assert siguiente_jefe_bonus_activo([derrotado, con_vida]) is con_vida
+
+
+def test_siguiente_jefe_bonus_activo_sin_candidatos_es_none():
+    derrotado_1 = SimpleNamespace(id=1, vida_actual=0)
+    derrotado_2 = SimpleNamespace(id=2, vida_actual=0)
+
+    assert siguiente_jefe_bonus_activo([derrotado_1, derrotado_2]) is None
+
+
+def test_cruzo_a_derrotado_de_vida_a_cero():
+    assert cruzo_a_derrotado(vida_antes=5, vida_despues=0) is True
+
+
+def test_cruzo_a_derrotado_ya_estaba_en_cero():
+    assert cruzo_a_derrotado(vida_antes=0, vida_despues=0) is False
+
+
+def test_cruzo_a_derrotado_sigue_con_vida():
+    assert cruzo_a_derrotado(vida_antes=100, vida_despues=40) is False

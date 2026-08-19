@@ -19,6 +19,7 @@ export type Personaje = {
 export type EventoXp = { cantidad: number; motivo: string; created_at: string };
 export type RankingItem = { nombre: string; avatar: string; nivel: number; xp: number };
 export type Jefe = { semana: string; nombre: string; vida_max: number; vida_actual: number; derrotado: boolean };
+export type JefeBonus = { nombre: string; vida_max: number; vida_actual: number; derrotado: boolean };
 export type Mascota = { semana: string; nombre: string; vida_max: number };
 export type DanioJefeEvento = {
 	id: number;
@@ -228,6 +229,8 @@ export const api = {
 	jefeActual: () => json<Jefe>('/jefes/actual'),
 
 	danosAlJefeActual: () => json<DanioJefeEvento[]>('/jefes/actual/danos'),
+
+	jefesBonusActuales: () => json<JefeBonus[]>('/jefes/actual/bonus'),
 
 	mascotas: () => json<Mascota[]>('/jefes/mascotas'),
 

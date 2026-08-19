@@ -63,6 +63,13 @@ class JefeOut(BaseModel):
     derrotado: bool
 
 
+class JefeBonusOut(BaseModel):
+    nombre: str
+    vida_max: int
+    vida_actual: int
+    derrotado: bool
+
+
 class MascotaOut(BaseModel):
     semana: str
     nombre: str
