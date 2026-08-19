@@ -159,6 +159,12 @@ def test_nombre_del_jefe_bonus_sale_de_su_lista():
     assert nombre_del_jefe_bonus("SEM 32 - 2026", 1) in NOMBRES_JEFE_BONUS
 
 
+def test_nombres_de_jefes_bonus_de_la_misma_semana_nunca_chocan():
+    for semana in ("SEM 34 - 2026", "SEM 01 - 2026", "SEM 52 - 2026", "SEM 12 - 2026"):
+        nombres = [nombre_del_jefe_bonus(semana, i) for i in range(jefes_module.CANTIDAD_JEFES_BONUS)]
+        assert len(set(nombres)) == len(nombres)
+
+
 def test_vida_jefe_bonus_es_25_por_ciento_redondeada():
     assert vida_jefe_bonus(1000) == 250
 

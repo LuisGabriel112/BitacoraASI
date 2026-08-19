@@ -14,6 +14,11 @@ Característica: Jefes bonus al derrotar al jefe semanal
     Cuando pido el nombre del jefe bonus
     Entonces esta en la lista de nombres de jefe bonus
 
+  Escenario: Los jefes bonus de la misma semana nunca tienen el mismo nombre
+    Dado la semana "SEM 34 - 2026" y los indices 0 a CANTIDAD_JEFES_BONUS - 1
+    Cuando pido el nombre de cada jefe bonus de esa semana
+    Entonces todos los nombres son distintos entre si
+
   Escenario: La vida de un jefe bonus es una fraccion de la vida del jefe principal
     Dado que el jefe principal tiene 1000 de vida maxima
     Cuando calculo la vida de un jefe bonus

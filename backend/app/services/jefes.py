@@ -50,9 +50,12 @@ def nombre_del_jefe(semana: str) -> str:
 
 
 def nombre_del_jefe_bonus(semana: str, indice: int) -> str:
-    """Determinista por semana + índice, para que cada jefe bonus tenga nombre fijo."""
-    posicion = int(hashlib.sha256(f"{semana}-bonus-{indice}".encode()).hexdigest(), 16) % len(NOMBRES_JEFE_BONUS)
-    return NOMBRES_JEFE_BONUS[posicion]
+    """Determinista por semana + índice. Usa un offset por semana y avanza por
+    índice (no un hash independiente por índice) para que los jefes bonus de
+    una misma semana nunca choquen en el mismo nombre — mientras
+    CANTIDAD_JEFES_BONUS <= len(NOMBRES_JEFE_BONUS), siempre son distintos."""
+    offset = int(hashlib.sha256(f"{semana}-bonus".encode()).hexdigest(), 16) % len(NOMBRES_JEFE_BONUS)
+    return NOMBRES_JEFE_BONUS[(offset + indice) % len(NOMBRES_JEFE_BONUS)]
 
 
 def vida_jefe_bonus(vida_max_semana: int) -> int:
