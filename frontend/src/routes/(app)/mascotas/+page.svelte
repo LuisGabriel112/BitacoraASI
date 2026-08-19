@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
-	import Enemigo3D from '$lib/components/Enemigo3D.svelte';
+	import Gatito3D from '$lib/components/Gatito3D.svelte';
+	import { colorGatito } from '$lib/colorGatito';
 	import { api, type Mascota } from '$lib/api/client';
 
 	let mascotas = $state<Mascota[]>([]);
@@ -13,7 +14,7 @@
 	});
 </script>
 
-<Header titulo="Mascotas" subtitulo="Cada jefe semanal que derrotamos se queda aquí para siempre." />
+<Header titulo="Mascotas" subtitulo="Cada jefe semanal que derrotamos se convierte en gatito. Tócalo para jugar." />
 
 {#if cargando}
 	<p class="cargando">Cargando mascotas…</p>
@@ -23,7 +24,7 @@
 	<div class="rejilla">
 		{#each mascotas as m}
 			<div class="tarjeta">
-				<Enemigo3D derrotado={true} porcentajeVida={0} tamano={140} />
+				<Gatito3D color={colorGatito(m.semana + m.nombre)} nombre={m.nombre} tamano={140} />
 				<h2 class="font-display">{m.nombre}</h2>
 				<span class="semana">{m.semana}</span>
 				<span class="vida-max">{m.vida_max} de vida máxima</span>
