@@ -86,6 +86,18 @@ async def _danar_jefe(session: AsyncSession, semana: str, cantidad: int, nombre:
     await session.commit()
 
 
+def _filtrar_derrotados(jefes: list[JefeSemanal]) -> list[JefeSemanal]:
+    return [j for j in jefes if j.vida_actual <= 0]
+
+
+async def mascotas_derrotadas(session: AsyncSession) -> list[JefeSemanal]:
+    """Cada jefe semanal que el equipo derrotó queda como mascota permanente
+    — no se borra nada, solo se filtran los jefes ya guardados en la tabla."""
+    stmt = select(JefeSemanal).order_by(JefeSemanal.created_at.desc())
+    jefes = (await session.execute(stmt)).scalars().all()
+    return _filtrar_derrotados(jefes)
+
+
 async def eventos_de_dano(session: AsyncSession, jefe_id: int, limite: int = 200) -> list[DanioJefeEvento]:
     stmt = (
         select(DanioJefeEvento)

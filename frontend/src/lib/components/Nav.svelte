@@ -32,6 +32,7 @@
 	const itemsRpg = [
 		{ href: '/personaje', label: 'Mi personaje', icon: '🛡' },
 		{ href: '/jefe', label: 'Jefe semanal', icon: '👹' },
+		{ href: '/mascotas', label: 'Mascotas', icon: '🏆' },
 		{ href: '/hub', label: 'En línea', icon: '🟢' },
 		{ href: '/chat', label: 'Chat', icon: '💬' }
 	];

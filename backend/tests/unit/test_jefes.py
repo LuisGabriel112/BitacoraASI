@@ -9,6 +9,7 @@ from app.services.jefes import (
     NOMBRES_JEFE,
     VIDA_MAX_SEMANAL,
     VIDA_MAX_TOPE,
+    _filtrar_derrotados,
     calcular_vida_max_siguiente,
     danar_jefe,
     nombre_del_jefe,
@@ -121,3 +122,23 @@ async def test_danar_jefe_nunca_propaga_excepcion():
     await danar_jefe(session, "SEM 32 - 2026", 5, "Alguien", "mesa_creada")
 
     session.rollback.assert_awaited()
+
+
+def test_jefe_con_vida_en_cero_es_mascota():
+    jefe = SimpleNamespace(semana="SEM 32 - 2026", vida_actual=0)
+
+    assert _filtrar_derrotados([jefe]) == [jefe]
+
+
+def test_jefe_con_vida_restante_no_es_mascota():
+    jefe = SimpleNamespace(semana="SEM 33 - 2026", vida_actual=150)
+
+    assert _filtrar_derrotados([jefe]) == []
+
+
+def test_filtra_solo_los_derrotados_entre_varias_semanas():
+    derrotado_1 = SimpleNamespace(semana="SEM 30 - 2026", vida_actual=0)
+    con_vida = SimpleNamespace(semana="SEM 31 - 2026", vida_actual=300)
+    derrotado_2 = SimpleNamespace(semana="SEM 32 - 2026", vida_actual=0)
+
+    assert _filtrar_derrotados([derrotado_1, con_vida, derrotado_2]) == [derrotado_1, derrotado_2]
