@@ -7,7 +7,7 @@ from app.database import get_session
 from app.schemas import DanioJefeEventoOut, JefeBonusOut, JefeOut, MascotaOut
 from app.services.auth import get_usuario_actual
 from app.services.jefes import (
-    bonus_jefes_de_semana,
+    asegurar_jefes_bonus,
     eventos_de_dano,
     mascotas_derrotadas,
     nombre_del_jefe,
@@ -42,7 +42,7 @@ async def danos_al_jefe_actual(session: AsyncSession = Depends(get_session)):
 async def jefes_bonus_actuales(session: AsyncSession = Depends(get_session)):
     semana = semana_de(date.today())
     jefe = await obtener_o_crear_jefe(session, semana)
-    bonus = await bonus_jefes_de_semana(session, jefe.id)
+    bonus = await asegurar_jefes_bonus(session, jefe)
     return [JefeBonusOut(nombre=b.nombre, vida_max=b.vida_max, vida_actual=b.vida_actual, derrotado=b.vida_actual <= 0) for b in bonus]
 
 

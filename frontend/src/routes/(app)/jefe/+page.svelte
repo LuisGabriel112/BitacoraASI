@@ -87,7 +87,7 @@
 {:else if jefe}
 	<div class="columnas">
 		<section class="tarjeta ficha-jefe" in:fade={{ duration: 250 }}>
-			<Enemigo3D derrotado={jefe.derrotado} {porcentajeVida} tamano={200} />
+			<Enemigo3D derrotado={jefe.derrotado} {porcentajeVida} nombre={jefe.nombre} tamano={200} />
 			<h2 class="font-display">{jefe.nombre}</h2>
 			<span class="semana">{jefe.semana}</span>
 
@@ -132,7 +132,7 @@
 			<div class="rejilla-bonus">
 				{#each jefesBonus as b}
 					<div class="tarjeta-bonus">
-						<Enemigo3D derrotado={b.derrotado} porcentajeVida={Math.max(0, (b.vida_actual / b.vida_max) * 100)} tamano={100} />
+						<Enemigo3D derrotado={b.derrotado} porcentajeVida={Math.max(0, (b.vida_actual / b.vida_max) * 100)} nombre={b.nombre} tamano={100} />
 						<span class="bonus-nombre">{b.nombre}</span>
 						<div class="barra-vida barra-vida-chica" title="{b.vida_actual} / {b.vida_max}">
 							<div class="barra-vida-relleno" class:derrotado={b.derrotado} style="width: {Math.max(0, (b.vida_actual / b.vida_max) * 100)}%"></div>

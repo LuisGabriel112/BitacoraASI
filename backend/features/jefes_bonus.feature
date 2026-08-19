@@ -43,3 +43,18 @@ Característica: Jefes bonus al derrotar al jefe semanal
     Dado vida antes en 0 y vida despues en 0
     Cuando reviso si cruzo a derrotado
     Entonces no cruzo a derrotado
+
+  Escenario: Jefe derrotado sin jefes bonus todavia los crea al consultarlos
+    Dado un jefe derrotado sin jefes bonus creados
+    Cuando aseguro los jefes bonus de ese jefe
+    Entonces se crean y se devuelven
+
+  Escenario: Jefe derrotado que ya tiene jefes bonus no crea de mas
+    Dado un jefe derrotado que ya tiene jefes bonus
+    Cuando aseguro los jefes bonus de ese jefe
+    Entonces se devuelven los existentes sin crear otros
+
+  Escenario: Jefe que sigue con vida no crea jefes bonus
+    Dado un jefe que todavia tiene vida
+    Cuando aseguro los jefes bonus de ese jefe
+    Entonces no se crea ninguno

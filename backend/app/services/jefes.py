@@ -123,7 +123,18 @@ async def _danar_jefe(session: AsyncSession, semana: str, cantidad: int, nombre:
     if cruzo_a_derrotado(vida_antes, max(0, vida_antes - cantidad)):
         await _crear_jefes_bonus(session, jefe.id, semana, jefe.vida_max)
     elif vida_antes <= 0:
+        await asegurar_jefes_bonus(session, jefe)
         await _danar_jefes_bonus(session, jefe.id, cantidad, nombre)
+
+
+async def asegurar_jefes_bonus(session: AsyncSession, jefe: JefeSemanal) -> list[JefeBonus]:
+    """Get-or-create: cubre el jefe que ya estaba derrotado antes de que
+    existieran los jefes bonus (o cualquier otro caso donde falten)."""
+    existentes = await bonus_jefes_de_semana(session, jefe.id)
+    if existentes or jefe.vida_actual > 0:
+        return existentes
+    await _crear_jefes_bonus(session, jefe.id, jefe.semana, jefe.vida_max)
+    return await bonus_jefes_de_semana(session, jefe.id)
 
 
 async def _crear_jefes_bonus(session: AsyncSession, jefe_id: int, semana: str, vida_max_semana: int) -> None:

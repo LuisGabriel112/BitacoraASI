@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from app.services import jefes as jefes_module
 from app.services.jefes import (
     DANIO_POR_ACCION,
     DANIO_POR_LOGRO,
@@ -11,6 +12,7 @@ from app.services.jefes import (
     VIDA_MAX_SEMANAL,
     VIDA_MAX_TOPE,
     _filtrar_derrotados,
+    asegurar_jefes_bonus,
     calcular_vida_max_siguiente,
     cruzo_a_derrotado,
     danar_jefe,
@@ -189,3 +191,50 @@ def test_cruzo_a_derrotado_ya_estaba_en_cero():
 
 def test_cruzo_a_derrotado_sigue_con_vida():
     assert cruzo_a_derrotado(vida_antes=100, vida_despues=40) is False
+
+
+@pytest.mark.asyncio
+async def test_asegurar_jefes_bonus_crea_si_derrotado_y_sin_bonus_aun(monkeypatch):
+    crear = AsyncMock()
+    monkeypatch.setattr(jefes_module, "_crear_jefes_bonus", crear)
+    creados = [SimpleNamespace(id=1), SimpleNamespace(id=2)]
+    llamadas = {"n": 0}
+
+    async def falso_bonus_de(session, jefe_id):
+        llamadas["n"] += 1
+        return [] if llamadas["n"] == 1 else creados
+
+    monkeypatch.setattr(jefes_module, "bonus_jefes_de_semana", falso_bonus_de)
+    jefe = SimpleNamespace(id=1, semana="SEM 32 - 2026", vida_max=1000, vida_actual=0)
+
+    resultado = await asegurar_jefes_bonus(AsyncMock(), jefe)
+
+    crear.assert_awaited_once()
+    assert resultado == creados
+
+
+@pytest.mark.asyncio
+async def test_asegurar_jefes_bonus_no_crea_de_mas_si_ya_existen(monkeypatch):
+    crear = AsyncMock()
+    monkeypatch.setattr(jefes_module, "_crear_jefes_bonus", crear)
+    existentes = [SimpleNamespace(id=1)]
+    monkeypatch.setattr(jefes_module, "bonus_jefes_de_semana", AsyncMock(return_value=existentes))
+    jefe = SimpleNamespace(id=1, semana="SEM 32 - 2026", vida_max=1000, vida_actual=0)
+
+    resultado = await asegurar_jefes_bonus(AsyncMock(), jefe)
+
+    crear.assert_not_called()
+    assert resultado == existentes
+
+
+@pytest.mark.asyncio
+async def test_asegurar_jefes_bonus_no_crea_si_jefe_sigue_con_vida(monkeypatch):
+    crear = AsyncMock()
+    monkeypatch.setattr(jefes_module, "_crear_jefes_bonus", crear)
+    monkeypatch.setattr(jefes_module, "bonus_jefes_de_semana", AsyncMock(return_value=[]))
+    jefe = SimpleNamespace(id=1, semana="SEM 32 - 2026", vida_max=1000, vida_actual=400)
+
+    resultado = await asegurar_jefes_bonus(AsyncMock(), jefe)
+
+    crear.assert_not_called()
+    assert resultado == []
