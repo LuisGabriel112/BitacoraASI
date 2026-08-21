@@ -1,17 +1,23 @@
 <script lang="ts">
-	import { formatearFechaHora, parsearFechaHoraPegada } from '$lib/fechaHora';
+	import { fechaHoraActualLocal, formatearFechaHora, parsearFechaHoraPegada } from '$lib/fechaHora';
 
 	let {
 		id,
 		label,
 		value = $bindable(''),
-		comoTexto = false
+		comoTexto = false,
+		actualizarAlHacerClic = false
 	}: {
 		id: string;
 		label: string;
 		value: string;
 		comoTexto?: boolean;
+		actualizarAlHacerClic?: boolean;
 	} = $props();
+
+	function alHacerClic() {
+		if (actualizarAlHacerClic) value = fechaHoraActualLocal();
+	}
 
 	function alPegar(e: ClipboardEvent) {
 		const texto = e.clipboardData?.getData('text') ?? '';
@@ -51,7 +57,7 @@
 			onblur={alPerderFocoTexto}
 		/>
 	{:else}
-		<input {id} type="datetime-local" bind:value onpaste={alPegar} />
+		<input {id} type="datetime-local" bind:value onpaste={alPegar} onclick={alHacerClic} />
 	{/if}
 </div>
 

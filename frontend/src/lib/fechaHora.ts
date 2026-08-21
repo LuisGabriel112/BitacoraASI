@@ -7,6 +7,13 @@ export function parsearFechaHoraPegada(texto: string): string | null {
 	return `${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}T${hora.padStart(2, '0')}:${min}`;
 }
 
+export function fechaHoraActualLocal(fecha: Date = new Date()): string {
+	const pad = (n: number) => String(n).padStart(2, '0');
+	const parteFecha = `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())}`;
+	const parteHora = `${pad(fecha.getHours())}:${pad(fecha.getMinutes())}`;
+	return `${parteFecha}T${parteHora}`;
+}
+
 export function formatearFechaHora(valorGuardado: string): string {
 	if (!valorGuardado) return '';
 	const [fecha, hora] = valorGuardado.split('T');

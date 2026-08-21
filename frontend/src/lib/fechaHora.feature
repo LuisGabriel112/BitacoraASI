@@ -32,3 +32,13 @@ Característica: Pegar fecha copiada de Proactivanet en campos de fecha/hora
     Dado que el valor guardado está vacío
     Cuando se formatea para mostrar en el campo de texto
     Entonces se muestra una cadena vacía
+
+Característica: Obtener la fecha y hora actual en formato datetime-local
+  Como usuario capturando el cierre de una mesa
+  Quiero un botón/clic que tome la fecha y hora actuales
+  Para no escribirlas a mano
+
+  Escenario: Convertir una fecha dada al formato datetime-local con ceros a la izquierda
+    Dado un instante "2026-01-05T03:07:00" (mes, día, hora y minuto de un solo dígito)
+    Cuando pido la fecha y hora actual en formato de campo
+    Entonces obtengo "2026-01-05T03:07"

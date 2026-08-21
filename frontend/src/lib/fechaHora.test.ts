@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatearFechaHora, parsearFechaHoraPegada } from './fechaHora';
+import { fechaHoraActualLocal, formatearFechaHora, parsearFechaHoraPegada } from './fechaHora';
 
 describe('parsearFechaHoraPegada', () => {
 	it('convierte una fecha DD/MM/AAAA HH:mm a formato datetime-local', () => {
@@ -35,5 +35,17 @@ describe('formatearFechaHora', () => {
 	it('es el inverso de parsearFechaHoraPegada para un valor ya normalizado', () => {
 		const iso = parsearFechaHoraPegada('05/08/2026 10:36')!;
 		expect(formatearFechaHora(iso)).toBe('05/08/2026 10:36');
+	});
+});
+
+describe('fechaHoraActualLocal', () => {
+	it('rellena con ceros mes, día, hora y minuto de un solo dígito', () => {
+		expect(fechaHoraActualLocal(new Date(2026, 0, 5, 3, 7))).toBe('2026-01-05T03:07');
+	});
+
+	it('usa la fecha y hora del sistema si no se le pasa una', () => {
+		const antes = new Date();
+		const resultado = fechaHoraActualLocal();
+		expect(resultado.slice(0, 4)).toBe(String(antes.getFullYear()));
 	});
 });

@@ -11,8 +11,12 @@
 	import AvisoResultado from '$lib/components/AvisoResultado.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Mesa, type SintesisSolucion } from '$lib/api/client';
-	import { sugerenciasParaCategoria } from '$lib/sugerenciasSolucion';
+	import { sugerenciasParaCategoria, sugerenciasPorTexto } from '$lib/sugerenciasSolucion';
 	import { ordenarPorActividadReciente } from '$lib/ordenActividadMesa';
+	import { limpiarExceptoResolutor } from '$lib/limpiezaFormularioMesa';
+	import { resolutorVinculadoA } from '$lib/resolutorCuenta';
+	import { catalogoCompleto } from '$lib/catalogoCache';
+	import { fechaHoraActualLocal } from '$lib/fechaHora';
 	import { tick } from 'svelte';
 
 	let celebracion: Celebracion;
@@ -24,11 +28,7 @@
 	let comboboxResolutor: ComboboxCreatable;
 	let comboboxVentana = $state<ComboboxCreatable | undefined>(undefined);
 
-	function ahora() {
-		const d = new Date();
-		const pad = (n: number) => String(n).padStart(2, '0');
-		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-	}
+	const ahora = fechaHoraActualLocal;
 
 	function hace7Dias() {
 		const d = new Date();
@@ -104,7 +104,9 @@
 		sessionStorage.setItem(CLAVE_BORRADOR, JSON.stringify(datos));
 	});
 
-	const sugerenciasSolucion = $derived(sugerenciasParaCategoria(sintesisSoluciones, categoriaId));
+	const sugerenciasSolucion = $derived(
+		sugerenciasPorTexto(sugerenciasParaCategoria(sintesisSoluciones, categoriaId), solucionTexto)
+	);
 
 	function usarSugerencia(s: SintesisSolucion) {
 		solucionTexto = s.texto;
@@ -136,9 +138,20 @@
 		expandidaId = expandidaId === id ? null : id;
 	}
 
+	async function precargarResolutorDeCuenta() {
+		const [personaje, lista] = await Promise.all([api.miPersonaje(), catalogoCompleto('resolutores-mesa')]);
+		if (resolutorId !== null) return;
+		const vinculado = resolutorVinculadoA(lista, personaje.id);
+		if (vinculado) {
+			resolutorId = vinculado.id;
+			resolutorNombre = vinculado.nombre;
+		}
+	}
+
 	$effect(() => {
 		cargarMesasRecientes();
 		api.sintesisSoluciones().then((s) => (sintesisSoluciones = s));
+		precargarResolutorDeCuenta();
 	});
 
 	function vaciarCierre() {
@@ -150,26 +163,38 @@
 		medidasImpacto = false;
 	}
 
+	function camposVaciosDelFormulario() {
+		return {
+			enlace: '', codigo: '', titulo: '', fechaCarga: ahora(), descripcion: '',
+			ventanaId: null as number | null, ventanaNombre: '', categoriaId: null as number | null, categoriaNombre: '',
+			solicitanteId: null as number | null, solicitanteNombre: '', resolutorId: null as number | null, resolutorNombre: '',
+			fechaEstimadaResolucion: '', yaResuelta: false, solucionTexto: '',
+			tipoSolucion: 'Modificación en BD' as const, fechaCierreReal: ahora(), medidasImpacto: false
+		};
+	}
+
 	function limpiar() {
-		enlace = '';
-		codigo = '';
-		titulo = '';
-		fechaCarga = ahora();
-		descripcion = '';
-		ventanaId = null;
-		ventanaNombre = '';
-		categoriaId = null;
-		categoriaNombre = '';
-		solicitanteId = null;
-		solicitanteNombre = '';
-		resolutorId = null;
-		resolutorNombre = '';
-		fechaEstimadaResolucion = '';
-		yaResuelta = false;
-		solucionTexto = '';
-		tipoSolucion = 'Modificación en BD';
-		fechaCierreReal = ahora();
-		medidasImpacto = false;
+		const vacio = camposVaciosDelFormulario();
+		const limpio = limpiarExceptoResolutor({ ...vacio, resolutorId, resolutorNombre }, vacio);
+		enlace = limpio.enlace;
+		codigo = limpio.codigo;
+		titulo = limpio.titulo;
+		fechaCarga = limpio.fechaCarga;
+		descripcion = limpio.descripcion;
+		ventanaId = limpio.ventanaId;
+		ventanaNombre = limpio.ventanaNombre;
+		categoriaId = limpio.categoriaId;
+		categoriaNombre = limpio.categoriaNombre;
+		solicitanteId = limpio.solicitanteId;
+		solicitanteNombre = limpio.solicitanteNombre;
+		resolutorId = limpio.resolutorId;
+		resolutorNombre = limpio.resolutorNombre;
+		fechaEstimadaResolucion = limpio.fechaEstimadaResolucion;
+		yaResuelta = limpio.yaResuelta;
+		solucionTexto = limpio.solucionTexto;
+		tipoSolucion = limpio.tipoSolucion;
+		fechaCierreReal = limpio.fechaCierreReal;
+		medidasImpacto = limpio.medidasImpacto;
 		resultado = null;
 		if (browser) sessionStorage.removeItem(CLAVE_BORRADOR);
 	}
@@ -297,13 +322,25 @@
 				<ul class="lista-capturados">
 					{#each mesasRecientes as m}
 						<li class="item-capturado">
-							<button type="button" class="item-boton" onclick={() => alternarExpandida(m.id)}>
-								<div class="item-cabecera">
+							<div class="item-cabecera">
+								{#if m.enlace}
+									<a
+										href={m.enlace}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="item-codigo item-enlace"
+										title="Abrir en Proactivanet"
+									>
+										{m.codigo} <Icon nombre="external-link" tamano={11} />
+									</a>
+								{:else}
 									<span class="item-codigo">{m.codigo}</span>
-									<span class="chip-estado" class:cerrada={!!m.fecha_cierre_real}>
-										{m.fecha_cierre_real ? 'Cerrada' : 'Abierta'}
-									</span>
-								</div>
+								{/if}
+								<span class="chip-estado" class:cerrada={!!m.fecha_cierre_real}>
+									{m.fecha_cierre_real ? 'Cerrada' : 'Abierta'}
+								</span>
+							</div>
+							<button type="button" class="item-boton" onclick={() => alternarExpandida(m.id)}>
 								<span class="item-titulo">{m.titulo}</span>
 								<span class="item-solicitante">{m.solicitante.nombre}</span>
 							</button>
@@ -420,7 +457,12 @@
 							</select>
 						</div>
 						<CampoGrupo grupo="b">
-							<FechaHoraInput id="fecha_cierre" label="Fecha y hora real de cierre" bind:value={fechaCierreReal} />
+							<FechaHoraInput
+								id="fecha_cierre"
+								label="Fecha y hora real de cierre"
+								bind:value={fechaCierreReal}
+								actualizarAlHacerClic
+							/>
 						</CampoGrupo>
 					</div>
 					<label class="check-medidas">
@@ -518,6 +560,9 @@
 	}
 
 	.item-capturado {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 		padding-bottom: 12px;
 		border-bottom: 1px solid var(--border);
 	}
@@ -552,6 +597,18 @@
 		font-size: 12px;
 		font-family: var(--font-mono);
 		color: var(--text-faint);
+	}
+
+	a.item-enlace {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		text-decoration: none;
+	}
+
+	a.item-enlace:hover {
+		color: var(--accent-strong);
+		text-decoration: underline;
 	}
 
 	.chip-estado {

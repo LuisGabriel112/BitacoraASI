@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { api, type Catalogo } from '$lib/api/client';
-	import { coincidenciaExacta } from '$lib/catalogoMatch';
+	import { coincidenciaExacta, filtrarPorFragmento } from '$lib/catalogoMatch';
 	import { agregarAlCache, catalogoCompleto } from '$lib/catalogoCache';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -37,11 +37,7 @@
 		});
 	});
 
-	const opciones = $derived.by(() => {
-		const q = texto.trim().toLowerCase();
-		const filtradas = q ? listaCompleta.filter((o) => o.nombre.toLowerCase().startsWith(q)) : listaCompleta;
-		return filtradas.slice(0, LIMITE_VISIBLE);
-	});
+	const opciones = $derived(filtrarPorFragmento(listaCompleta, texto).slice(0, LIMITE_VISIBLE));
 
 	function alEscribir(e: Event) {
 		texto = (e.target as HTMLInputElement).value;
