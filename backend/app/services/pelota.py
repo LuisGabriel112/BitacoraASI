@@ -10,7 +10,7 @@ from app.services.jefes import danar_jefe
 from app.services.semanas import semana_de
 
 CASILLAS_PELOTA = 3
-DANIO_PELOTA = 5
+DANIO_PELOTA = 2
 COOLDOWN_PELOTA = timedelta(minutes=5)
 
 

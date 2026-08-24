@@ -8,7 +8,7 @@ from app.services import cooldown as cooldown_service
 from app.services.jefes import danar_jefe
 from app.services.semanas import semana_de
 
-DANIO_REACCION = 5
+DANIO_REACCION = 2
 COOLDOWN_REACCION = timedelta(minutes=5)
 # Bajo 120ms nadie reacciona de verdad a un estímulo visual (probable script).
 # Arriba de 3s ya no es "reacción rápida" — probable valor manipulado o distracción.

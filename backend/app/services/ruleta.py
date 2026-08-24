@@ -9,7 +9,7 @@ from app.services import cooldown as cooldown_service
 from app.services.jefes import danar_jefe
 from app.services.semanas import semana_de
 
-DANIO_RULETA_GANA = 15
+DANIO_RULETA_GANA = 5
 PENALIZACION_RULETA_PIERDE = 5
 PROBABILIDAD_GANAR = 0.5
 COOLDOWN_RULETA = timedelta(minutes=5)

@@ -9,7 +9,7 @@ from app.services.jefes import danar_jefe
 from app.services.semanas import semana_de
 
 PARES_MEMORAMA = 6
-DANIO_MEMORAMA = 5
+DANIO_MEMORAMA = 2
 COOLDOWN_MEMORAMA = timedelta(minutes=5)
 # Nadie resuelve 6 pares (12 cartas) de verdad en menos de esto — filtra un
 # "completar" enviado sin haber jugado. El servidor mide el tiempo real

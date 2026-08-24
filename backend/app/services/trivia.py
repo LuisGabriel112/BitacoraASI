@@ -10,7 +10,7 @@ from app.services import cooldown as cooldown_service
 from app.services.jefes import danar_jefe
 from app.services.semanas import semana_de
 
-DANIO_TRIVIA = 5
+DANIO_TRIVIA = 2
 COOLDOWN_TRIVIA = timedelta(minutes=5)
 
 
