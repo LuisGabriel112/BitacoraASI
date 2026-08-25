@@ -186,11 +186,14 @@ def generar_xlsx_reporte(
         celda.fill = PatternFill("solid", fgColor=_COLOR_ENCABEZADO_FONDO)
     ws.row_dimensions[fila_encabezado].height = 20
 
+    _COLUMNA_MEDIDAS = 4
+
     borde_fino = Border(*[Side(style="thin", color=_COLOR_BORDE)] * 4)
     for i, (codigo, fecha, solucion, medidas) in enumerate(filas, start=fila_encabezado + 1):
         for col, valor in enumerate((celda_segura(codigo), fecha, celda_segura(solucion), medidas), start=1):
+            tamano = 9 if col == _COLUMNA_MEDIDAS else 10
             celda = ws.cell(i, col, valor)
-            celda.font = Font(name="Calibri", color=_COLOR_TEXTO, size=10)
+            celda.font = Font(name="Calibri", color=_COLOR_TEXTO, size=tamano)
             celda.fill = PatternFill("solid", fgColor=_COLOR_FILA)
             celda.border = borde_fino
             celda.alignment = Alignment(vertical="center", wrap_text=col == 3)

@@ -49,6 +49,7 @@
 	let total = $state(0);
 	let cargando = $state(true);
 	let timer: ReturnType<typeof setTimeout>;
+	const INTERVALO_REFRESCO_MS = 30_000;
 
 	let confirmandoId = $state<number | null>(null);
 	let eliminandoId = $state<number | null>(null);
@@ -139,25 +140,39 @@
 		}
 	}
 
+	function paramsListado() {
+		return {
+			page,
+			page_size: pageSize,
+			buscar: buscar || undefined,
+			categoria_id: categoriaId ?? undefined,
+			solicitante_id: solicitanteId ?? undefined,
+			resolutor_id: resolutorId ?? undefined,
+			ventana_id: ventanaId ?? undefined,
+			estado: estado || undefined,
+			prioridad: marca === 'prioridad' ? true : undefined,
+			destacada: marca === 'destacada' ? true : undefined
+		};
+	}
+
 	async function cargar() {
 		cargando = true;
 		try {
-			const pagina = await api.listadoMesas({
-				page,
-				page_size: pageSize,
-				buscar: buscar || undefined,
-				categoria_id: categoriaId ?? undefined,
-				solicitante_id: solicitanteId ?? undefined,
-				resolutor_id: resolutorId ?? undefined,
-				ventana_id: ventanaId ?? undefined,
-				estado: estado || undefined,
-				prioridad: marca === 'prioridad' ? true : undefined,
-				destacada: marca === 'destacada' ? true : undefined
-			});
+			const pagina = await api.listadoMesas(paramsListado());
 			items = pagina.items;
 			total = pagina.total;
 		} finally {
 			cargando = false;
+		}
+	}
+
+	async function refrescarSilencioso() {
+		try {
+			const pagina = await api.listadoMesas(paramsListado());
+			items = pagina.items;
+			total = pagina.total;
+		} catch {
+			// un fallo de refresco en segundo plano no debe interrumpir al usuario
 		}
 	}
 
@@ -171,6 +186,11 @@
 	$effect(() => {
 		page; categoriaId; solicitanteId; resolutorId; ventanaId; estado; marca;
 		cargar();
+	});
+
+	$effect(() => {
+		const id = setInterval(refrescarSilencioso, INTERVALO_REFRESCO_MS);
+		return () => clearInterval(id);
 	});
 
 	const totalPaginas = $derived(Math.max(1, Math.ceil(total / pageSize)));

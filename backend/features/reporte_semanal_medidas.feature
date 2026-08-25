@@ -40,3 +40,8 @@ Característica: Columna de medidas para disminuir el impacto en el reporte sema
     Dado que genero el XLSX del reporte con una mesa marcada y otra sin marcar
     Cuando reviso el contenido de la columna de medidas
     Entonces cada fila muestra el texto correspondiente a su checkbox
+
+  Escenario: La columna de medidas usa una fuente más chica que el resto
+    Dado que genero el XLSX del reporte con al menos una incidencia
+    Cuando reviso la fuente de la columna de medidas
+    Entonces su tamaño es 9, mientras el resto de columnas usa tamaño 10

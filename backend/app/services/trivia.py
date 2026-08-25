@@ -73,6 +73,46 @@ PREGUNTAS: tuple[PreguntaTrivia, ...] = (
         ("Registro Federal de Contribuyentes", "Reporte Financiero de Cierre", "Registro de Folios Consecutivos", "Recibo Fiscal de Compra"),
         0,
     ),
+    PreguntaTrivia(
+        10, "¿Qué comando de Git crea una nueva rama y se cambia a ella?",
+        ("git branch -m", "git checkout -b", "git merge -b", "git switch --new"),
+        1,
+    ),
+    PreguntaTrivia(
+        11, "¿Qué estructura de datos sigue el orden 'último en entrar, primero en salir'?",
+        ("Cola (queue)", "Pila (stack)", "Árbol binario", "Lista enlazada"),
+        1,
+    ),
+    PreguntaTrivia(
+        12, "¿Qué significa 'ORM' al trabajar con bases de datos?",
+        ("Object-Relational Mapping", "Online Resource Manager", "Ordered Record Model", "Output Rendering Method"),
+        0,
+    ),
+    PreguntaTrivia(
+        13, "¿Cuál es la complejidad en tiempo de una búsqueda binaria sobre un arreglo ordenado?",
+        ("O(n)", "O(n²)", "O(log n)", "O(1)"),
+        2,
+    ),
+    PreguntaTrivia(
+        14, "¿Qué método HTTP se usa normalmente para actualizar parcialmente un recurso?",
+        ("GET", "PATCH", "TRACE", "OPTIONS"),
+        1,
+    ),
+    PreguntaTrivia(
+        15, "En SQL, ¿qué cláusula filtra filas después de aplicar un GROUP BY?",
+        ("WHERE", "ORDER BY", "HAVING", "LIMIT"),
+        2,
+    ),
+    PreguntaTrivia(
+        16, "¿Qué tipo de dato representa 'verdadero' o 'falso' en la mayoría de lenguajes de programación?",
+        ("String", "Boolean", "Float", "Enum"),
+        1,
+    ),
+    PreguntaTrivia(
+        17, "¿Cómo se le llama a una función que se llama a sí misma?",
+        ("Función anónima", "Función pura", "Función recursiva", "Función lambda"),
+        2,
+    ),
 )
 
 

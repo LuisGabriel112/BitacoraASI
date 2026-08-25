@@ -97,3 +97,18 @@ def test_xlsx_columna_medidas_trae_el_texto_de_cada_fila_no_solo_la_lista():
 
     assert ws["D4"].value == OPCIONES_MEDIDAS[0]
     assert ws["D5"].value == OPCIONES_MEDIDAS[1]
+
+
+def test_xlsx_columna_medidas_usa_fuente_tamano_9():
+    wb = _xlsx()
+    ws = wb["Reporte"]
+
+    assert ws["D4"].font.size == 9
+
+
+def test_xlsx_otras_columnas_mantienen_fuente_tamano_10():
+    wb = _xlsx()
+    ws = wb["Reporte"]
+
+    assert ws["A4"].font.size == 10
+    assert ws["C4"].font.size == 10

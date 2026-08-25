@@ -20,6 +20,7 @@
 	let total = $state(0);
 	let cargando = $state(true);
 	let timer: ReturnType<typeof setTimeout>;
+	const INTERVALO_REFRESCO_MS = 30_000;
 
 	let confirmandoId = $state<number | null>(null);
 	let eliminandoId = $state<number | null>(null);
@@ -40,23 +41,37 @@
 		}
 	}
 
+	function paramsListado() {
+		return {
+			page,
+			page_size: pageSize,
+			buscar: buscar || undefined,
+			empresa_id: empresaId ?? undefined,
+			sistema_id: sistemaId ?? undefined,
+			medio_id: medioId ?? undefined,
+			modulo_id: moduloId ?? undefined,
+			atendio_id: atendioId ?? undefined
+		};
+	}
+
 	async function cargar() {
 		cargando = true;
 		try {
-			const pagina = await api.listado({
-				page,
-				page_size: pageSize,
-				buscar: buscar || undefined,
-				empresa_id: empresaId ?? undefined,
-				sistema_id: sistemaId ?? undefined,
-				medio_id: medioId ?? undefined,
-				modulo_id: moduloId ?? undefined,
-				atendio_id: atendioId ?? undefined
-			});
+			const pagina = await api.listado(paramsListado());
 			items = pagina.items;
 			total = pagina.total;
 		} finally {
 			cargando = false;
+		}
+	}
+
+	async function refrescarSilencioso() {
+		try {
+			const pagina = await api.listado(paramsListado());
+			items = pagina.items;
+			total = pagina.total;
+		} catch {
+			// un fallo de refresco en segundo plano no debe interrumpir al usuario
 		}
 	}
 
@@ -70,6 +85,11 @@
 	$effect(() => {
 		page; empresaId; sistemaId; medioId; moduloId; atendioId;
 		cargar();
+	});
+
+	$effect(() => {
+		const id = setInterval(refrescarSilencioso, INTERVALO_REFRESCO_MS);
+		return () => clearInterval(id);
 	});
 
 	const totalPaginas = $derived(Math.max(1, Math.ceil(total / pageSize)));

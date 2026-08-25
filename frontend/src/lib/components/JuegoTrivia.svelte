@@ -6,7 +6,9 @@
 	const CLAVE_ULTIMO = 'bitacora-trivia-ultimo-intento';
 
 	let pregunta = $state<PreguntaTrivia | null>(null);
-	let resultado = $state<{ acierto: boolean; respuestaCorrecta: number; elegida: number } | null>(null);
+	let resultado = $state<{ acierto: boolean; respuestaCorrecta: number; elegida: number; opciones: string[] } | null>(
+		null
+	);
 	let error = $state<string | null>(null);
 	let segundosRestantes = $state(0);
 
@@ -46,7 +48,12 @@
 		if (!pregunta) return;
 		try {
 			const r = await api.responderTrivia(pregunta.intento_id, opcion);
-			resultado = { acierto: r.acierto, respuestaCorrecta: r.respuesta_correcta, elegida: opcion };
+			resultado = {
+				acierto: r.acierto,
+				respuestaCorrecta: r.respuesta_correcta,
+				elegida: opcion,
+				opciones: pregunta.opciones
+			};
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo responder';
 		} finally {
@@ -75,13 +82,14 @@
 		</div>
 	{:else if resultado}
 		<div class="opciones-trivia">
-			{#each Array(4) as _, i}
+			{#each resultado.opciones as opcion, i}
 				<span
 					class="opcion-trivia resultado"
 					class:correcta={i === resultado.respuestaCorrecta}
 					class:incorrecta={i === resultado.elegida && !resultado.acierto}
 				>
 					{i === resultado.respuestaCorrecta ? '✓' : i === resultado.elegida ? '✗' : ''}
+					{opcion}
 				</span>
 			{/each}
 		</div>
@@ -150,8 +158,9 @@
 	span.opcion-trivia.resultado {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		font-weight: 700;
+		gap: 6px;
+		text-align: left;
+		font-weight: 400;
 		cursor: default;
 	}
 

@@ -20,6 +20,7 @@
 
 	let recientes = $state<Registro[]>([]);
 	let cargandoTabla = $state(true);
+	const INTERVALO_REFRESCO_MS = 30_000;
 
 	async function cargarPanel() {
 		cargandoKpis = true;
@@ -30,17 +31,21 @@
 		}
 	}
 
+	function paramsTabla() {
+		return {
+			page: 1,
+			page_size: 10,
+			empresa_id: empresaId ?? undefined,
+			sistema_id: sistemaId ?? undefined,
+			medio_id: medioId ?? undefined,
+			modulo_id: moduloId ?? undefined
+		};
+	}
+
 	async function cargarTabla() {
 		cargandoTabla = true;
 		try {
-			const pagina = await api.listado({
-				page: 1,
-				page_size: 10,
-				empresa_id: empresaId ?? undefined,
-				sistema_id: sistemaId ?? undefined,
-				medio_id: medioId ?? undefined,
-				modulo_id: moduloId ?? undefined
-			});
+			const pagina = await api.listado(paramsTabla());
 			recientes = pagina.items;
 		} finally {
 			cargandoTabla = false;
@@ -55,6 +60,20 @@
 		// re-fetch al cambiar cualquier filtro
 		empresaId; sistemaId; medioId; moduloId;
 		cargarTabla();
+	});
+
+	async function refrescarSilencioso() {
+		try {
+			kpis = await api.panel();
+			recientes = (await api.listado(paramsTabla())).items;
+		} catch {
+			// un fallo de refresco en segundo plano no debe interrumpir al usuario
+		}
+	}
+
+	$effect(() => {
+		const id = setInterval(refrescarSilencioso, INTERVALO_REFRESCO_MS);
+		return () => clearInterval(id);
 	});
 
 	function lunesDeEstaSemana(): Date {
