@@ -69,6 +69,21 @@ _ALTO_POR_LINEA_PT = 16
 _CARACTERES_POR_LINEA_SOLUCION = 65
 _ALTO_DISPONIBLE_DATOS_PT = 360
 
+# La columna de "Medidas" es más angosta (3.0") y usa fuente más chica (9pt vs
+# los 12pt de "Solución" en 5.3"), así que le caben más caracteres por pulgada:
+# se escala el mismo cálculo de _CARACTERES_POR_LINEA_SOLUCION por esa
+# proporción de ancho/tamaño en vez de inventar un número aparte.
+_TAMANO_FUENTE_MEDIDAS_PT = 9
+_TAMANO_FUENTE_DATOS_PT = 12
+_ANCHO_COLUMNA_MEDIDAS_IN = 3.0
+_ANCHO_COLUMNA_SOLUCION_IN = 5.3
+_CARACTERES_POR_LINEA_MEDIDAS = round(
+    _CARACTERES_POR_LINEA_SOLUCION
+    / _ANCHO_COLUMNA_SOLUCION_IN
+    * _ANCHO_COLUMNA_MEDIDAS_IN
+    * (_TAMANO_FUENTE_DATOS_PT / _TAMANO_FUENTE_MEDIDAS_PT)
+)
+
 _ANCHO_GRAFICA_CHICA = Inches(4.7)
 _ANCHO_GRAFICA_GRANDE = Inches(7.3)
 _NOMBRE_GRAFICA_GRANDE = "Por ventana"
@@ -99,15 +114,19 @@ def _titulo_grafica_pptx(nombre: str, rango: str) -> str:
     return f"{base} ({rango})"
 
 
-def _lineas_de_texto(texto: str) -> int:
+def _lineas_de_texto(texto: str, caracteres_por_linea: int) -> int:
     if not texto:
         return 1
-    return -(-len(texto) // _CARACTERES_POR_LINEA_SOLUCION)  # ceil sin importar math
+    return -(-len(texto) // caracteres_por_linea)  # ceil sin importar math
 
 
 def _altura_fila_pt(fila: tuple[str, str, str, str]) -> int:
-    _, _, solucion, _ = fila
-    return max(_ALTO_MIN_FILA_PT, _lineas_de_texto(solucion) * _ALTO_POR_LINEA_PT)
+    _, _, solucion, medidas = fila
+    lineas = max(
+        _lineas_de_texto(solucion, _CARACTERES_POR_LINEA_SOLUCION),
+        _lineas_de_texto(medidas, _CARACTERES_POR_LINEA_MEDIDAS),
+    )
+    return max(_ALTO_MIN_FILA_PT, lineas * _ALTO_POR_LINEA_PT)
 
 
 def _paginar_filas(filas: list[tuple[str, str, str, str]]) -> list[list[tuple[str, str, str, str]]]:
@@ -290,11 +309,15 @@ def _fila_encabezados_tabla(tabla) -> None:
         _escribir_celda(tabla.cell(_FILA_ENCABEZADO, col), texto, _COLOR_ENCABEZADO_FONDO, negrita=True, tamano=12)
 
 
+_COLUMNA_MEDIDAS_PPTX = 3
+
+
 def _fila_de_datos(tabla, fila: int, indice: int, datos: tuple[str, str, str, str]) -> None:
     color = _COLOR_FILA if indice % 2 == 0 else _COLOR_FILA_ALTERNA
     codigo, fecha, solucion, medidas = datos
     for col, valor in enumerate((codigo, fecha, solucion, medidas)):
-        _escribir_celda(tabla.cell(fila, col), valor, color, negrita=False, tamano=12)
+        tamano = _TAMANO_FUENTE_MEDIDAS_PT if col == _COLUMNA_MEDIDAS_PPTX else _TAMANO_FUENTE_DATOS_PT
+        _escribir_celda(tabla.cell(fila, col), valor, color, negrita=False, tamano=tamano)
 
 
 def _ajustar_alturas_tabla(tabla, bloque: list[tuple[str, str, str, str]]) -> None:

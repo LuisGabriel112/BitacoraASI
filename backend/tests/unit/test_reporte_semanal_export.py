@@ -5,6 +5,7 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from app.services.reporte_semanal_export import (
+    OPCIONES_MEDIDAS,
     _altura_fila_pt,
     _paginar_filas,
     filas_reporte,
@@ -229,6 +230,39 @@ def test_diapositiva_de_graficas_tiene_el_encabezado_resumen():
     slide_graficas = prs.slides[1]
 
     assert f"Resumen de actividades ({_RANGO})" in _texto_de_slide(slide_graficas)
+
+
+def test_altura_fila_medidas_larga_es_mayor_que_ninguna():
+    corta = ("TCK-1", "01/01/2026", "Se reinició el servicio.", "Ninguna.")
+    con_medidas = ("TCK-2", "01/01/2026", "Se reinició el servicio.", OPCIONES_MEDIDAS[1])
+
+    assert _altura_fila_pt(con_medidas) > _altura_fila_pt(corta)
+
+
+def test_paginar_muchas_filas_con_medidas_larga_ocupan_mas_diapositivas_que_ninguna():
+    filas_ninguna = [(f"TCK-{i}", "01/01/2026", "corta", "Ninguna.") for i in range(8)]
+    filas_medidas = [(f"TCK-{i}", "01/01/2026", "corta", OPCIONES_MEDIDAS[1]) for i in range(8)]
+
+    bloques_ninguna = _paginar_filas(filas_ninguna)
+    bloques_medidas = _paginar_filas(filas_medidas)
+
+    assert len(bloques_medidas) > len(bloques_ninguna)
+
+
+def test_pptx_columna_medidas_usa_fuente_tamano_9():
+    prs = _pptx_reporte()
+    tabla = next(s for s in prs.slides[2].shapes if s.shape_type == MSO_SHAPE_TYPE.TABLE).table
+
+    celda_medidas = tabla.cell(2, 3)
+    assert celda_medidas.text_frame.paragraphs[0].font.size.pt == 9
+
+
+def test_pptx_otras_columnas_mantienen_fuente_tamano_12():
+    prs = _pptx_reporte()
+    tabla = next(s for s in prs.slides[2].shapes if s.shape_type == MSO_SHAPE_TYPE.TABLE).table
+
+    celda_codigo = tabla.cell(2, 0)
+    assert celda_codigo.text_frame.paragraphs[0].font.size.pt == 12
 
 
 def test_paginacion_es_mas_conservadora_que_antes():

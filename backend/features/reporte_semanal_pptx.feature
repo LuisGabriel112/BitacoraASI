@@ -100,3 +100,20 @@ Característica: Estilo y orden del reporte semanal en PowerPoint
     Dado un bloque de filas que antes cabía justo en una diapositiva
     Cuando pagino las filas con la nueva tolerancia
     Entonces cabe menos contenido por diapositiva que antes, con más margen de sobra
+
+  Escenario: La altura de fila también toma en cuenta el texto largo de "Medidas"
+    Dado una fila con el texto largo de seguimiento de validación en la columna de medidas
+    Y otra fila con "Ninguna." en esa misma columna
+    Cuando calculo la altura de cada fila
+    Entonces la fila con el texto largo de medidas es más alta
+
+  Escenario: Muchas filas con el texto largo de medidas caben menos por diapositiva
+    Dado varias incidencias con el texto largo de seguimiento en la columna de medidas
+    Y las mismas incidencias pero con "Ninguna." en esa columna
+    Cuando pagino ambos grupos de filas
+    Entonces el grupo con el texto largo de medidas se reparte en más diapositivas
+
+  Escenario: La columna de medidas usa una fuente más chica en el PPTX
+    Dado la tabla de una diapositiva de incidencias
+    Cuando reviso la fuente de la columna de medidas
+    Entonces su tamaño es 9, mientras el resto de columnas usa tamaño 12
