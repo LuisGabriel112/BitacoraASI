@@ -10,6 +10,11 @@ from app.config import settings
 
 _REINTENTOS_429 = 5
 _ESPERA_BASE_SEGUNDOS = 20
+# 429 = cuota por minuto excedida; 503 = modelo saturado del lado de Google
+# (confirmado en incidentes reales de "no se pudo conectar con Gemini" que en
+# realidad eran un 503 "overloaded", no una falla de red). Ambos son
+# transitorios, no errores del request -- vale la pena reintentar.
+_CODIGOS_REINTENTABLES = {429, 503}
 
 
 class GeminiError(Exception):
@@ -47,9 +52,10 @@ async def _pedir_generate_content(url: str, body: dict) -> httpx.Response:
 
 
 async def _llamar_generate_content(body: dict) -> str:
-    """Reintenta en 429 (cuota por minuto excedida): con varios grupos
-    llamando a Gemini casi al mismo tiempo (síntesis de soluciones), es
-    normal chocar con el límite de solicitudes por minuto del plan gratuito."""
+    """Reintenta en fallas transitorias (429 cuota, 503 saturado) con espera
+    creciente. Con varios grupos llamando a Gemini casi al mismo tiempo
+    (síntesis de soluciones), es normal chocar con el límite de solicitudes
+    por minuto del plan gratuito, o con el modelo saturado del lado de Google."""
     if not gemini_configurado():
         raise GeminiError("Gemini no está configurado (falta GEMINI_API_KEY)")
 
@@ -57,7 +63,7 @@ async def _llamar_generate_content(body: dict) -> str:
     intento = 0
     while True:
         resp = await _pedir_generate_content(url, body)
-        if resp.status_code != 429 or intento >= _REINTENTOS_429:
+        if resp.status_code not in _CODIGOS_REINTENTABLES or intento >= _REINTENTOS_429:
             break
         await asyncio.sleep(_ESPERA_BASE_SEGUNDOS * (intento + 1))
         intento += 1
