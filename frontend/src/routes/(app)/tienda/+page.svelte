@@ -51,7 +51,9 @@
 		return undefined;
 	}
 
-	function stats(objeto: Objeto): { texto: string }[] {
+	type ObjetoStats = Pick<Objeto, 'danio_pct' | 'critico_pct' | 'cooldown_pct' | 'xp_pct'>;
+
+	function stats(objeto: ObjetoStats): { texto: string }[] {
 		const lista: { texto: string }[] = [];
 		if (objeto.danio_pct) lista.push({ texto: `+${objeto.danio_pct}% daño` });
 		if (objeto.critico_pct) lista.push({ texto: `+${objeto.critico_pct}% crítico` });
@@ -59,6 +61,17 @@
 		if (objeto.xp_pct) lista.push({ texto: `+${objeto.xp_pct}% XP` });
 		return lista;
 	}
+
+	const bonoTotal = $derived.by(() => {
+		const equipados = estado?.equipados ?? [];
+		return {
+			danio_pct: equipados.reduce((s, o) => s + o.danio_pct, 0),
+			critico_pct: equipados.reduce((s, o) => s + o.critico_pct, 0),
+			cooldown_pct: equipados.reduce((s, o) => s + o.cooldown_pct, 0),
+			xp_pct: equipados.reduce((s, o) => s + o.xp_pct, 0)
+		};
+	});
+	const statsBonoTotal = $derived(stats(bonoTotal));
 
 	async function comprar(objeto: Objeto) {
 		comprandoId = objeto.id;
@@ -87,6 +100,27 @@
 	</div>
 
 	{#if error}<p class="error-tienda">{error}</p>{/if}
+
+	<section class="seccion-tienda">
+		<h2 class="font-display">Mi inventario</h2>
+		{#if (estado?.equipados.length ?? 0) === 0}
+			<p class="inventario-vacio">Sin objetos equipados todavía — compra algo de abajo.</p>
+		{:else}
+			<div class="inventario">
+				<div class="inventario-objetos">
+					{#each estado?.equipados ?? [] as objeto}
+						<span class="chip-inventario">{objeto.nombre}</span>
+					{/each}
+				</div>
+				{#if statsBonoTotal.length > 0}
+					<div class="inventario-bono">
+						<span class="inventario-bono-etiqueta">Bono total:</span>
+						{#each statsBonoTotal as s}<span class="stat-chip">{s.texto}</span>{/each}
+					</div>
+				{/if}
+			</div>
+		{/if}
+	</section>
 
 	<section class="seccion-tienda">
 		<h2 class="font-display">Objetos básicos</h2>
@@ -189,6 +223,53 @@
 		color: var(--danger);
 		font-size: 13px;
 		margin: 0 0 16px;
+	}
+
+	.inventario-vacio {
+		color: var(--text-muted);
+		font-size: 13px;
+		margin: 0;
+	}
+
+	.inventario {
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 16px 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.inventario-objetos {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.chip-inventario {
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--text);
+		background: var(--surface-raised);
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 6px 12px;
+	}
+
+	.inventario-bono {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		padding-top: 8px;
+		border-top: 1px solid var(--border);
+	}
+
+	.inventario-bono-etiqueta {
+		font-size: 12px;
+		color: var(--text-muted);
+		margin-right: 2px;
 	}
 
 	.seccion-tienda {
