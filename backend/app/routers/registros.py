@@ -28,8 +28,8 @@ from app.services.clustering import agrupar_por_similitud, tema_representativo
 from app.services.embeddings import asegurar_embeddings
 from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.exportar_seguro import celda_segura
-from app.services.cloudflare_ai import CloudflareAIError, cloudflare_configurado, extraer_registro
 from app.services.gemini import GeminiError, gemini_configurado
+from app.services.openrouter_ai import OpenRouterAIError, extraer_registro, openrouter_configurado
 from app.services.auth import get_usuario_actual
 from app.services.bonus import aplicar_bono_y_critico, es_critico_soporte, porcentaje_bono_del_momento
 from app.services.jefes import DANIO_POR_ACCION, danar_jefe
@@ -129,8 +129,8 @@ async def editar_registro(registro_id: int, payload: RegistroUpdate, session: As
 
 @router.post("/extraer-imagen", response_model=ExtraccionRegistro)
 async def extraer_imagen(imagen: UploadFile = File(...), session: AsyncSession = Depends(get_session)):
-    if not cloudflare_configurado():
-        raise HTTPException(400, "Cloudflare Workers AI no está configurado (falta CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_API_TOKEN en el backend)")
+    if not openrouter_configurado():
+        raise HTTPException(400, "OpenRouter no está configurado (falta OPENROUTER_API_KEY en el backend)")
     if not imagen.content_type or not imagen.content_type.startswith("image/"):
         raise HTTPException(400, "El archivo debe ser una imagen")
 
@@ -147,7 +147,7 @@ async def extraer_imagen(imagen: UploadFile = File(...), session: AsyncSession =
 
     try:
         extraido = await extraer_registro(contenido, catalogos)
-    except CloudflareAIError as exc:
+    except OpenRouterAIError as exc:
         raise HTTPException(502, str(exc)) from exc
 
     def _match(clave: str, campo: str):

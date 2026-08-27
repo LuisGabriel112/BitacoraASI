@@ -1,3 +1,5 @@
+import asyncio
+import base64
 import io
 import json
 import re
@@ -7,27 +9,22 @@ from PIL import Image, UnidentifiedImageError
 
 from app.config import settings
 
-_URL_BASE = "https://api.cloudflare.com/client/v4/accounts/{cuenta}/ai/run/{modelo}"
-_MAX_TOKENS_EXTRACCION = 768
-# response_format:json_schema no se respeta siempre con este modelo -- a veces
-# devuelve puro texto sin nada de JSON (confirmado empíricamente: con imágenes
-# reales de captura la falla es más frecuente que con una imagen trivial de
-# prueba). Es una falla de contenido, no de red, así que vale la pena
-# reintentar con una llamada nueva en vez de fallar de una vez.
-_REINTENTOS_JSON = 3
-_INSTRUCCION_JSON = (
-    "IMPORTANTE: responde ÚNICAMENTE con un objeto JSON válido, empezando en '{' y "
-    "terminando en '}'. No escribas explicaciones, comentarios, listas ni bloques de "
-    "markdown (nada de ```) antes o después del JSON.\n\n"
-)
+_URL = "https://openrouter.ai/api/v1/chat/completions"
+_MAX_TOKENS_EXTRACCION = 600
+_ESPERA_BASE_SEGUNDOS = 5
+_CODIGOS_REINTENTABLES = {429, 503}
+# El modelo no siempre respeta response_format:json_schema -- a veces devuelve
+# texto sin JSON aprovechable, o la capa gratuita responde 429 por saturación.
+# Ninguno de los dos es un error del request, así que vale la pena reintentar.
+_REINTENTOS = 3
 
 
-class CloudflareAIError(Exception):
+class OpenRouterAIError(Exception):
     pass
 
 
-def cloudflare_configurado() -> bool:
-    return bool(settings.cloudflare_account_id and settings.cloudflare_api_token)
+def openrouter_configurado() -> bool:
+    return bool(settings.openrouter_api_key)
 
 
 def _normalizar_imagen(imagen: bytes) -> bytes:
@@ -40,7 +37,7 @@ def _normalizar_imagen(imagen: bytes) -> bytes:
             return buf.getvalue()
     except UnidentifiedImageError as exc:
         cabecera = imagen[:12].hex()
-        raise CloudflareAIError(f"El archivo no se pudo leer como imagen ({len(imagen)} bytes, cabecera {cabecera})") from exc
+        raise OpenRouterAIError(f"El archivo no se pudo leer como imagen ({len(imagen)} bytes, cabecera {cabecera})") from exc
 
 
 def _lista(titulo: str, items: list) -> str:
@@ -49,8 +46,6 @@ def _lista(titulo: str, items: list) -> str:
 
 
 def _extraer_json_de_texto(texto: str) -> dict | None:
-    # A veces el modelo antepone prosa y envuelve el JSON en un fence de markdown
-    # en vez de devolverlo ya parseado -- se recupera con una búsqueda simple.
     coincidencia = re.search(r"\{.*\}", texto, re.DOTALL)
     if not coincidencia:
         return None
@@ -60,50 +55,66 @@ def _extraer_json_de_texto(texto: str) -> dict | None:
         return None
 
 
-async def _pedir(modelo: str, body: dict) -> httpx.Response:
-    url = _URL_BASE.format(cuenta=settings.cloudflare_account_id, modelo=modelo)
-    headers = {"Authorization": f"Bearer {settings.cloudflare_api_token}"}
-    async with httpx.AsyncClient(timeout=30) as client:
+async def _pedir(body: dict) -> httpx.Response:
+    headers = {"Authorization": f"Bearer {settings.openrouter_api_key}"}
+    async with httpx.AsyncClient(timeout=60) as client:
         try:
-            return await client.post(url, headers=headers, json=body)
+            return await client.post(_URL, headers=headers, json=body)
         except httpx.RequestError as exc:
-            raise CloudflareAIError(f"No se pudo conectar con Cloudflare Workers AI: {exc}") from exc
+            raise OpenRouterAIError(f"No se pudo conectar con OpenRouter: {exc}") from exc
 
 
-async def _pedir_json(modelo: str, body: dict) -> dict | None:
-    """Un intento. Devuelve None (en vez de lanzar) cuando la respuesta no trae
-    JSON aprovechable, para que el llamador decida si vale la pena reintentar."""
-    resp = await _pedir(modelo, body)
+async def _intentar(body: dict) -> dict | None:
+    """Un intento. None = reintentable (429/503 o sin JSON aprovechable).
+    Lanza de inmediato en errores duros (4xx/5xx que no son transitorios)."""
+    resp = await _pedir(body)
+    if resp.status_code in _CODIGOS_REINTENTABLES:
+        return None
     if resp.status_code >= 400:
-        raise CloudflareAIError(f"Cloudflare Workers AI respondió {resp.status_code}: {resp.text[:300]}")
+        raise OpenRouterAIError(f"OpenRouter respondió {resp.status_code}: {resp.text[:300]}")
 
     data = resp.json()
-    if not data.get("success", True):
-        raise CloudflareAIError(f"Cloudflare Workers AI reportó error: {data.get('errors')}")
+    try:
+        contenido = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError) as exc:
+        raise OpenRouterAIError("Respuesta de OpenRouter sin contenido") from exc
 
-    resultado = data.get("result", {}).get("response")
-    if isinstance(resultado, str):
-        resultado = _extraer_json_de_texto(resultado)
-    return resultado if isinstance(resultado, dict) else None
+    if not isinstance(contenido, str):
+        return None
+    return _extraer_json_de_texto(contenido)
 
 
 async def _generar_json(imagen: bytes, prompt: str, schema: dict) -> dict:
-    if not cloudflare_configurado():
-        raise CloudflareAIError("Cloudflare Workers AI no está configurado (falta CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_API_TOKEN)")
+    if not openrouter_configurado():
+        raise OpenRouterAIError("OpenRouter no está configurado (falta OPENROUTER_API_KEY)")
 
-    imagen_png = _normalizar_imagen(imagen)
+    imagen_b64 = base64.b64encode(_normalizar_imagen(imagen)).decode()
     body = {
-        "prompt": prompt,
-        "image": list(imagen_png),
+        "model": settings.openrouter_vision_model,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{imagen_b64}"}},
+                ],
+            }
+        ],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "extraccion", "schema": schema, "strict": True},
+        },
         "max_tokens": _MAX_TOKENS_EXTRACCION,
-        "response_format": {"type": "json_schema", "json_schema": schema},
     }
-    for _ in range(_REINTENTOS_JSON + 1):
-        resultado = await _pedir_json(settings.cloudflare_vision_model, body)
+
+    for intento in range(_REINTENTOS + 1):
+        if intento > 0:
+            await asyncio.sleep(_ESPERA_BASE_SEGUNDOS * intento)
+        resultado = await _intentar(body)
         if resultado is not None:
             return resultado
 
-    raise CloudflareAIError("Cloudflare Workers AI no devolvió un JSON válido tras varios intentos")
+    raise OpenRouterAIError("OpenRouter no devolvió un JSON válido tras varios intentos")
 
 
 _SCHEMA_REGISTRO = {
@@ -117,7 +128,14 @@ _SCHEMA_REGISTRO = {
         "modulo_id": {"type": "integer"},
         "atendio_id": {"type": "integer"},
     },
+    "required": ["fecha", "descripcion", "empresa_id", "sistema_id", "medio_id", "modulo_id", "atendio_id"],
 }
+
+_INSTRUCCION_JSON = (
+    "IMPORTANTE: responde ÚNICAMENTE con un objeto JSON válido, empezando en '{' y "
+    "terminando en '}'. No escribas explicaciones, comentarios, listas ni bloques de "
+    "markdown (nada de ```) antes o después del JSON.\n\n"
+)
 
 
 def _prompt_registro(catalogos: dict[str, list]) -> str:
@@ -151,6 +169,7 @@ _SCHEMA_MESA = {
         "descripcion": {"type": "string"},
         "solicitante_id": {"type": "integer"},
     },
+    "required": ["codigo", "titulo", "fecha_carga", "descripcion", "solicitante_id"],
 }
 
 

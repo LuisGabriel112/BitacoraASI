@@ -31,8 +31,8 @@ from app.services.embeddings import asegurar_embeddings
 from app.services.exportar_seguro import celda_segura
 from app.services.excel_resumen import agregar_hoja_resumen
 from app.services.bonus import aplicar_bono_y_critico, es_critico_por_horario, porcentaje_bono_del_momento
-from app.services.cloudflare_ai import CloudflareAIError, cloudflare_configurado, extraer_mesa
 from app.services.gemini import GeminiError, gemini_configurado
+from app.services.openrouter_ai import OpenRouterAIError, extraer_mesa, openrouter_configurado
 from app.services.jefes import DANIO_POR_ACCION, DANIO_POR_LOGRO, danar_jefe
 from app.services.logros import a_hora_local, evaluar_logros
 from app.services.reporte_semanal_export import (
@@ -119,8 +119,8 @@ async def crear_mesa(payload: MesaCreate, session: AsyncSession = Depends(get_se
 
 @router.post("/extraer-imagen", response_model=ExtraccionMesa)
 async def extraer_imagen_mesa(imagen: UploadFile = File(...), session: AsyncSession = Depends(get_session)):
-    if not cloudflare_configurado():
-        raise HTTPException(400, "Cloudflare Workers AI no está configurado (falta CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_API_TOKEN en el backend)")
+    if not openrouter_configurado():
+        raise HTTPException(400, "OpenRouter no está configurado (falta OPENROUTER_API_KEY en el backend)")
     if not imagen.content_type or not imagen.content_type.startswith("image/"):
         raise HTTPException(400, "El archivo debe ser una imagen")
 
@@ -132,7 +132,7 @@ async def extraer_imagen_mesa(imagen: UploadFile = File(...), session: AsyncSess
 
     try:
         extraido = await extraer_mesa(contenido, {"solicitantes": solicitantes})
-    except CloudflareAIError as exc:
+    except OpenRouterAIError as exc:
         raise HTTPException(502, str(exc)) from exc
 
     fecha_carga = None
