@@ -272,30 +272,69 @@ async def _registros_de_semana(session: AsyncSession, semana: str) -> list[Regis
     return (await session.execute(stmt)).scalars().all()
 
 
+async def _kpis_registros_de_semana(session: AsyncSession, semana: str):
+    """Agrega en SQL en vez de traer toda la semana y sumar en Python — el
+    panel se visita seguido y ahora también se refresca solo cada 30s."""
+    total = await session.scalar(select(func.count()).select_from(Registro).where(Registro.semana == semana))
+
+    por_sistema = (
+        await session.execute(
+            select(Sistema.nombre, func.count())
+            .select_from(Registro)
+            .join(Sistema, Registro.sistema_id == Sistema.id)
+            .where(Registro.semana == semana)
+            .group_by(Sistema.nombre)
+            .order_by(Sistema.nombre)
+        )
+    ).all()
+    por_dia = (
+        await session.execute(
+            select(Registro.fecha, func.count())
+            .where(Registro.semana == semana)
+            .group_by(Registro.fecha)
+            .order_by(Registro.fecha)
+        )
+    ).all()
+    por_modulo = (
+        await session.execute(
+            select(Modulo.nombre, func.count())
+            .select_from(Registro)
+            .join(Modulo, Registro.modulo_id == Modulo.id)
+            .where(Registro.semana == semana)
+            .group_by(Modulo.nombre)
+            .order_by(func.count().desc(), Modulo.nombre)
+        )
+    ).all()
+    return total or 0, por_sistema, por_dia, por_modulo
+
+
+async def _registros_recientes_de_semana(session: AsyncSession, semana: str, limite: int = 10) -> list[Registro]:
+    stmt = (
+        select(Registro)
+        .where(Registro.semana == semana)
+        .order_by(Registro.fecha.desc(), Registro.id.desc())
+        .limit(limite)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
 @router.get("/panel", response_model=PanelKPIs)
 async def panel(session: AsyncSession = Depends(get_session)):
     semana = semana_de(date.today())
-    registros = await _registros_de_semana(session, semana)
+    total, filas_sistema, filas_dia, filas_modulo = await _kpis_registros_de_semana(session, semana)
+    recientes = await _registros_recientes_de_semana(session, semana)
 
-    por_sistema: dict[str, int] = {}
-    por_dia: dict[str, int] = {}
-    por_modulo: dict[str, int] = {}
-    for r in registros:
-        por_sistema[r.sistema.nombre] = por_sistema.get(r.sistema.nombre, 0) + 1
-        dia = r.fecha.isoformat()
-        por_dia[dia] = por_dia.get(dia, 0) + 1
-        por_modulo[r.modulo.nombre] = por_modulo.get(r.modulo.nombre, 0) + 1
-
-    volumen_diario = [{"fecha": k, "total": v} for k, v in sorted(por_dia.items())]
-    distribucion_modulo = [{"modulo": k, "total": v} for k, v in sorted(por_modulo.items(), key=lambda x: -x[1])]
+    por_sistema = {nombre: cantidad for nombre, cantidad in filas_sistema}
+    volumen_diario = [{"fecha": fecha.isoformat(), "total": cantidad} for fecha, cantidad in filas_dia]
+    distribucion_modulo = [{"modulo": nombre, "total": cantidad} for nombre, cantidad in filas_modulo]
 
     return PanelKPIs(
         semana=semana,
-        total_semana=len(registros),
+        total_semana=total,
         por_sistema=por_sistema,
         volumen_diario=volumen_diario,
         distribucion_modulo=distribucion_modulo,
-        recientes=[RegistroOut.model_validate(r) for r in registros[:10]],
+        recientes=[RegistroOut.model_validate(r) for r in recientes],
     )
 
 

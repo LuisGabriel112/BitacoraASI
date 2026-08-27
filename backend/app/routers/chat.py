@@ -70,7 +70,9 @@ async def listar_mensajes(
 ):
     stmt = select(MensajeChat)
     if despues_de is not None:
-        stmt = stmt.where(MensajeChat.id > despues_de).order_by(MensajeChat.id.asc())
+        # limite también aquí: evita traer un backlog sin cota tras una
+        # reconexión larga (ej. pestaña dormida horas).
+        stmt = stmt.where(MensajeChat.id > despues_de).order_by(MensajeChat.id.asc()).limit(limite)
     else:
         stmt = stmt.order_by(MensajeChat.id.desc()).limit(limite)
 

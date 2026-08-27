@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-from sqlalchemy import Row, case, func, select
+from sqlalchemy import Date, Row, case, cast, func, select
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -324,29 +324,79 @@ async def _mesas_cerradas_de_semana(session: AsyncSession, semana: str) -> list[
     return (await session.execute(stmt)).scalars().all()
 
 
+def _rango_semana_cierre(semana: str) -> tuple[datetime, datetime]:
+    lunes, _ = rango_semana(semana)
+    inicio = datetime.combine(lunes, time.min)
+    return inicio, inicio + timedelta(days=7)
+
+
+async def _kpis_mesas_cerradas_de_semana(session: AsyncSession, semana: str):
+    """Agrega en SQL en vez de traer toda la semana y sumar en Python — el
+    panel se visita seguido y ahora también se refresca solo cada 30s."""
+    inicio, fin = _rango_semana_cierre(semana)
+    en_semana = (Mesa.fecha_cierre_real >= inicio) & (Mesa.fecha_cierre_real < fin)
+
+    total = await session.scalar(select(func.count()).select_from(Mesa).where(en_semana))
+
+    por_dia = (
+        await session.execute(
+            select(cast(Mesa.fecha_cierre_real, Date), func.count())
+            .where(en_semana)
+            .group_by(cast(Mesa.fecha_cierre_real, Date))
+            .order_by(cast(Mesa.fecha_cierre_real, Date))
+        )
+    ).all()
+    por_ventana = (
+        await session.execute(
+            select(VentanaMesa.nombre, func.count())
+            .select_from(Mesa)
+            .join(VentanaMesa, Mesa.ventana_id == VentanaMesa.id)
+            .where(en_semana)
+            .group_by(VentanaMesa.nombre)
+            .order_by(func.count().desc(), VentanaMesa.nombre)
+        )
+    ).all()
+    por_categoria_solucion = (
+        await session.execute(
+            select(Mesa.tipo_solucion, func.count())
+            .where(en_semana, Mesa.tipo_solucion.isnot(None), Mesa.tipo_solucion != "")
+            .group_by(Mesa.tipo_solucion)
+            .order_by(func.count().desc(), Mesa.tipo_solucion)
+        )
+    ).all()
+    return total or 0, por_dia, por_ventana, por_categoria_solucion
+
+
+async def _mesas_recientes_cerradas_de_semana(session: AsyncSession, semana: str, limite: int = 10) -> list[Mesa]:
+    inicio, fin = _rango_semana_cierre(semana)
+    stmt = (
+        select(Mesa)
+        .where(Mesa.fecha_cierre_real >= inicio, Mesa.fecha_cierre_real < fin)
+        .order_by(Mesa.fecha_cierre_real.desc(), Mesa.id.desc())
+        .limit(limite)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
 @router.get("/panel", response_model=PanelMesasKPIs)
 async def panel_mesas(fecha: date | None = Query(None), session: AsyncSession = Depends(get_session)):
     semana = semana_de(fecha or date.today())
-    mesas_semana = await _mesas_cerradas_de_semana(session, semana)
+    total, filas_dia, filas_ventana, filas_categoria = await _kpis_mesas_cerradas_de_semana(session, semana)
+    recientes = await _mesas_recientes_cerradas_de_semana(session, semana)
 
-    por_dia: dict[str, int] = {}
-    for m in mesas_semana:
-        dia = m.fecha_cierre_real.date().isoformat()
-        por_dia[dia] = por_dia.get(dia, 0) + 1
-
-    volumen_diario = [{"fecha": k, "total": v} for k, v in sorted(por_dia.items())]
-    distribucion_ventana = [{"ventana": k, "total": v} for k, v in distribucion_por_ventana(mesas_semana)]
+    volumen_diario = [{"fecha": dia.isoformat(), "total": cantidad} for dia, cantidad in filas_dia]
+    distribucion_ventana = [{"ventana": nombre, "total": cantidad} for nombre, cantidad in filas_ventana]
     distribucion_categoria_solucion = [
-        {"categoria_solucion": k, "total": v} for k, v in distribucion_por_categoria_solucion(mesas_semana)
+        {"categoria_solucion": nombre, "total": cantidad} for nombre, cantidad in filas_categoria
     ]
 
     return PanelMesasKPIs(
         semana=semana,
-        total_semana=len(mesas_semana),
+        total_semana=total,
         volumen_diario=volumen_diario,
         distribucion_ventana=distribucion_ventana,
         distribucion_categoria_solucion=distribucion_categoria_solucion,
-        recientes=[MesaOut.model_validate(m) for m in mesas_semana[:10]],
+        recientes=[MesaOut.model_validate(m) for m in recientes],
     )
 
 

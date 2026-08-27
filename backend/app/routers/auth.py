@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select, update
@@ -13,7 +13,6 @@ from app.services.auth import (
     calcular_bloqueo_hasta,
     crear_token,
     debe_bloquear,
-    esta_en_linea,
     get_usuario_actual,
     hash_pin,
     normalizar_nombre,
@@ -25,6 +24,8 @@ from app.services.rpg import nivel_y_progreso, titulo_para_nivel
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 SEGUNDOS_EXPIRACION_COOKIE = 30 * 24 * 60 * 60
+# Debe coincidir con el default de esta_en_linea() en services/auth.py
+UMBRAL_EN_LINEA_SEGUNDOS = 90
 
 
 def _personaje_de(usuario: Usuario) -> PersonajeOut:
@@ -186,10 +187,13 @@ async def heartbeat(
 @router.get("/en-linea", response_model=list[RankingItemOut])
 async def en_linea(session: AsyncSession = Depends(get_session)):
     ahora = datetime.now(timezone.utc)
-    stmt = select(Usuario).order_by(Usuario.xp.desc())
+    stmt = (
+        select(Usuario)
+        .where(Usuario.ultima_actividad > ahora - timedelta(seconds=UMBRAL_EN_LINEA_SEGUNDOS))
+        .order_by(Usuario.xp.desc())
+    )
     usuarios = (await session.execute(stmt)).scalars().all()
     return [
         RankingItemOut(nombre=u.nombre, avatar=u.avatar, nivel=nivel_y_progreso(u.xp).nivel, xp=u.xp)
         for u in usuarios
-        if esta_en_linea(u.ultima_actividad, ahora)
     ]
