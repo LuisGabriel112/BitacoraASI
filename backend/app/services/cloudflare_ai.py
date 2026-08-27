@@ -8,12 +8,18 @@ from PIL import Image, UnidentifiedImageError
 from app.config import settings
 
 _URL_BASE = "https://api.cloudflare.com/client/v4/accounts/{cuenta}/ai/run/{modelo}"
-_MAX_TOKENS_EXTRACCION = 512
+_MAX_TOKENS_EXTRACCION = 768
 # response_format:json_schema no se respeta siempre con este modelo -- a veces
-# devuelve puro texto sin nada de JSON (confirmado empíricamente: ~35% de las
-# llamadas). Es una falla de contenido, no de red, así que vale la pena
+# devuelve puro texto sin nada de JSON (confirmado empíricamente: con imágenes
+# reales de captura la falla es más frecuente que con una imagen trivial de
+# prueba). Es una falla de contenido, no de red, así que vale la pena
 # reintentar con una llamada nueva en vez de fallar de una vez.
-_REINTENTOS_JSON = 2
+_REINTENTOS_JSON = 3
+_INSTRUCCION_JSON = (
+    "IMPORTANTE: responde ÚNICAMENTE con un objeto JSON válido, empezando en '{' y "
+    "terminando en '}'. No escribas explicaciones, comentarios, listas ni bloques de "
+    "markdown (nada de ```) antes o después del JSON.\n\n"
+)
 
 
 class CloudflareAIError(Exception):
@@ -116,8 +122,9 @@ _SCHEMA_REGISTRO = {
 
 def _prompt_registro(catalogos: dict[str, list]) -> str:
     return (
-        "Analiza esta captura de pantalla de un reporte o ticket de soporte técnico. "
-        "Extrae la información para llenar un formulario de bitácora de soporte. Responde SOLO con JSON.\n\n"
+        _INSTRUCCION_JSON
+        + "Analiza esta captura de pantalla de un reporte o ticket de soporte técnico. "
+        "Extrae la información para llenar un formulario de bitácora de soporte.\n\n"
         "Para empresa_id, sistema_id, medio_id, modulo_id y atendio_id: elige el id EXACTO de la lista "
         "correspondiente que mejor coincida con lo que aparece en la imagen. Si no hay una coincidencia "
         "razonable, usa 0 — nunca inventes un id que no esté en la lista.\n\n"
@@ -149,8 +156,9 @@ _SCHEMA_MESA = {
 
 def _prompt_mesa(catalogos: dict[str, list]) -> str:
     return (
-        "Analiza esta captura de pantalla de una mesa de ayuda de Proactivanet. "
-        "Extrae la información para abrir una mesa en la bitácora administrativa. Responde SOLO con JSON.\n\n"
+        _INSTRUCCION_JSON
+        + "Analiza esta captura de pantalla de una mesa de ayuda de Proactivanet. "
+        "Extrae la información para abrir una mesa en la bitácora administrativa.\n\n"
         "Para solicitante_id: elige el id EXACTO de la lista correspondiente que mejor coincida con quién "
         "levantó la mesa. Si no hay una coincidencia razonable, usa 0 — nunca inventes un id que no esté "
         "en la lista.\n\n"
