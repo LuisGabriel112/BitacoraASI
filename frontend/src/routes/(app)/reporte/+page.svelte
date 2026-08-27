@@ -264,7 +264,14 @@
 	}
 
 	.tabla-wrap {
-		overflow-x: auto;
+		overflow: auto;
+		max-height: 560px;
+	}
+
+	thead th {
+		position: sticky;
+		top: 0;
+		background: var(--surface);
 	}
 
 	table {
@@ -311,6 +318,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+		max-height: 420px;
+		overflow-y: auto;
 	}
 
 	.grupo {

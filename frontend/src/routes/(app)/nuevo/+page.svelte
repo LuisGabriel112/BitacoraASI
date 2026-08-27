@@ -418,6 +418,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+		max-height: 480px;
+		overflow-y: auto;
 	}
 
 	.item-capturado {

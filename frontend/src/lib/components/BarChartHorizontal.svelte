@@ -48,6 +48,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+		max-height: 420px;
+		overflow-y: auto;
+		padding-right: 4px;
 	}
 
 	.fila {
