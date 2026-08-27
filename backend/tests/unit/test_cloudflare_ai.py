@@ -52,13 +52,43 @@ async def test_success_false_lanza_cloudflare_ai_error_con_detalle(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_respuesta_sin_objeto_json_lanza_error(monkeypatch):
-    cuerpo = {"success": True, "result": {"response": "```json\n{\"a\": 1}\n```"}}
+async def test_respuesta_con_texto_y_json_en_fence_markdown_se_recupera(monkeypatch):
+    cuerpo = {"success": True, "result": {"response": "Aquí tienes:\n\n```json\n{\"a\": 1}\n```"}}
+    pedir = AsyncMock(return_value=_resp(200, cuerpo))
+    monkeypatch.setattr(cloudflare_ai, "_pedir", pedir)
+
+    resultado = await _generar_json(b"png-falso", "prompt", {"type": "object"})
+
+    assert resultado == {"a": 1}
+
+
+@pytest.mark.asyncio
+async def test_respuesta_de_puro_texto_sin_json_agota_reintentos_y_lanza_error(monkeypatch):
+    cuerpo = {"success": True, "result": {"response": "No pude leer la imagen."}}
     pedir = AsyncMock(return_value=_resp(200, cuerpo))
     monkeypatch.setattr(cloudflare_ai, "_pedir", pedir)
 
     with pytest.raises(CloudflareAIError, match="JSON válido"):
         await _generar_json(b"png-falso", "prompt", {"type": "object"})
+
+    assert pedir.await_count == cloudflare_ai._REINTENTOS_JSON + 1
+
+
+@pytest.mark.asyncio
+async def test_reintenta_cuando_el_primer_intento_no_trae_json_y_el_segundo_si(monkeypatch):
+    esperado = {"titulo": "ok"}
+    pedir = AsyncMock(
+        side_effect=[
+            _resp(200, {"success": True, "result": {"response": "No pude leer la imagen."}}),
+            _resp(200, {"success": True, "result": {"response": esperado}}),
+        ]
+    )
+    monkeypatch.setattr(cloudflare_ai, "_pedir", pedir)
+
+    resultado = await _generar_json(b"png-falso", "prompt", {"type": "object"})
+
+    assert resultado == esperado
+    assert pedir.await_count == 2
 
 
 @pytest.mark.asyncio

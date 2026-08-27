@@ -22,11 +22,26 @@ Característica: Extracción de datos de imagen vía Cloudflare Workers AI
     Cuando pido que se extraiga la información de una imagen
     Entonces se lanza un error indicando el detalle reportado
 
-  Escenario: Cloudflare no devuelve un objeto JSON
+  Escenario: Cloudflare envuelve el JSON en prosa y un fence de markdown
     Dado que Cloudflare Workers AI está configurado
-    Y Cloudflare responde 200 con texto plano en vez de JSON
+    Y Cloudflare responde 200 con texto que contiene un bloque ```json``` con el objeto
     Cuando pido que se extraiga la información de una imagen
-    Entonces se lanza un error de JSON inválido
+    Entonces se recupera el objeto JSON de dentro del texto
+
+  Escenario: Cloudflare no trae JSON la primera vez pero sí la segunda
+    Dado que Cloudflare Workers AI está configurado
+    Y Cloudflare responde 200 con puro texto la primera vez
+    Y Cloudflare responde 200 con un objeto JSON la segunda vez
+    Cuando pido que se extraiga la información de una imagen
+    Entonces se reintenta automáticamente
+    Y se devuelve el objeto JSON del segundo intento
+
+  Escenario: Cloudflare nunca trae JSON, ni tras reintentar
+    Dado que Cloudflare Workers AI está configurado
+    Y Cloudflare responde 200 con texto plano sin ningún JSON en todos los intentos
+    Cuando pido que se extraiga la información de una imagen
+    Entonces se agota el número de reintentos
+    Y se lanza un error de JSON inválido
 
   Escenario: Cloudflare Workers AI no está configurado
     Dado que Cloudflare Workers AI no tiene credenciales
