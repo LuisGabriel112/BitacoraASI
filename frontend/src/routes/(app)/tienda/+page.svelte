@@ -44,6 +44,13 @@
 		return !yaEquipado(objeto) && !faltaCredito(objeto) && partesFaltantes(objeto).length === 0;
 	}
 
+	function razonBloqueo(objeto: Objeto): string | undefined {
+		const faltantes = partesFaltantes(objeto);
+		if (faltantes.length > 0) return `Falta: ${faltantes.map(nombreDe).join(', ')}`;
+		if (faltaCredito(objeto)) return 'Créditos insuficientes';
+		return undefined;
+	}
+
 	function stats(objeto: Objeto): { texto: string }[] {
 		const lista: { texto: string }[] = [];
 		if (objeto.danio_pct) lista.push({ texto: `+${objeto.danio_pct}% daño` });
@@ -97,6 +104,7 @@
 							type="button"
 							class="btn-comprar"
 							disabled={!puedeComprar(objeto) || comprandoId === objeto.id}
+							title={razonBloqueo(objeto)}
 							onclick={() => comprar(objeto)}
 						>
 							{#if yaEquipado(objeto)}
@@ -123,7 +131,7 @@
 					<div class="stats-objeto">
 						{#each stats(objeto) as s}<span class="stat-chip">{s.texto}</span>{/each}
 					</div>
-					<p class="requiere-objeto">
+					<p class="requiere-objeto" class:incompleto={partesFaltantes(objeto).length > 0}>
 						Requiere: {objeto.requiere?.map(nombreDe).join(' + ')}
 					</p>
 					<div class="pie-objeto">
@@ -132,14 +140,13 @@
 							type="button"
 							class="btn-comprar"
 							disabled={!puedeComprar(objeto) || comprandoId === objeto.id}
+							title={razonBloqueo(objeto)}
 							onclick={() => comprar(objeto)}
 						>
 							{#if yaEquipado(objeto)}
 								Equipado
 							{:else if comprandoId === objeto.id}
 								Comprando…
-							{:else if partesFaltantes(objeto).length > 0}
-								Falta: {partesFaltantes(objeto).map(nombreDe).join(', ')}
 							{:else}
 								Comprar
 							{/if}
@@ -208,6 +215,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
+		min-width: 0;
 	}
 
 	.tarjeta-objeto.equipado {
@@ -248,18 +256,24 @@
 		color: var(--text-faint);
 	}
 
+	.requiere-objeto.incompleto {
+		color: var(--danger);
+	}
+
 	.pie-objeto {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 10px;
-		margin-top: 4px;
+		margin-top: auto;
+		padding-top: 4px;
 	}
 
 	.costo-objeto {
 		font-family: var(--font-mono);
 		font-size: 13px;
 		color: var(--text);
+		white-space: nowrap;
 	}
 
 	.btn-comprar {
@@ -272,6 +286,7 @@
 		font-size: 12px;
 		cursor: pointer;
 		white-space: nowrap;
+		flex-shrink: 0;
 	}
 
 	.btn-comprar:hover:not(:disabled) {
