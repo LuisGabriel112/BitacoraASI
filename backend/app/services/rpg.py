@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-XP_POR_ACCION = 20
-XP_POR_LOGRO = 100
+XP_POR_ACCION = 30
+XP_POR_LOGRO = 150
 
 
 @dataclass(frozen=True)
