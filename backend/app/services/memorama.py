@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import IntentoMemorama
 from app.services import cooldown as cooldown_service
+from app.services import tienda
 from app.services.jefes import danar_jefe
 from app.services.semanas import semana_de
 
@@ -33,8 +34,11 @@ async def _ultimo_intento(session: AsyncSession, usuario_id: int) -> IntentoMemo
 
 async def iniciar_intento(session: AsyncSession, usuario_id: int, ahora: datetime) -> IntentoMemorama:
     ultimo = await _ultimo_intento(session, usuario_id)
-    if ultimo is not None and not cooldown_service.puede_jugar(ultimo.created_at, ahora, COOLDOWN_MEMORAMA):
-        raise MemoramaError("Todavía en cooldown")
+    if ultimo is not None:
+        bono = await tienda.bono_de_usuario(session, usuario_id, semana_de(date.today()))
+        cooldown = cooldown_service.cooldown_efectivo(COOLDOWN_MEMORAMA, bono.cooldown_pct)
+        if not cooldown_service.puede_jugar(ultimo.created_at, ahora, cooldown):
+            raise MemoramaError("Todavía en cooldown")
 
     intento = IntentoMemorama(usuario_id=usuario_id)
     session.add(intento)

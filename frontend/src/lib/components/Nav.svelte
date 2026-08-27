@@ -34,6 +34,7 @@
 	const itemsRpg: { href: string; label: string; icon: NombreIcono }[] = [
 		{ href: '/personaje', label: 'Mi personaje', icon: 'shield' },
 		{ href: '/jefe', label: 'Jefe semanal', icon: 'skull' },
+		{ href: '/tienda', label: 'Tienda', icon: 'shopping-bag' },
 		{ href: '/mascotas', label: 'Mascotas', icon: 'trophy' },
 		{ href: '/hub', label: 'En línea', icon: 'circle' },
 		{ href: '/chat', label: 'Chat', icon: 'message-circle' }

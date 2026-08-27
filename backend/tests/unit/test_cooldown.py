@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from app.services.cooldown import puede_jugar, tiempo_restante
+from app.services.cooldown import cooldown_efectivo, puede_jugar, tiempo_restante
 
 AHORA = datetime(2026, 8, 14, 12, 0, tzinfo=timezone.utc)
 COOLDOWN = timedelta(minutes=5)
@@ -39,3 +39,11 @@ def test_cooldowns_distintos_son_independientes():
     hace_2_min = AHORA - timedelta(minutes=2)
     assert puede_jugar(hace_2_min, AHORA, timedelta(minutes=1)) is True
     assert puede_jugar(hace_2_min, AHORA, timedelta(minutes=10)) is False
+
+
+def test_cooldown_efectivo_reduce_segun_el_porcentaje():
+    assert cooldown_efectivo(timedelta(minutes=5), 20) == timedelta(minutes=4)
+
+
+def test_cooldown_efectivo_sin_reduccion_es_igual_al_base():
+    assert cooldown_efectivo(COOLDOWN, 0) == COOLDOWN

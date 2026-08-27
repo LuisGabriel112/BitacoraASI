@@ -58,10 +58,30 @@ async def test_iniciar_intento_rechaza_en_cooldown():
     session = AsyncMock()
     resultado_execute = MagicMock()
     resultado_execute.scalar_one_or_none.return_value = ultimo
+    resultado_execute.scalars.return_value.all.return_value = []  # sin objetos equipados
     session.execute.return_value = resultado_execute
 
     with pytest.raises(PelotaError):
         await iniciar_intento(session, usuario_id=1, ahora=AHORA)
+
+
+@pytest.mark.asyncio
+async def test_iniciar_intento_permite_jugar_antes_con_bono_de_cooldown(monkeypatch):
+    from app.services.tienda import BonoStats
+
+    ultimo = _intento(created_at=AHORA - timedelta(minutes=4))  # normalmente seguiría en cooldown
+    session = AsyncMock()
+    session.add = MagicMock()
+    resultado_execute = MagicMock()
+    resultado_execute.scalar_one_or_none.return_value = ultimo
+    session.execute.return_value = resultado_execute
+    monkeypatch.setattr(
+        "app.services.pelota.tienda.bono_de_usuario", AsyncMock(return_value=BonoStats(cooldown_pct=20))
+    )
+
+    await iniciar_intento(session, usuario_id=1, ahora=AHORA)  # 5min * (1-20%) = 4min, ya cumplidos
+
+    session.add.assert_called_once()
 
 
 @pytest.mark.asyncio

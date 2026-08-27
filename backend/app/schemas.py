@@ -85,6 +85,23 @@ class DanioJefeEventoOut(BaseModel):
     created_at: datetime
 
 
+class ObjetoOut(BaseModel):
+    id: str
+    nombre: str
+    descripcion: str
+    costo: int
+    danio_pct: int
+    critico_pct: int
+    cooldown_pct: int
+    xp_pct: int
+    requiere: list[str] | None
+
+
+class TiendaEstadoOut(BaseModel):
+    creditos_disponibles: int
+    equipados: list[ObjetoOut]
+
+
 class JugadorGatoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     nombre: str

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
 from fastapi import Cookie, Depends, HTTPException
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -57,6 +58,18 @@ def esta_en_linea(ultima_actividad: datetime | None, ahora: datetime, umbral_seg
     if ultima_actividad is None:
         return False
     return (ahora - ultima_actividad).total_seconds() < umbral_segundos
+
+
+async def resolver_usuario_id(
+    session: AsyncSession, nombre: str, usuario_id_directo: int | None = None
+) -> int | None:
+    """Compartido por xp.py, tienda.py y jefes.py: todos necesitan mapear el
+    nombre capturado de un catálogo (agente/resolutor) a la cuenta vinculada,
+    si existe."""
+    if usuario_id_directo is not None:
+        return usuario_id_directo
+    stmt = select(Usuario.id).where(func.lower(Usuario.nombre) == normalizar_nombre(nombre))
+    return (await session.execute(stmt)).scalar_one_or_none()
 
 
 async def get_usuario_actual(

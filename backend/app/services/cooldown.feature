@@ -29,3 +29,13 @@ Característica: Cooldown genérico entre intentos de un minijuego
     Dado un intento hace mucho más tiempo que el cooldown
     Cuando pregunto el tiempo restante
     Entonces el restante es 0
+
+  Escenario: Un objeto de la tienda puede reducir el cooldown base
+    Dado un cooldown base y un porcentaje de reducción de objetos equipados
+    Cuando calculo el cooldown efectivo
+    Entonces es menor al cooldown base en esa proporción
+
+  Escenario: Sin reducción equipada el cooldown efectivo es el mismo de siempre
+    Dado un cooldown base y cero por ciento de reducción
+    Cuando calculo el cooldown efectivo
+    Entonces es igual al cooldown base

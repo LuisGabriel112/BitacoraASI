@@ -1,10 +1,13 @@
 import hashlib
+import random
 
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import DanioJefeEvento, JefeBonus, JefeSemanal
+from app.services import tienda
+from app.services.auth import resolver_usuario_id
 from app.services.xp import otorgar_xp
 
 # Constantes propias, a propósito desacopladas de XP_POR_ACCION/XP_POR_LOGRO en
@@ -112,8 +115,24 @@ async def danar_jefe(session: AsyncSession, semana: str, cantidad: int, nombre: 
         await session.rollback()
 
 
+async def _bono_danio_objetos(session: AsyncSession, semana: str, nombre: str, cantidad: int) -> int:
+    """+% de daño de los objetos equipados, más un roll de crítico (x2)
+    independiente del crítico determinista de bonus.py. Sin cuenta vinculada
+    al nombre capturado, no hay objetos que buscar — daño sin cambios."""
+    usuario_id = await resolver_usuario_id(session, nombre)
+    bono = await tienda.bono_de_usuario(session, usuario_id, semana)
+    if bono.danio_pct == 0 and bono.critico_pct == 0:
+        return cantidad
+
+    cantidad = max(1, round(cantidad * (1 + bono.danio_pct / 100)))
+    if bono.critico_pct > 0 and random.random() < bono.critico_pct / 100:
+        cantidad *= 2
+    return cantidad
+
+
 async def _danar_jefe(session: AsyncSession, semana: str, cantidad: int, nombre: str, motivo: str) -> None:
     jefe = await obtener_o_crear_jefe(session, semana)
+    cantidad = await _bono_danio_objetos(session, semana, nombre, cantidad)
     vida_antes = jefe.vida_actual
     await session.execute(
         update(JefeSemanal)

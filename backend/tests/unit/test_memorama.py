@@ -26,6 +26,7 @@ async def test_iniciar_intento_rechaza_en_cooldown():
     session = AsyncMock()
     resultado_execute = MagicMock()
     resultado_execute.scalar_one_or_none.return_value = ultimo
+    resultado_execute.scalars.return_value.all.return_value = []  # sin objetos equipados
     session.execute.return_value = resultado_execute
 
     with pytest.raises(MemoramaError):

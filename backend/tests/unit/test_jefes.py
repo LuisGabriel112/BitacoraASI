@@ -11,6 +11,7 @@ from app.services.jefes import (
     NOMBRES_JEFE_BONUS,
     VIDA_MAX_SEMANAL,
     VIDA_MAX_TOPE,
+    _bono_danio_objetos,
     _filtrar_derrotados,
     asegurar_jefes_bonus,
     calcular_vida_max_siguiente,
@@ -22,6 +23,8 @@ from app.services.jefes import (
     siguiente_jefe_bonus_activo,
     vida_jefe_bonus,
 )
+from app.services import tienda as tienda_module
+from app.services.tienda import Objeto
 
 
 def test_nombre_del_jefe_es_consistente_en_la_misma_semana():
@@ -119,6 +122,44 @@ def test_vida_se_reinicia_a_la_base_si_no_fue_derrotado():
 
 def test_vida_tiene_un_tope_maximo():
     assert calcular_vida_max_siguiente(VIDA_MAX_TOPE, True) == VIDA_MAX_TOPE
+
+
+@pytest.mark.asyncio
+async def test_bono_danio_objetos_sube_el_danio_segun_el_porcentaje(monkeypatch):
+    session = AsyncMock()
+    monkeypatch.setattr(jefes_module, "resolver_usuario_id", AsyncMock(return_value=7))
+    objeto = Objeto("daga_oxidada", "Daga Oxidada", "", 40, danio_pct=10)
+    monkeypatch.setattr(tienda_module, "objetos_equipados", AsyncMock(return_value=[objeto]))
+
+    resultado = await _bono_danio_objetos(session, "SEM 32 - 2026", "Ana", 100)
+
+    assert resultado == 110
+
+
+@pytest.mark.asyncio
+async def test_bono_danio_objetos_sin_cuenta_vinculada_no_cambia_el_danio(monkeypatch):
+    session = AsyncMock()
+    monkeypatch.setattr(jefes_module, "resolver_usuario_id", AsyncMock(return_value=None))
+    buscar_objetos = AsyncMock()
+    monkeypatch.setattr(tienda_module, "objetos_equipados", buscar_objetos)
+
+    resultado = await _bono_danio_objetos(session, "SEM 32 - 2026", "Nombre Fantasma", 100)
+
+    assert resultado == 100
+    buscar_objetos.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_bono_danio_objetos_critico_duplica_cuando_el_roll_acierta(monkeypatch):
+    session = AsyncMock()
+    monkeypatch.setattr(jefes_module, "resolver_usuario_id", AsyncMock(return_value=7))
+    objeto = Objeto("nucleo_inestable", "Núcleo Inestable", "", 40, critico_pct=100)
+    monkeypatch.setattr(tienda_module, "objetos_equipados", AsyncMock(return_value=[objeto]))
+    monkeypatch.setattr(jefes_module.random, "random", lambda: 0.0)
+
+    resultado = await _bono_danio_objetos(session, "SEM 32 - 2026", "Ana", 100)
+
+    assert resultado == 200
 
 
 @pytest.mark.asyncio

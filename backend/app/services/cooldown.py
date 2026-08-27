@@ -9,3 +9,8 @@ def tiempo_restante(ultimo_intento: datetime | None, ahora: datetime, cooldown: 
 
 def puede_jugar(ultimo_intento: datetime | None, ahora: datetime, cooldown: timedelta) -> bool:
     return tiempo_restante(ultimo_intento, ahora, cooldown) <= timedelta(0)
+
+
+def cooldown_efectivo(base: timedelta, reduccion_pct: int) -> timedelta:
+    """Objetos de la tienda con bono de cooldown% reducen la espera base."""
+    return base * (1 - reduccion_pct / 100)

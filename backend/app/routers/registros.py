@@ -34,6 +34,7 @@ from app.services.bonus import aplicar_bono_y_critico, es_critico_soporte, porce
 from app.services.jefes import DANIO_POR_ACCION, danar_jefe
 from app.services.logros import a_hora_local, evaluar_logros_registro
 from app.services.rpg import XP_POR_ACCION
+from app.services.tienda import CREDITOS_POR_ACCION, otorgar_creditos
 from app.services.semanas import semana_de
 from app.services.trello import TrelloError, crear_tarjeta, trello_configurado
 from app.services.xp import otorgar_xp
@@ -83,6 +84,10 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
     )
     danio = aplicar_bono_y_critico(DANIO_POR_ACCION, porcentaje_bono, critico)
     await danar_jefe(session, semana_de(date.today()), danio, registro.atendio.nombre, "registro_creado")
+    await otorgar_creditos(
+        session, registro.atendio.nombre, CREDITOS_POR_ACCION, "registro_creado", semana_de(date.today()),
+        usuario_id_directo=registro.atendio.usuario_id,
+    )
     logros = await evaluar_logros_registro(session, registro)
 
     trello_ok = False

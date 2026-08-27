@@ -311,3 +311,22 @@ class Sonido(Base):
     url: Mapped[str] = mapped_column(Text)
     activo: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class InventarioItem(Base):
+    __tablename__ = "inventario_items"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    item_id: Mapped[str] = mapped_column(Text)
+    semana: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CreditoEvento(Base):
+    __tablename__ = "credito_eventos"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    semana: Mapped[str] = mapped_column(Text)
+    cantidad: Mapped[int] = mapped_column()
+    motivo: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

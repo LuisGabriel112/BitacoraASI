@@ -21,6 +21,18 @@ export type RankingItem = { nombre: string; avatar: string; nivel: number; xp: n
 export type Jefe = { semana: string; nombre: string; vida_max: number; vida_actual: number; derrotado: boolean };
 export type JefeBonus = { nombre: string; vida_max: number; vida_actual: number; derrotado: boolean };
 export type Mascota = { semana: string; nombre: string; vida_max: number };
+export type Objeto = {
+	id: string;
+	nombre: string;
+	descripcion: string;
+	costo: number;
+	danio_pct: number;
+	critico_pct: number;
+	cooldown_pct: number;
+	xp_pct: number;
+	requiere: string[] | null;
+};
+export type TiendaEstado = { creditos_disponibles: number; equipados: Objeto[] };
 export type DanioJefeEvento = {
 	id: number;
 	nombre_capturado: string;
@@ -233,6 +245,12 @@ export const api = {
 	jefesBonusActuales: () => json<JefeBonus[]>('/jefes/actual/bonus'),
 
 	mascotas: () => json<Mascota[]>('/jefes/mascotas'),
+
+	tiendaCatalogo: () => json<Objeto[]>('/tienda/catalogo'),
+
+	tiendaEstado: () => json<TiendaEstado>('/tienda/mio'),
+
+	tiendaComprar: (itemId: string) => json<TiendaEstado>(`/tienda/comprar/${itemId}`, { method: 'POST' }),
 
 	buscarPartidaGato: () => json<PartidaGato>('/juegos/gato/buscar', { method: 'POST' }),
 

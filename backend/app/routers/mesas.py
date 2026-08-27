@@ -43,6 +43,7 @@ from app.services.reporte_semanal_export import (
 )
 from app.services.auth import get_usuario_actual
 from app.services.rpg import XP_POR_ACCION, XP_POR_LOGRO
+from app.services.tienda import CREDITOS_POR_ACCION, otorgar_creditos
 from app.services.xp import otorgar_xp
 from app.services.semanas import rango_semana, semana_de
 
@@ -82,6 +83,10 @@ async def _otorgar_xp_cierre(session: AsyncSession, mesa: Mesa, logros: list[str
     )
     danio = aplicar_bono_y_critico(DANIO_POR_ACCION + DANIO_POR_LOGRO * len(logros), porcentaje_bono, critico)
     await danar_jefe(session, semana_de(date.today()), danio, mesa.resolutor.nombre, "mesa_cerrada")
+    await otorgar_creditos(
+        session, mesa.resolutor.nombre, CREDITOS_POR_ACCION, "mesa_cerrada", semana_de(date.today()),
+        usuario_id_directo=mesa.resolutor.usuario_id,
+    )
 
 
 @router.post("", response_model=MesaOut, status_code=201)
@@ -104,6 +109,10 @@ async def crear_mesa(payload: MesaCreate, session: AsyncSession = Depends(get_se
     await otorgar_xp(session, mesa.resolutor.nombre, xp, "mesa_creada", usuario_id_directo=mesa.resolutor.usuario_id)
     danio = aplicar_bono_y_critico(DANIO_POR_ACCION, porcentaje_bono, critico)
     await danar_jefe(session, semana_de(date.today()), danio, mesa.resolutor.nombre, "mesa_creada")
+    await otorgar_creditos(
+        session, mesa.resolutor.nombre, CREDITOS_POR_ACCION, "mesa_creada", semana_de(date.today()),
+        usuario_id_directo=mesa.resolutor.usuario_id,
+    )
     return MesaOut.model_validate(mesa).model_copy(update={"logros": logros})
 
 

@@ -162,6 +162,7 @@ async def test_otorgar_xp_cierre_da_accion_mas_logros(monkeypatch):
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
     monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
+    monkeypatch.setattr(mesas, "otorgar_creditos", AsyncMock())
     mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"), fecha_cierre_real=datetime(2026, 8, 3, 16, 0))
 
     await mesas._otorgar_xp_cierre(_session_sin_bono(), mesa, logros=["primera_dia_resolutor", "decima_dia"])
@@ -181,6 +182,7 @@ async def test_otorgar_xp_cierre_sin_logros_solo_da_xp_de_accion(monkeypatch):
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
     monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
+    monkeypatch.setattr(mesas, "otorgar_creditos", AsyncMock())
     mesa = SimpleNamespace(resolutor=_catalogo_item(1, "Ana"), fecha_cierre_real=datetime(2026, 8, 3, 16, 0))
 
     await mesas._otorgar_xp_cierre(_session_sin_bono(), mesa, logros=[])
@@ -197,6 +199,7 @@ async def test_otorgar_xp_cierre_pasa_el_usuario_id_vinculado(monkeypatch):
 
     monkeypatch.setattr(mesas, "otorgar_xp", falso_otorgar_xp)
     monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
+    monkeypatch.setattr(mesas, "otorgar_creditos", AsyncMock())
     mesa = SimpleNamespace(
         resolutor=_catalogo_item(1, "Ana", usuario_id=42), fecha_cierre_real=datetime(2026, 8, 3, 16, 0)
     )
@@ -204,3 +207,58 @@ async def test_otorgar_xp_cierre_pasa_el_usuario_id_vinculado(monkeypatch):
     await mesas._otorgar_xp_cierre(_session_sin_bono(), mesa, logros=[])
 
     assert llamadas[0] == 42
+
+
+@pytest.mark.asyncio
+async def test_otorgar_xp_cierre_da_creditos_de_tienda(monkeypatch):
+    creditos_otorgados = AsyncMock()
+    monkeypatch.setattr(mesas, "otorgar_xp", AsyncMock())
+    monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
+    monkeypatch.setattr(mesas, "otorgar_creditos", creditos_otorgados)
+    mesa = SimpleNamespace(
+        resolutor=_catalogo_item(1, "Ana", usuario_id=42), fecha_cierre_real=datetime(2026, 8, 3, 16, 0)
+    )
+
+    await mesas._otorgar_xp_cierre(_session_sin_bono(), mesa, logros=[])
+
+    creditos_otorgados.assert_awaited_once()
+    args = creditos_otorgados.await_args.args
+    kwargs = creditos_otorgados.await_args.kwargs
+    assert args[1] == "Ana"
+    assert args[2] == mesas.CREDITOS_POR_ACCION
+    assert args[3] == "mesa_cerrada"
+    assert kwargs["usuario_id_directo"] == 42
+
+
+@pytest.mark.asyncio
+async def test_crear_mesa_da_creditos_de_tienda(monkeypatch):
+    monkeypatch.setattr(mesas, "evaluar_logros", AsyncMock(return_value=[]))
+    monkeypatch.setattr(mesas, "porcentaje_bono_del_momento", AsyncMock(return_value=(0, [])))
+    monkeypatch.setattr(mesas, "es_critico_por_horario", lambda momento: False)
+    monkeypatch.setattr(mesas, "otorgar_xp", AsyncMock())
+    monkeypatch.setattr(mesas, "danar_jefe", AsyncMock())
+    creditos_otorgados = AsyncMock()
+    monkeypatch.setattr(mesas, "otorgar_creditos", creditos_otorgados)
+
+    mesa_creada = SimpleNamespace(
+        id=1, enlace=None, codigo="TCK-001", titulo="Falla login",
+        fecha_carga=datetime(2026, 8, 3, 14, 30), semana="SEM 32 - 2026",
+        descripcion="No entra al portal", fecha_estimada_resolucion=datetime(2026, 8, 5, 9, 0),
+        solucion=None, tipo_solucion=None, fecha_cierre_real=None,
+        medidas_impacto=False, prioridad=False, destacada=False,
+        created_at=datetime(2026, 8, 3, 16, 0),
+        ventana=None, categoria=_catalogo_item(1, "Cat"), solicitante=_catalogo_item(1, "Sol"),
+        resolutor=_catalogo_item(1, "Ana", usuario_id=42),
+    )
+    monkeypatch.setattr(mesas, "_obtener_mesa", AsyncMock(return_value=mesa_creada))
+
+    session = AsyncMock()
+    session.add = MagicMock()
+
+    await mesas.crear_mesa(_mesa_create(), session)
+
+    creditos_otorgados.assert_awaited_once()
+    args = creditos_otorgados.await_args.args
+    assert args[1] == "Ana"
+    assert args[2] == mesas.CREDITOS_POR_ACCION
+    assert args[3] == "mesa_creada"
