@@ -23,6 +23,14 @@ from app.services.auth import get_usuario_actual
 router = APIRouter(tags=["catalogos"], dependencies=[Depends(get_usuario_actual)])
 
 
+def _consulta_nombre_existente(model, nombre: str):
+    """Case-insensitive: sin esto, "Tramites E." y "tramites E." se guardan
+    como dos filas distintas cuando el catálogo en caché del frontend no
+    atrapa la coincidencia (p. ej. carga desactualizada) -- el backend es
+    la última línea de defensa contra el duplicado real."""
+    return select(model).where(func.lower(model.nombre) == nombre.lower())
+
+
 def _catalogo_router(prefix: str, model, creatable: bool, vinculable: bool = False, columna_uso=None):
     sub = APIRouter(prefix=prefix)
 
@@ -40,7 +48,7 @@ def _catalogo_router(prefix: str, model, creatable: bool, vinculable: bool = Fal
             nombre = payload.nombre.strip()
             if not nombre:
                 raise HTTPException(400, "Nombre vacío")
-            existente = await session.execute(select(model).where(model.nombre == nombre))
+            existente = await session.execute(_consulta_nombre_existente(model, nombre))
             row = existente.scalar_one_or_none()
             if row:
                 return row
