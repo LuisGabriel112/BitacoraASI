@@ -197,7 +197,10 @@
 
 	<section class="tarjeta tile-tabla">
 		<div class="tarjeta-cabecera">
-			<h2 class="font-display">Registros recientes</h2>
+			<div class="titulo-con-link">
+				<h2 class="font-display">Registros recientes</h2>
+				<a href="/listado" class="ver-todos">Ver todos en Listado →</a>
+			</div>
 			<div class="filtros">
 				<ComboboxCreatable id="f-empresa" catalogo="empresas" label="Empresa" bind:selectedId={empresaId} permiteCrear={false} />
 				<SelectCatalogo id="f-sistema" catalogo="sistemas" label="Sistema" bind:selectedId={sistemaId} />
@@ -237,7 +240,7 @@
 								<td><ChipSistema nombre={r.sistema.nombre} /></td>
 								<td>{r.modulo.nombre}</td>
 								<td>{r.atendio.nombre}</td>
-								<td class="descripcion">{r.descripcion}</td>
+								<td class="descripcion" title={r.descripcion}>{r.descripcion}</td>
 							</tr>
 						{/each}
 					{/if}
@@ -362,6 +365,27 @@
 		gap: 16px;
 		margin-bottom: 14px;
 		flex-wrap: wrap;
+	}
+
+	.titulo-con-link {
+		display: flex;
+		align-items: baseline;
+		gap: 14px;
+	}
+
+	.titulo-con-link h2 {
+		margin: 0;
+	}
+
+	.ver-todos {
+		font-size: 12px;
+		color: var(--accent);
+		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	.ver-todos:hover {
+		text-decoration: underline;
 	}
 
 	.filtros {
