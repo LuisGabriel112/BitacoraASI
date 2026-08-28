@@ -16,3 +16,4 @@ frontend/dev.log
 frontend/.vercel/
 
 .claude/settings.local.json
+.impeccable/

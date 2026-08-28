@@ -117,10 +117,10 @@
 		class="buscador"
 	/>
 	<div class="filtros">
-		<ComboboxCreatable id="l-empresa" catalogo="empresas" label="Empresa" bind:selectedId={empresaId} />
+		<ComboboxCreatable id="l-empresa" catalogo="empresas" label="Empresa" bind:selectedId={empresaId} permiteCrear={false} />
 		<SelectCatalogo id="l-sistema" catalogo="sistemas" label="Sistema" bind:selectedId={sistemaId} />
 		<SelectCatalogo id="l-medio" catalogo="medios" label="Medio" bind:selectedId={medioId} />
-		<ComboboxCreatable id="l-modulo" catalogo="modulos" label="Módulo" bind:selectedId={moduloId} />
+		<ComboboxCreatable id="l-modulo" catalogo="modulos" label="Módulo" bind:selectedId={moduloId} permiteCrear={false} />
 		<SelectCatalogo id="l-atendio" catalogo="agentes" label="Atendió" bind:selectedId={atendioId} />
 	</div>
 	<div class="exportar">

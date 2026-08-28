@@ -224,10 +224,10 @@
 		class="buscador"
 	/>
 	<div class="filtros">
-		<ComboboxCreatable id="m-categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} />
-		<ComboboxCreatable id="m-solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} />
-		<ComboboxCreatable id="m-resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} />
-		<ComboboxCreatable id="m-ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} />
+		<ComboboxCreatable id="m-categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} permiteCrear={false} />
+		<ComboboxCreatable id="m-solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} permiteCrear={false} />
+		<ComboboxCreatable id="m-resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} permiteCrear={false} />
+		<ComboboxCreatable id="m-ventana" catalogo="ventanas-mesa" label="Ventana" bind:selectedId={ventanaId} permiteCrear={false} />
 		<div class="campo">
 			<label for="m-estado">Estado</label>
 			<select id="m-estado" bind:value={estado}>

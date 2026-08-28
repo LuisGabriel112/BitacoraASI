@@ -12,6 +12,7 @@
 
 	let kpis = $state<PanelKPIs | null>(null);
 	let cargandoKpis = $state(true);
+	let errorPanel = $state(false);
 
 	let empresaId = $state<number | null>(null);
 	let sistemaId = $state<number | null>(null);
@@ -20,12 +21,17 @@
 
 	let recientes = $state<Registro[]>([]);
 	let cargandoTabla = $state(true);
+	let errorTabla = $state(false);
+	let datosDesactualizados = $state(false);
 	const INTERVALO_REFRESCO_MS = 30_000;
 
 	async function cargarPanel() {
 		cargandoKpis = true;
+		errorPanel = false;
 		try {
 			kpis = await api.panel();
+		} catch {
+			errorPanel = true;
 		} finally {
 			cargandoKpis = false;
 		}
@@ -44,9 +50,12 @@
 
 	async function cargarTabla() {
 		cargandoTabla = true;
+		errorTabla = false;
 		try {
 			const pagina = await api.listado(paramsTabla());
 			recientes = pagina.items;
+		} catch {
+			errorTabla = true;
 		} finally {
 			cargandoTabla = false;
 		}
@@ -66,8 +75,11 @@
 		try {
 			kpis = await api.panel();
 			recientes = (await api.listado(paramsTabla())).items;
+			datosDesactualizados = false;
 		} catch {
-			// un fallo de refresco en segundo plano no debe interrumpir al usuario
+			// un fallo de refresco en segundo plano no debe interrumpir al usuario con un
+			// error bloqueante, pero sí debe quedar visible que los datos ya no son frescos.
+			datosDesactualizados = true;
 		}
 	}
 
@@ -126,12 +138,21 @@
 		return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 	}
 
-	const ultimaActualizacion = $derived(
-		kpis && kpis.recientes.length > 0 ? horaCorta(kpis.recientes[0].created_at) : '—'
-	);
+	const ultimaActualizacion = $derived.by(() => {
+		if (!kpis || kpis.recientes.length === 0) return '—';
+		const hora = horaCorta(kpis.recientes[0].created_at);
+		return datosDesactualizados ? `${hora} (desactualizado)` : hora;
+	});
 </script>
 
 <Header titulo="Panel principal" subtitulo={kpis ? kpis.semana : 'Cargando semana en curso…'} />
+
+{#if errorPanel || errorTabla}
+	<div class="banner-error" role="alert">
+		<span>No se pudo cargar el panel. Verifica tu conexión.</span>
+		<button type="button" onclick={() => { cargarPanel(); cargarTabla(); }}>Reintentar</button>
+	</div>
+{/if}
 
 <div class="bento">
 	<section class="tarjeta tile-hero">
@@ -178,10 +199,10 @@
 		<div class="tarjeta-cabecera">
 			<h2 class="font-display">Registros recientes</h2>
 			<div class="filtros">
-				<ComboboxCreatable id="f-empresa" catalogo="empresas" label="Empresa" bind:selectedId={empresaId} />
+				<ComboboxCreatable id="f-empresa" catalogo="empresas" label="Empresa" bind:selectedId={empresaId} permiteCrear={false} />
 				<SelectCatalogo id="f-sistema" catalogo="sistemas" label="Sistema" bind:selectedId={sistemaId} />
 				<SelectCatalogo id="f-medio" catalogo="medios" label="Medio" bind:selectedId={medioId} />
-				<ComboboxCreatable id="f-modulo" catalogo="modulos" label="Módulo" bind:selectedId={moduloId} />
+				<ComboboxCreatable id="f-modulo" catalogo="modulos" label="Módulo" bind:selectedId={moduloId} permiteCrear={false} />
 			</div>
 		</div>
 
@@ -227,6 +248,31 @@
 </div>
 
 <style>
+	.banner-error {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		background: color-mix(in oklch, var(--danger) 14%, var(--surface));
+		border: 1px solid var(--danger);
+		border-radius: var(--radius-lg);
+		padding: 12px 16px;
+		margin-bottom: 18px;
+		font-size: 13px;
+		color: var(--text);
+	}
+
+	.banner-error button {
+		background: var(--danger);
+		color: var(--bg);
+		border: none;
+		border-radius: var(--radius);
+		padding: 7px 14px;
+		font-weight: 600;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+
 	.bento {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);

@@ -10,7 +10,8 @@
 		selectedId = $bindable(null),
 		autofocus = false,
 		id,
-		nombreSeleccionado = ''
+		nombreSeleccionado = '',
+		permiteCrear = true
 	}: {
 		catalogo: 'empresas' | 'modulos' | 'categorias-mesa' | 'solicitantes-mesa' | 'resolutores-mesa' | 'ventanas-mesa';
 		label: string;
@@ -18,6 +19,8 @@
 		autofocus?: boolean;
 		id: string;
 		nombreSeleccionado?: string;
+		/** false en contexto de filtro: escribir un valor sin coincidencia nunca debe crear una fila real de catálogo. */
+		permiteCrear?: boolean;
 	} = $props();
 
 	const LIMITE_VISIBLE = 20;
@@ -48,7 +51,7 @@
 
 	const hayCoincidenciaExacta = $derived(coincidenciaExacta(opciones, texto) !== null);
 
-	const totalFilas = $derived(opciones.length + (texto.trim() && !hayCoincidenciaExacta ? 1 : 0));
+	const totalFilas = $derived(opciones.length + (permiteCrear && texto.trim() && !hayCoincidenciaExacta ? 1 : 0));
 
 	function elegir(item: Catalogo) {
 		selectedId = item.id;
@@ -57,6 +60,7 @@
 	}
 
 	async function crear() {
+		if (!permiteCrear) return;
 		const nombre = texto.trim();
 		if (!nombre) return;
 		const item = await api.crearCatalogo(catalogo, nombre);
@@ -135,7 +139,7 @@
 						</button>
 					</li>
 				{/each}
-				{#if texto.trim() && !hayCoincidenciaExacta}
+				{#if permiteCrear && texto.trim() && !hayCoincidenciaExacta}
 					<li>
 						<button
 							type="button"
