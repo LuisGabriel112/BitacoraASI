@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -17,12 +18,16 @@ MAX_INTENTOS_FALLIDOS = 5
 MINUTOS_BLOQUEO = 5
 
 
-def hash_pin(pin: str) -> str:
-    return bcrypt.hashpw(pin.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+async def hash_pin(pin: str) -> str:
+    # bcrypt es CPU-bound y síncrono (~100-300ms) -- corrido inline bloquea el
+    # único event loop y congela cualquier otra request concurrente (juegos,
+    # chat, paneles) mientras dura. asyncio.to_thread lo saca del loop.
+    hashed = await asyncio.to_thread(bcrypt.hashpw, pin.encode("utf-8"), bcrypt.gensalt())
+    return hashed.decode("utf-8")
 
 
-def verificar_pin(pin: str, pin_hash: str) -> bool:
-    return bcrypt.checkpw(pin.encode("utf-8"), pin_hash.encode("utf-8"))
+async def verificar_pin(pin: str, pin_hash: str) -> bool:
+    return await asyncio.to_thread(bcrypt.checkpw, pin.encode("utf-8"), pin_hash.encode("utf-8"))
 
 
 def crear_token(usuario_id: int) -> str:

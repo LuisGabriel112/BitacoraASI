@@ -1,6 +1,9 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 import jwt
+import pytest
 
 from app.config import settings
 from app.services.auth import (
@@ -16,14 +19,47 @@ from app.services.auth import (
 )
 
 
-def test_pin_correcto_verifica_contra_su_hash():
-    hash_guardado = hash_pin("1234")
-    assert verificar_pin("1234", hash_guardado) is True
+@pytest.mark.asyncio
+async def test_pin_correcto_verifica_contra_su_hash():
+    hash_guardado = await hash_pin("1234")
+    assert await verificar_pin("1234", hash_guardado) is True
 
 
-def test_pin_incorrecto_no_verifica():
-    hash_guardado = hash_pin("1234")
-    assert verificar_pin("9999", hash_guardado) is False
+@pytest.mark.asyncio
+async def test_pin_incorrecto_no_verifica():
+    hash_guardado = await hash_pin("1234")
+    assert await verificar_pin("9999", hash_guardado) is False
+
+
+@pytest.mark.asyncio
+async def test_hash_pin_corre_fuera_del_event_loop(monkeypatch):
+    llamada = {}
+
+    async def falso_to_thread(func, *args):
+        llamada["func"] = func
+        return func(*args)
+
+    monkeypatch.setattr(asyncio, "to_thread", falso_to_thread)
+
+    await hash_pin("1234")
+
+    assert llamada["func"] is bcrypt.hashpw
+
+
+@pytest.mark.asyncio
+async def test_verificar_pin_corre_fuera_del_event_loop(monkeypatch):
+    hash_guardado = bcrypt.hashpw(b"1234", bcrypt.gensalt()).decode("utf-8")
+    llamada = {}
+
+    async def falso_to_thread(func, *args):
+        llamada["func"] = func
+        return func(*args)
+
+    monkeypatch.setattr(asyncio, "to_thread", falso_to_thread)
+
+    await verificar_pin("1234", hash_guardado)
+
+    assert llamada["func"] is bcrypt.checkpw
 
 
 def test_token_recien_creado_se_lee_de_vuelta():

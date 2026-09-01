@@ -76,7 +76,7 @@ async def registro(
 
     usuario = Usuario(
         nombre=nombre_limpio,
-        pin_hash=hash_pin(payload.pin),
+        pin_hash=await hash_pin(payload.pin),
         avatar=payload.avatar,
         color_piel=payload.color_piel,
         color_cuerpo=payload.color_cuerpo,
@@ -109,7 +109,7 @@ async def login(
     if sigue_bloqueado(usuario.bloqueado_hasta, ahora):
         raise HTTPException(429, "Cuenta bloqueada temporalmente por demasiados intentos fallidos")
 
-    if not verificar_pin(payload.pin, usuario.pin_hash):
+    if not await verificar_pin(payload.pin, usuario.pin_hash):
         usuario.intentos_fallidos += 1
         if debe_bloquear(usuario.intentos_fallidos):
             usuario.bloqueado_hasta = calcular_bloqueo_hasta(ahora)
