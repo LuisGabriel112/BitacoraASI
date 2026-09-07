@@ -9,6 +9,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import type AnimacionExito3D from '$lib/components/AnimacionExito3D.svelte';
 	import { RUTA_SONIDO_EE_ATZIMBA, esPrimerSoporteDelDiaDeAtzimba } from '$lib/easterEggs';
+	import { reproducirFanfarriaMexicana } from '$lib/sonidoMexicano';
 	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
 	import { tick } from 'svelte';
 
@@ -176,7 +177,7 @@
 			});
 			cargarCapturadosHoy();
 			const fueEasterEgg = revisarEasterEggAtzimba(resultado.registro, resultado.logros);
-			if (!fueEasterEgg) aviso?.mostrar('exito', 'Registro guardado en la bitácora.');
+			if (!fueEasterEgg) aviso?.mostrar('exito', 'Registro guardado en la bitácora.', reproducirFanfarriaMexicana);
 			celebracion?.mostrar(['soporte_guardado', ...resultado.logros]);
 			mostrarAnimacionExito();
 		} catch (e) {
