@@ -122,14 +122,13 @@
 	--accent-2: #ce1126;
 }
 
-.franja-patria,
-.papel-picado {
+.franja-patria {
 	display: none;
 }
 
 :root[data-temporada='patrio'] .franja-patria {
 	display: flex;
-	height: 6px;
+	height: 10px;
 }
 
 :root[data-temporada='patrio'] .franja-patria span {
@@ -146,17 +145,6 @@
 
 :root[data-temporada='patrio'] .franja-patria span:nth-child(3) {
 	background: #ce1126;
-}
-
-/* banderines estilo papel picado — decoración estacional, no perforado real:
-   tres banderines (verde/blanco/rojo) con un punto de color contrastante,
-   colgados de una cuerda. Se repite horizontalmente. */
-:root[data-temporada='patrio'] .papel-picado {
-	display: block;
-	height: 36px;
-	background-repeat: repeat-x;
-	background-position: top left;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='36' viewBox='0 0 90 36'%3E%3Cline x1='0' y1='2' x2='90' y2='2' stroke='%23554f47' stroke-width='2'/%3E%3Cpath d='M0,3 L30,3 15,30Z' fill='%23006341'/%3E%3Ccircle cx='15' cy='13' r='2.5' fill='white'/%3E%3Cpath d='M30,3 L60,3 45,30Z' fill='white'/%3E%3Ccircle cx='45' cy='13' r='2.5' fill='%23ce1126'/%3E%3Cpath d='M60,3 L90,3 75,30Z' fill='%23ce1126'/%3E%3Ccircle cx='75' cy='13' r='2.5' fill='%23006341'/%3E%3C/svg%3E");
 }
 
 * {

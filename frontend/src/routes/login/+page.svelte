@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Toast from '$lib/components/Toast.svelte';
+	import PapelPicado from '$lib/components/PapelPicado.svelte';
 	import type Personaje3D from '$lib/components/Personaje3D.svelte';
 	import { ACCESORIOS, COLOR_CUERPO_DEFECTO, COLOR_PIEL_DEFECTO } from '$lib/apariencia';
 	import { api, type Accesorio } from '$lib/api/client';
@@ -64,6 +65,7 @@
 
 <div class="pantalla">
 	<form class="tarjeta" onsubmit={(e) => (e.preventDefault(), enviar())}>
+		<PapelPicado cantidad={11} />
 		<h1 class="font-display">{modo === 'login' ? 'Iniciar sesión' : 'Crear personaje'}</h1>
 		<p class="subtitulo">Bitácora ASIPONA — identifícate con tu nombre y PIN.</p>
 

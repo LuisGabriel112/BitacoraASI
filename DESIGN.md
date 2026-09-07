@@ -151,7 +151,7 @@ Radios moderados, no pill/blob: `--radius` (8px) para inputs, botones y dropdown
 
 ### Seasonal exception (mes patrio)
 
-En septiembre, `app.html` fija `data-temporada="patrio"` en `<html>` (detectado por fecha del navegador, sin preferencia de usuario). Ese atributo sustituye `--accent`/`--accent-strong`/`--accent-2` por verde (`#006341`) y rojo (`#ce1126`) bandera, y activa dos elementos decorativos ocultos por default en `Nav.svelte`: `.franja-patria` (franja tricolor de 6px) y `.papel-picado` (banderines SVG bajo la marca). Es la única excepción a la regla del acento único y a "sin decoración adicional" — vencida el resto del año, vuelve sola al violeta.
+En septiembre, `app.html` fija `data-temporada="patrio"` en `<html>` (detectado por fecha del navegador, sin preferencia de usuario). Ese atributo sustituye `--accent`/`--accent-strong`/`--accent-2` por verde (`#006341`) y rojo (`#ce1126`) bandera, y activa: `.franja-patria` en `Nav.svelte` (franja tricolor de 10px), un fondo tintado en `.marca`, y el componente `PapelPicado.svelte` — banderines reales (no SVG estático) con ondeo animado (`@keyframes ondear`, rotación ±5° escalonada por `generarBanderines()`), presente en `Nav.svelte`, `Header.svelte` (toda página autenticada) y la tarjeta de `/login`. Es la única excepción a la regla del acento único y a "sin decoración adicional" — vencida el resto del año, vuelve sola al violeta.
 
 ### Don't:
 - **Don't** reintroducir `backdrop-filter`, superficies translúcidas o blobs animados de fondo — es exactamente el mundo visual que este redesign reemplazó.

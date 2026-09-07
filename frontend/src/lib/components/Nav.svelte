@@ -6,6 +6,7 @@
 	import { estadoPersonaje, limpiarPersonaje } from '$lib/personaje.svelte';
 	import Reloj from '$lib/components/Reloj.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import PapelPicado from '$lib/components/PapelPicado.svelte';
 	import type { NombreIcono } from '$lib/icons';
 
 	const semana = semanaActual();
@@ -71,7 +72,7 @@
 		<span class="marca-icono"><Icon nombre="anchor" tamano={18} /></span>
 		<span class="font-display marca-texto">Bitácora ASIPONA</span>
 	</div>
-	<div class="papel-picado" aria-hidden="true"></div>
+	<PapelPicado cantidad={9} />
 
 	<div class="reloj-envoltura">
 		<Reloj />
@@ -147,8 +148,8 @@
 		border-bottom: 1px solid var(--border);
 	}
 
-	.papel-picado {
-		border-bottom: 1px solid var(--border);
+	:root[data-temporada='patrio'] .marca {
+		background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 	}
 
 	.marca-icono {

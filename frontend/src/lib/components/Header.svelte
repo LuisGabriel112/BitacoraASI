@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { semanaActual } from '$lib/semana';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import PapelPicado from '$lib/components/PapelPicado.svelte';
 	import { estadoPersonaje } from '$lib/personaje.svelte';
 
 	let { titulo, subtitulo = '' }: { titulo: string; subtitulo?: string } = $props();
@@ -9,6 +10,7 @@
 	const personaje = $derived(estadoPersonaje.actual);
 </script>
 
+<PapelPicado cantidad={16} />
 <header class="header">
 	<div class="titulos">
 		<h1 class="font-display">{titulo}</h1>
