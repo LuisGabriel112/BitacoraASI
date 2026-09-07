@@ -21,4 +21,10 @@ describe('segundosRestantesCooldown', () => {
 	it('el cooldown configurado es de 5 minutos', () => {
 		expect(COOLDOWN_MS).toBe(5 * 60_000);
 	});
+
+	it('acepta un cooldown propio para minijuegos con espera distinta', () => {
+		const ahora = Date.now();
+		const ultimo = ahora - 60_000;
+		expect(segundosRestantesCooldown(ultimo, ahora, 2 * 60_000)).toBe(60);
+	});
 });

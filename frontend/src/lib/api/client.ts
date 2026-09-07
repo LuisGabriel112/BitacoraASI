@@ -174,6 +174,18 @@ export type PanelMesasKPIs = {
 };
 const BASE = '/api';
 
+/** Conserva el status HTTP: sin él, quien llama no puede distinguir un 429 de
+ *  cooldown legítimo de un 500 del servidor, y trata ambos como "espera". */
+export class ErrorApi extends Error {
+	constructor(
+		mensaje: string,
+		readonly status: number
+	) {
+		super(mensaje);
+		this.name = 'ErrorApi';
+	}
+}
+
 async function lanzarSiError(resp: Response): Promise<void> {
 	if (resp.ok) return;
 	let detail = resp.statusText;
@@ -183,7 +195,7 @@ async function lanzarSiError(resp: Response): Promise<void> {
 	} catch {
 		/* respuesta sin cuerpo JSON */
 	}
-	throw new Error(detail);
+	throw new ErrorApi(detail, resp.status);
 }
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {

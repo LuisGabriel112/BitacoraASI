@@ -3,75 +3,84 @@ export interface Punto {
 	y: number;
 }
 
-export interface Bot {
-	id: number;
-	pos: Punto;
-	vivo: boolean;
+export interface Direccion {
+	dx: number;
+	dy: number;
 }
 
-export const ANCHO_ARENA = 320;
-export const ALTO_ARENA = 220;
-export const RADIO_CONTACTO = 20;
-export const VELOCIDAD_JUGADOR = 4;
-export const VELOCIDAD_BOT = 1.6;
-export const ALCANCE_DISPARO = 90;
+export interface Muro {
+	x: number;
+	y: number;
+	ancho: number;
+	alto: number;
+}
 
-const ESQUINAS_BOT: Punto[] = [
-	{ x: 20, y: 20 },
-	{ x: ANCHO_ARENA - 20, y: 20 },
-	{ x: ANCHO_ARENA - 20, y: ALTO_ARENA - 20 }
+export const ANCHO_ARENA = 360;
+export const ALTO_ARENA = 260;
+export const RADIO_PERSONAJE = 11;
+export const VELOCIDAD_JUGADOR = 3.2;
+export const VELOCIDAD_BOT = 1.15;
+
+export const POSICION_INICIAL_JUGADOR: Punto = { x: ANCHO_ARENA / 2, y: ALTO_ARENA / 2 };
+
+/** Coberturas fijas: dan al jugador dónde esconderse de los disparos enemigos,
+ *  que es lo que vuelve la arena un duelo y no una persecución en campo abierto. */
+export const MUROS: Muro[] = [
+	{ x: 60, y: 170, ancho: 40, alto: 44 },
+	{ x: 160, y: 40, ancho: 40, alto: 40 },
+	{ x: 260, y: 160, ancho: 40, alto: 44 }
 ];
-
-export function limitarAArena(p: Punto): Punto {
-	return {
-		x: Math.min(ANCHO_ARENA, Math.max(0, p.x)),
-		y: Math.min(ALTO_ARENA, Math.max(0, p.y))
-	};
-}
-
-export function moverPunto(p: Punto, dx: number, dy: number, velocidad: number): Punto {
-	return limitarAArena({ x: p.x + dx * velocidad, y: p.y + dy * velocidad });
-}
 
 export function distancia(a: Punto, b: Punto): number {
 	return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-export function moverBotHaciaJugador(bot: Punto, jugador: Punto, velocidad: number): Punto {
-	const dist = distancia(bot, jugador) || 1;
-	const dx = (jugador.x - bot.x) / dist;
-	const dy = (jugador.y - bot.y) / dist;
-	return moverPunto(bot, dx, dy, velocidad);
+export function direccionHacia(desde: Punto, hacia: Punto): Direccion {
+	const dist = distancia(desde, hacia) || 1;
+	return { dx: (hacia.x - desde.x) / dist, dy: (hacia.y - desde.y) / dist };
 }
 
-export function crearBotsIniciales(cantidad: number): Bot[] {
-	return Array.from({ length: cantidad }, (_, i) => ({
-		id: i,
-		pos: ESQUINAS_BOT[i % ESQUINAS_BOT.length],
-		vivo: true
-	}));
+export function limitarAArena(p: Punto, radio: number): Punto {
+	return {
+		x: Math.min(ANCHO_ARENA - radio, Math.max(radio, p.x)),
+		y: Math.min(ALTO_ARENA - radio, Math.max(radio, p.y))
+	};
 }
 
-export function botMasCercano(jugador: Punto, bots: Bot[]): Bot | null {
-	const vivos = bots.filter((b) => b.vivo);
-	if (vivos.length === 0) return null;
-	return vivos.reduce((cercano, b) => (distancia(jugador, b.pos) < distancia(jugador, cercano.pos) ? b : cercano));
+export function dentroDeArena(p: Punto): boolean {
+	return p.x >= 0 && p.x <= ANCHO_ARENA && p.y >= 0 && p.y <= ALTO_ARENA;
 }
 
-export function disparar(jugador: Punto, bots: Bot[], alcance: number): Bot[] {
-	const objetivo = botMasCercano(jugador, bots);
-	if (!objetivo || distancia(jugador, objetivo.pos) > alcance) return bots;
-	return bots.map((b) => (b.id === objetivo.id ? { ...b, vivo: false } : b));
+function invadeMuro(p: Punto, muro: Muro, radio: number): boolean {
+	return (
+		p.x > muro.x - radio &&
+		p.x < muro.x + muro.ancho + radio &&
+		p.y > muro.y - radio &&
+		p.y < muro.y + muro.alto + radio
+	);
 }
 
-export function jugadorFueGolpeado(jugador: Punto, bots: Bot[], radio: number): boolean {
-	return bots.some((b) => b.vivo && distancia(jugador, b.pos) < radio);
+export function tocaMuro(p: Punto, radio: number): boolean {
+	return MUROS.some((muro) => invadeMuro(p, muro, radio));
 }
 
-export function enemigosEliminados(bots: Bot[]): number {
-	return bots.filter((b) => !b.vivo).length;
-}
-
-export function partidaGanada(bots: Bot[]): boolean {
-	return bots.every((b) => !b.vivo);
+/** Intenta el movimiento completo y, si un muro lo bloquea, prueba cada eje por
+ *  separado — así el personaje se desliza pegado al muro en vez de trabarse. */
+export function moverConColision(
+	desde: Punto,
+	dx: number,
+	dy: number,
+	velocidad: number,
+	radio: number
+): Punto {
+	const candidatos = [
+		{ x: desde.x + dx * velocidad, y: desde.y + dy * velocidad },
+		{ x: desde.x + dx * velocidad, y: desde.y },
+		{ x: desde.x, y: desde.y + dy * velocidad }
+	];
+	for (const candidato of candidatos) {
+		const destino = limitarAArena(candidato, radio);
+		if (!tocaMuro(destino, radio)) return destino;
+	}
+	return desde;
 }

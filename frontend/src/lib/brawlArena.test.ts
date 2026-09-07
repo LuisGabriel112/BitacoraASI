@@ -2,101 +2,79 @@ import { describe, expect, it } from 'vitest';
 import {
 	ALTO_ARENA,
 	ANCHO_ARENA,
-	botMasCercano,
-	crearBotsIniciales,
-	disparar,
+	MUROS,
+	POSICION_INICIAL_JUGADOR,
+	RADIO_PERSONAJE,
+	direccionHacia,
 	distancia,
-	enemigosEliminados,
-	jugadorFueGolpeado,
 	limitarAArena,
-	moverBotHaciaJugador,
-	moverPunto
+	moverConColision,
+	tocaMuro
 } from './brawlArena';
+
+const centroDe = (muro: (typeof MUROS)[number]) => ({
+	x: muro.x + muro.ancho / 2,
+	y: muro.y + muro.alto / 2
+});
 
 describe('limitarAArena', () => {
 	it('mantiene un punto fuera de los límites dentro de la arena', () => {
-		const p = limitarAArena({ x: -50, y: ALTO_ARENA + 999 });
-		expect(p.x).toBeGreaterThanOrEqual(0);
-		expect(p.x).toBeLessThanOrEqual(ANCHO_ARENA);
-		expect(p.y).toBeGreaterThanOrEqual(0);
-		expect(p.y).toBeLessThanOrEqual(ALTO_ARENA);
+		const p = limitarAArena({ x: -50, y: ALTO_ARENA + 999 }, RADIO_PERSONAJE);
+		expect(p.x).toBeGreaterThanOrEqual(RADIO_PERSONAJE);
+		expect(p.x).toBeLessThanOrEqual(ANCHO_ARENA - RADIO_PERSONAJE);
+		expect(p.y).toBeGreaterThanOrEqual(RADIO_PERSONAJE);
+		expect(p.y).toBeLessThanOrEqual(ALTO_ARENA - RADIO_PERSONAJE);
 	});
 });
 
-describe('moverPunto', () => {
-	it('desplaza el punto en la dirección dada', () => {
-		const p = moverPunto({ x: 0, y: 0 }, 1, 0, 4);
-		expect(p.x).toBe(4);
-		expect(p.y).toBe(0);
+describe('tocaMuro', () => {
+	it('detecta un punto encima de un muro', () => {
+		expect(tocaMuro(centroDe(MUROS[0]), RADIO_PERSONAJE)).toBe(true);
+	});
+
+	it('el punto de salida del jugador está libre', () => {
+		expect(tocaMuro(POSICION_INICIAL_JUGADOR, RADIO_PERSONAJE)).toBe(false);
 	});
 });
 
-describe('moverBotHaciaJugador', () => {
-	it('acerca al bot hacia el jugador', () => {
-		const bot = { x: 0, y: 0 };
-		const jugador = { x: 100, y: 0 };
-		const nuevo = moverBotHaciaJugador(bot, jugador, 5);
-		expect(distancia(nuevo, jugador)).toBeLessThan(distancia(bot, jugador));
+describe('moverConColision', () => {
+	it('avanza normalmente en zona libre', () => {
+		const desde = POSICION_INICIAL_JUGADOR;
+		const destino = moverConColision(desde, 0, -1, 5, RADIO_PERSONAJE);
+		expect(destino.y).toBeLessThan(desde.y);
+	});
+
+	it('no atraviesa un muro pero se desliza por el eje libre', () => {
+		const muro = MUROS[0];
+		const pegado = {
+			x: muro.x - RADIO_PERSONAJE - 1,
+			y: muro.y + muro.alto / 2
+		};
+		const destino = moverConColision(pegado, 1, -1, 4, RADIO_PERSONAJE);
+
+		expect(tocaMuro(destino, RADIO_PERSONAJE)).toBe(false);
+		expect(destino.x).toBeLessThanOrEqual(pegado.x);
+		expect(destino.y).toBeLessThan(pegado.y);
 	});
 });
 
-describe('crearBotsIniciales', () => {
-	it('crea la cantidad pedida, todos vivos, en posiciones distintas', () => {
-		const bots = crearBotsIniciales(3);
-		expect(bots).toHaveLength(3);
-		expect(bots.every((b) => b.vivo)).toBe(true);
-		const posiciones = new Set(bots.map((b) => `${b.pos.x},${b.pos.y}`));
-		expect(posiciones.size).toBe(3);
+describe('direccionHacia', () => {
+	it('devuelve un vector normalizado', () => {
+		const d = direccionHacia({ x: 0, y: 0 }, { x: 30, y: 40 });
+		expect(Math.hypot(d.dx, d.dy)).toBeCloseTo(1);
+		expect(d.dx).toBeCloseTo(0.6);
+		expect(d.dy).toBeCloseTo(0.8);
+	});
+
+	it('no divide entre cero cuando origen y objetivo coinciden', () => {
+		const d = direccionHacia({ x: 5, y: 5 }, { x: 5, y: 5 });
+		expect(Number.isFinite(d.dx)).toBe(true);
+		expect(Number.isFinite(d.dy)).toBe(true);
 	});
 });
 
-describe('disparar', () => {
-	it('elimina solo al bot vivo más cercano dentro de alcance', () => {
-		const jugador = { x: 0, y: 0 };
-		const bots = [
-			{ id: 0, pos: { x: 10, y: 0 }, vivo: true },
-			{ id: 1, pos: { x: 50, y: 0 }, vivo: true }
-		];
-		const resultado = disparar(jugador, bots, 100);
-		expect(resultado.find((b) => b.id === 0)?.vivo).toBe(false);
-		expect(resultado.find((b) => b.id === 1)?.vivo).toBe(true);
-	});
-
-	it('no elimina a nadie si está fuera de alcance', () => {
-		const jugador = { x: 0, y: 0 };
-		const bots = [{ id: 0, pos: { x: 500, y: 0 }, vivo: true }];
-		const resultado = disparar(jugador, bots, 50);
-		expect(resultado.find((b) => b.id === 0)?.vivo).toBe(true);
-	});
-});
-
-describe('botMasCercano', () => {
-	it('devuelve null si no hay bots vivos', () => {
-		expect(botMasCercano({ x: 0, y: 0 }, [{ id: 0, pos: { x: 1, y: 1 }, vivo: false }])).toBeNull();
-	});
-});
-
-describe('jugadorFueGolpeado', () => {
-	it('detecta contacto con un bot vivo cercano', () => {
-		const jugador = { x: 0, y: 0 };
-		const bots = [{ id: 0, pos: { x: 5, y: 0 }, vivo: true }];
-		expect(jugadorFueGolpeado(jugador, bots, 20)).toBe(true);
-	});
-
-	it('ignora bots eliminados', () => {
-		const jugador = { x: 0, y: 0 };
-		const bots = [{ id: 0, pos: { x: 5, y: 0 }, vivo: false }];
-		expect(jugadorFueGolpeado(jugador, bots, 20)).toBe(false);
-	});
-});
-
-describe('enemigosEliminados', () => {
-	it('cuenta los bots no vivos', () => {
-		const bots = [
-			{ id: 0, pos: { x: 0, y: 0 }, vivo: false },
-			{ id: 1, pos: { x: 0, y: 0 }, vivo: false },
-			{ id: 2, pos: { x: 0, y: 0 }, vivo: true }
-		];
-		expect(enemigosEliminados(bots)).toBe(2);
+describe('distancia', () => {
+	it('calcula la distancia euclidiana', () => {
+		expect(distancia({ x: 0, y: 0 }, { x: 3, y: 4 })).toBe(5);
 	});
 });

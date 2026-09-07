@@ -1,41 +1,36 @@
-Característica: Lógica de la arena del minijuego tipo Brawl Stars
+Característica: Geometría y movimiento de la arena tipo Brawl Stars
 
   Escenario: Un punto nunca sale de los límites de la arena
     Dado un punto fuera de los límites
     Cuando lo limito a la arena
-    Entonces queda dentro de los límites
+    Entonces queda dentro de los límites, respetando su radio
 
-  Escenario: Mover un punto lo desplaza en la dirección dada
-    Dado un punto en el origen
-    Cuando lo muevo con dirección (1, 0) y velocidad 4
-    Entonces su x aumenta en 4 y su y no cambia
+  Escenario: Un punto sobre un muro se detecta como colisión
+    Dado un punto en el centro de un muro
+    Cuando reviso si toca muro
+    Entonces el resultado es que sí toca
 
-  Escenario: Un bot se mueve hacia el jugador
-    Dado un bot y un jugador en posiciones distintas
-    Cuando el bot se mueve hacia el jugador
-    Entonces la distancia entre bot y jugador disminuye
+  Escenario: Un punto en zona libre no colisiona
+    Dado un punto lejos de todo muro
+    Cuando reviso si toca muro
+    Entonces el resultado es que no toca
 
-  Escenario: Se crean bots iniciales vivos en posiciones distintas
-    Dado que pido 3 bots iniciales
-    Cuando los creo
-    Entonces obtengo 3 bots vivos en posiciones distintas
+  Escenario: Moverse en zona libre desplaza normalmente
+    Dado un personaje en zona libre
+    Cuando se mueve hacia una dirección despejada
+    Entonces avanza en esa dirección
 
-  Escenario: Disparar elimina al bot vivo más cercano dentro de alcance
-    Dado un jugador y dos bots vivos, uno más cerca que el otro
-    Cuando disparo con alcance suficiente
-    Entonces solo el bot más cercano queda eliminado
+  Escenario: Un muro bloquea el avance pero deja deslizarse
+    Dado un personaje pegado a un muro por el eje X
+    Cuando intenta moverse en diagonal contra el muro
+    Entonces no atraviesa el muro pero sí se desplaza en el eje libre
 
-  Escenario: Disparar sin nada en alcance no elimina a nadie
-    Dado un jugador y un bot vivo fuera de alcance
-    Cuando disparo
-    Entonces el bot sigue vivo
+  Escenario: La dirección hacia un objetivo está normalizada
+    Dado un origen y un objetivo separados
+    Cuando calculo la dirección hacia el objetivo
+    Entonces el vector tiene magnitud 1
 
-  Escenario: El jugador es golpeado si un bot vivo lo toca
-    Dado un bot vivo a poca distancia del jugador
-    Cuando reviso si el jugador fue golpeado
-    Entonces el resultado es que sí fue golpeado
-
-  Escenario: Contar enemigos eliminados
-    Dado una lista de bots donde 2 de 3 están eliminados
-    Cuando cuento los eliminados
-    Entonces obtengo 2
+  Escenario: La dirección hacia el mismo punto no rompe el cálculo
+    Dado un origen igual al objetivo
+    Cuando calculo la dirección
+    Entonces obtengo un vector finito, sin división entre cero
