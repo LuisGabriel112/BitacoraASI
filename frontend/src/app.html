@@ -10,6 +10,9 @@
 				if (guardado === 'light' || guardado === 'dark') {
 					document.documentElement.dataset.theme = guardado;
 				}
+				if (new Date().getMonth() === 8) {
+					document.documentElement.dataset.temporada = 'patrio';
+				}
 			})();
 		</script>
 		%sveltekit.head%

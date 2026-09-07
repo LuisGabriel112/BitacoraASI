@@ -149,6 +149,10 @@ Radios moderados, no pill/blob: `--radius` (8px) para inputs, botones y dropdown
 - **Do** preservar los tres colores de sistema (Mediport/PIS/ProactivaNet) exactamente como están — están validados por contraste y CVD.
 - **Do** usar `--shadow-flat` (sin blur) para separar elementos flotantes del fondo.
 
+### Seasonal exception (mes patrio)
+
+En septiembre, `app.html` fija `data-temporada="patrio"` en `<html>` (detectado por fecha del navegador, sin preferencia de usuario). Ese atributo sustituye `--accent`/`--accent-strong`/`--accent-2` por verde (`#006341`) y rojo (`#ce1126`) bandera, y activa dos elementos decorativos ocultos por default en `Nav.svelte`: `.franja-patria` (franja tricolor de 6px) y `.papel-picado` (banderines SVG bajo la marca). Es la única excepción a la regla del acento único y a "sin decoración adicional" — vencida el resto del año, vuelve sola al violeta.
+
 ### Don't:
 - **Don't** reintroducir `backdrop-filter`, superficies translúcidas o blobs animados de fondo — es exactamente el mundo visual que este redesign reemplazó.
 - **Don't** usar gradiente decorativo en fondo de página o de tarjeta (el `conic-gradient` del donut y el shimmer del skeleton son funcionales, no decorativos, y quedan exceptuados).

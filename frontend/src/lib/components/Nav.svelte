@@ -66,10 +66,12 @@
 </script>
 
 <aside class="nav">
+	<div class="franja-patria" aria-hidden="true"><span></span><span></span><span></span></div>
 	<div class="marca">
 		<span class="marca-icono"><Icon nombre="anchor" tamano={18} /></span>
 		<span class="font-display marca-texto">Bitácora ASIPONA</span>
 	</div>
+	<div class="papel-picado" aria-hidden="true"></div>
 
 	<div class="reloj-envoltura">
 		<Reloj />
@@ -142,6 +144,10 @@
 		gap: 8px;
 		padding: 18px 16px;
 		font-size: 15px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.papel-picado {
 		border-bottom: 1px solid var(--border);
 	}
 
