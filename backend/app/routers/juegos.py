@@ -7,6 +7,7 @@ from app.database import get_session
 from app.models import PartidaGato, PartidaRPS, Usuario
 from app.schemas import (
     EleccionPelota,
+    IntentoBrawlOut,
     IntentoMemoramaOut,
     IntentoPelotaOut,
     IntentoReaccionOut,
@@ -15,8 +16,10 @@ from app.schemas import (
     PartidaGatoOut,
     PartidaRPSOut,
     PreguntaTriviaOut,
+    ReporteBrawl,
     ReporteReaccion,
     RespuestaTrivia,
+    ResultadoBrawlOut,
     ResultadoMemoramaOut,
     ResultadoPelotaOut,
     ResultadoReaccionOut,
@@ -26,6 +29,7 @@ from app.schemas import (
 from app.services.auth import get_usuario_actual
 from app.services.gato import MovimientoInvalido, buscar_o_crear_partida, cancelar_espera, jugar_movimiento
 from app.services.pelota import PelotaError, iniciar_intento, resolver_intento
+from app.services import brawl as brawl_service
 from app.services import memorama as memorama_service
 from app.services import reaccion as reaccion_service
 from app.services import rps as rps_service
@@ -242,3 +246,29 @@ async def jugar_ruleta_endpoint(
     except ruleta_service.RuletaError as e:
         raise HTTPException(429, str(e))
     return ResultadoRuletaOut(gano=intento.gano)
+
+
+@router.post("/brawl/iniciar", response_model=IntentoBrawlOut)
+async def iniciar_brawl(
+    usuario: Usuario = Depends(get_usuario_actual), session: AsyncSession = Depends(get_session)
+):
+    try:
+        return await brawl_service.iniciar_intento(session, usuario.id, datetime.now(timezone.utc))
+    except brawl_service.BrawlError as e:
+        raise HTTPException(429, str(e))
+
+
+@router.post("/brawl/{intento_id}/reportar", response_model=ResultadoBrawlOut)
+async def reportar_brawl(
+    intento_id: int,
+    payload: ReporteBrawl,
+    usuario: Usuario = Depends(get_usuario_actual),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        intento = await brawl_service.resolver_intento(
+            session, intento_id, usuario.id, payload.enemigos_eliminados, usuario.nombre
+        )
+    except brawl_service.BrawlError as e:
+        raise HTTPException(400, str(e))
+    return ResultadoBrawlOut(acierto=intento.acierto)

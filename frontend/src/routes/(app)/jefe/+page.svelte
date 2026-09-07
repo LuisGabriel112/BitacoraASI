@@ -9,6 +9,7 @@
 	import JuegoMemorama from '$lib/components/JuegoMemorama.svelte';
 	import JuegoReaccion from '$lib/components/JuegoReaccion.svelte';
 	import JuegoRuleta from '$lib/components/JuegoRuleta.svelte';
+	import JuegoBrawl from '$lib/components/JuegoBrawl.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { NombreIcono } from '$lib/icons';
 	import { api, type DanioJefeEvento, type Jefe, type JefeBonus } from '$lib/api/client';
@@ -23,7 +24,8 @@
 		minijuego_trivia: 'Trivia de soporte',
 		minijuego_memorama: 'Memorama relámpago',
 		minijuego_reaccion: 'Reacción rápida',
-		minijuego_ruleta: 'Ruleta rusa'
+		minijuego_ruleta: 'Ruleta rusa',
+		minijuego_brawl: 'Arena rápida'
 	};
 
 	const ICONO_MOTIVO: Record<string, NombreIcono> = {
@@ -34,7 +36,8 @@
 		minijuego_trivia: 'brain',
 		minijuego_memorama: 'grid-3x3',
 		minijuego_reaccion: 'zap',
-		minijuego_ruleta: 'dices'
+		minijuego_ruleta: 'dices',
+		minijuego_brawl: 'swords'
 	};
 
 	let jefe = $state<Jefe | null>(null);
@@ -151,6 +154,7 @@
 		<JuegoMemorama />
 		<JuegoReaccion />
 		<JuegoRuleta />
+		<JuegoBrawl />
 	</div>
 {/if}
 

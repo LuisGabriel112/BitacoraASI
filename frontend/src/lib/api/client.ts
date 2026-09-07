@@ -142,6 +142,8 @@ export type ResultadoMemorama = { acierto: boolean };
 export type IntentoReaccion = { id: number; resuelto: boolean; acierto: boolean | null };
 export type ResultadoReaccion = { acierto: boolean };
 export type ResultadoRuleta = { gano: boolean };
+export type IntentoBrawl = { id: number; resuelto: boolean; acierto: boolean | null };
+export type ResultadoBrawl = { acierto: boolean };
 export type JugadaRPS = 'piedra' | 'papel' | 'tijera';
 export type PartidaRPS = {
 	id: number;
@@ -298,6 +300,14 @@ export const api = {
 		}),
 
 	jugarRuleta: () => json<ResultadoRuleta>('/juegos/ruleta/jugar', { method: 'POST' }),
+
+	iniciarBrawl: () => json<IntentoBrawl>('/juegos/brawl/iniciar', { method: 'POST' }),
+
+	reportarBrawl: (id: number, enemigosEliminados: number) =>
+		json<ResultadoBrawl>(`/juegos/brawl/${id}/reportar`, {
+			method: 'POST',
+			body: JSON.stringify({ enemigos_eliminados: enemigosEliminados })
+		}),
 
 	crearUrlSubidaChat: (nombreArchivo: string, contentType: string) =>
 		json<{ url_subida: string; url_publica: string }>('/chat/subir-url', {

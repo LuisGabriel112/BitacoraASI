@@ -285,6 +285,16 @@ class IntentoReaccion(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class IntentoBrawl(Base):
+    __tablename__ = "intentos_brawl"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    enemigos_eliminados: Mapped[int | None] = mapped_column(nullable=True)
+    resuelto: Mapped[bool] = mapped_column(default=False)
+    acierto: Mapped[bool | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class IntentoRuleta(Base):
     __tablename__ = "intentos_ruleta"
     id: Mapped[int] = mapped_column(primary_key=True)

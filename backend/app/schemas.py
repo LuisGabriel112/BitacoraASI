@@ -205,6 +205,21 @@ class ResultadoRuletaOut(BaseModel):
     gano: bool
 
 
+class IntentoBrawlOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    resuelto: bool
+    acierto: bool | None
+
+
+class ReporteBrawl(BaseModel):
+    enemigos_eliminados: int = Field(ge=0, le=3)
+
+
+class ResultadoBrawlOut(BaseModel):
+    acierto: bool
+
+
 class AutorChatOut(BaseModel):
     nombre: str
     avatar: str
