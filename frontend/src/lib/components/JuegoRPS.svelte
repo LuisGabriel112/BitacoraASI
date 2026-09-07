@@ -153,7 +153,7 @@
 		height: 56px;
 		font-size: 26px;
 		background: var(--surface-raised);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		cursor: pointer;
 	}
@@ -192,7 +192,7 @@
 
 	.btn-secundario {
 		background: none;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 16px;
 		color: var(--text);

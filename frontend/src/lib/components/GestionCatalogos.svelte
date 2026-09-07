@@ -154,12 +154,10 @@
 	}
 
 	.modal {
-		background: color-mix(in oklch, var(--bg) 96%, var(--surface-raised));
-		backdrop-filter: var(--glass-blur);
-		-webkit-backdrop-filter: var(--glass-blur);
-		border: 1px solid var(--border-strong);
+		background: var(--surface-raised);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius-lg);
-		box-shadow: 0 20px 50px -12px oklch(0 0 0 / 0.5);
+		box-shadow: 6px 6px 0 0 var(--border-strong);
 		width: 100%;
 		max-width: 480px;
 		max-height: 80vh;
@@ -202,7 +200,7 @@
 
 	.pestanas button {
 		background: none;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: 999px;
 		padding: 6px 12px;
 		font-size: 12px;
@@ -299,7 +297,7 @@
 
 	.btn-cancelar {
 		background: none;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 3px 8px;
 		color: var(--text);

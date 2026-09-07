@@ -176,7 +176,7 @@
 	input {
 		width: 100%;
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 32px 9px 10px;
 		color: var(--text);
@@ -207,12 +207,10 @@
 		top: calc(100% + 4px);
 		left: 0;
 		right: 0;
-		background: color-mix(in oklch, var(--bg) 96%, var(--surface-raised));
-		backdrop-filter: var(--glass-blur);
-		-webkit-backdrop-filter: var(--glass-blur);
-		border: 1px solid var(--border-strong);
+		background: var(--surface-raised);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
-		box-shadow: 0 12px 30px -8px oklch(0 0 0 / 0.45);
+		box-shadow: var(--shadow-flat);
 		max-height: 220px;
 		overflow-y: auto;
 		list-style: none;

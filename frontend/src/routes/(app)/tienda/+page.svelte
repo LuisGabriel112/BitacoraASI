@@ -252,7 +252,7 @@
 		font-weight: 600;
 		color: var(--text);
 		background: var(--surface-raised);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 6px 12px;
 	}

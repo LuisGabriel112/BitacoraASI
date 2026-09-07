@@ -160,7 +160,7 @@
 		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 		padding: 28px;
-		box-shadow: 0 16px 40px -12px oklch(0 0 0 / 0.4);
+		box-shadow: 6px 6px 0 0 var(--border-strong);
 	}
 
 	h1 {
@@ -188,7 +188,7 @@
 
 	input {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);
@@ -207,7 +207,7 @@
 
 	.avatar {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		width: 38px;
 		height: 38px;
@@ -254,7 +254,7 @@
 	.controles-3d input[type='color'] {
 		width: 40px;
 		height: 30px;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		background: var(--surface);
 		padding: 2px;
@@ -263,7 +263,7 @@
 
 	.controles-3d select {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 6px 8px;
 		color: var(--text);

@@ -285,10 +285,10 @@
 	}
 
 	.tarjeta {
-		border: 1px solid var(--border);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius-lg);
 		padding: 18px;
-		box-shadow: 0 8px 30px -12px oklch(0 0 0 / 0.35);
+		box-shadow: var(--shadow-flat);
 	}
 
 	.tarjeta h2 {
@@ -417,7 +417,7 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		padding: 8px 10px;
-		border-bottom: 1px solid var(--border-strong);
+		border-bottom: 2px solid var(--border-strong);
 	}
 
 	td {

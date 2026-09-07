@@ -359,13 +359,11 @@
 		align-items: center;
 		text-align: center;
 		gap: 6px;
-		border: 1px dashed var(--border-strong);
+		border: 2px dashed var(--border-strong);
 		border-radius: var(--radius-lg);
 		padding: 28px 16px;
 		cursor: pointer;
-		background: var(--glass-bg);
-		backdrop-filter: var(--glass-blur);
-		-webkit-backdrop-filter: var(--glass-blur);
+		background: var(--surface);
 		transition: border-color 0.15s ease;
 	}
 
@@ -491,7 +489,7 @@
 	input,
 	textarea {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);
@@ -533,7 +531,7 @@
 
 	.secundario {
 		background: none;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 10px 16px;
 		color: var(--text);

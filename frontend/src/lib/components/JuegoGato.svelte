@@ -146,7 +146,7 @@
 		font-size: 22px;
 		font-weight: 700;
 		background: var(--surface-raised);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		color: var(--text);
 		cursor: pointer;
@@ -181,7 +181,7 @@
 
 	.btn-secundario {
 		background: none;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 16px;
 		color: var(--text);

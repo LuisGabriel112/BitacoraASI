@@ -239,7 +239,7 @@
 
 	.buscador {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 12px;
 		min-width: 220px;
@@ -266,10 +266,10 @@
 		align-items: center;
 		gap: 6px;
 		min-width: 0;
-		border: 1px solid var(--glass-border);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		padding: 6px 26px 6px 14px;
-		background: var(--glass-bg);
+		background: var(--surface);
 	}
 
 	.filtros :global(.campo)::after {
@@ -319,7 +319,7 @@
 	}
 
 	.boton-secundario {
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		color: var(--text);
 	}
 
@@ -372,7 +372,7 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		padding: 10px;
-		border-bottom: 1px solid var(--border-strong);
+		border-bottom: 2px solid var(--border-strong);
 		position: sticky;
 		top: 0;
 		background: var(--bg);
@@ -423,7 +423,7 @@
 		display: inline-flex;
 		align-items: center;
 		min-height: 40px;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 4px 10px;
 		color: var(--text);
@@ -483,7 +483,7 @@
 
 	.btn-cancelar {
 		background: none;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 4px 10px;
 		color: var(--text);
@@ -527,7 +527,7 @@
 		align-items: center;
 		gap: 6px;
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: 999px;
 		min-height: 40px;
 		padding: 7px 16px;

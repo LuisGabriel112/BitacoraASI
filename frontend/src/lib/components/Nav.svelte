@@ -306,13 +306,9 @@
 		outline-offset: -2px;
 	}
 
-	/* fondo más opaco que var(--surface-raised): el blob decorativo del fondo
-	   usa el mismo var(--accent) que este highlight, y a través del glass del
-	   nav ambos se mezclaban en un bloque de color confuso en modo oscuro. */
 	nav a.activo {
-		background: color-mix(in oklch, var(--bg) 55%, var(--surface-raised));
-		color: var(--accent);
-		box-shadow: inset 3px 0 0 var(--accent);
+		background: var(--accent);
+		color: white;
 	}
 
 	.icono {
@@ -324,6 +320,6 @@
 	}
 
 	nav a.activo .icono {
-		color: var(--accent);
+		color: white;
 	}
 </style>

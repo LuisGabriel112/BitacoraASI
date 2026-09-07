@@ -162,7 +162,7 @@
 		height: 48px;
 		font-size: 20px;
 		background: var(--surface-raised);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		cursor: pointer;
 	}

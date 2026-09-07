@@ -108,7 +108,7 @@
 		left: 50%;
 		transform: translateX(-50%);
 		background: var(--surface-raised);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: 4px;
 		padding: 2px 8px;
 		font-size: 11px;

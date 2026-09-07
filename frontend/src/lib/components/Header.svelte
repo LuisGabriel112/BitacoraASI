@@ -50,16 +50,14 @@
 	}
 
 	.badge-semana {
-		background: var(--glass-bg);
-		border: 1px solid var(--glass-border);
+		background: var(--surface);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 8px 14px;
 		font-family: var(--font-mono);
 		font-size: 12px;
 		font-weight: 600;
 		color: var(--text-muted);
-		backdrop-filter: var(--glass-blur);
-		-webkit-backdrop-filter: var(--glass-blur);
 	}
 
 	.avatar {

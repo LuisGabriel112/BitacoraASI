@@ -29,7 +29,7 @@
 		gap: 10px;
 		padding: 10px 14px;
 		border-radius: var(--radius);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		background: var(--surface-raised);
 		font-size: 13px;
 	}
@@ -65,7 +65,7 @@
 
 	.accion {
 		background: none;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 4px 10px;
 		color: var(--text);

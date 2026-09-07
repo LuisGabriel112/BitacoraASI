@@ -462,7 +462,7 @@
 	.personalizar input[type='color'] {
 		width: 44px;
 		height: 32px;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		background: var(--surface);
 		padding: 2px;
@@ -471,7 +471,7 @@
 
 	.personalizar select {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 7px 10px;
 		color: var(--text);
@@ -558,7 +558,7 @@
 
 	.campo-vincular select {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 7px 10px;
 		color: var(--text);
@@ -572,7 +572,7 @@
 
 	.campo-vincular button {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 7px 12px;
 		color: var(--text);

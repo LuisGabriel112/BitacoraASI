@@ -322,7 +322,7 @@
 		justify-content: center;
 		width: 40px;
 		height: 40px;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		cursor: pointer;
 		flex-shrink: 0;
@@ -331,7 +331,7 @@
 	.campo-texto {
 		flex: 1;
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 12px;
 		color: var(--text);

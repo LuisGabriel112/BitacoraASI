@@ -156,7 +156,7 @@
 
 	.pestanas-vista button {
 		background: none;
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: 999px;
 		padding: 7px 16px;
 		font-size: 13px;
@@ -185,7 +185,7 @@
 
 	.buscador {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 12px;
 		min-width: 260px;
@@ -210,10 +210,10 @@
 		align-items: center;
 		gap: 6px;
 		min-width: 0;
-		border: 1px solid var(--glass-border);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		padding: 6px 26px 6px 14px;
-		background: var(--glass-bg);
+		background: var(--surface);
 	}
 
 	.filtros :global(.campo)::after,
@@ -386,7 +386,7 @@
 		align-items: center;
 		gap: 6px;
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: 999px;
 		min-height: 40px;
 		padding: 6px 14px;

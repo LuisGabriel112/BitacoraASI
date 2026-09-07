@@ -59,12 +59,10 @@
 		top: calc(100% + 4px);
 		right: 0;
 		min-width: 150px;
-		background: color-mix(in oklch, var(--bg) 96%, var(--surface-raised));
-		backdrop-filter: var(--glass-blur);
-		-webkit-backdrop-filter: var(--glass-blur);
-		border: 1px solid var(--border-strong);
+		background: var(--surface-raised);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
-		box-shadow: 0 12px 30px -8px oklch(0 0 0 / 0.45);
+		box-shadow: var(--shadow-flat);
 		list-style: none;
 		margin: 0;
 		padding: 4px;

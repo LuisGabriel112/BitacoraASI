@@ -46,7 +46,7 @@
 		gap: 10px;
 		padding: 14px 40px 14px 18px;
 		border-radius: var(--radius-lg);
-		box-shadow: 0 16px 40px -12px oklch(0 0 0 / 0.5);
+		box-shadow: var(--shadow-flat);
 		max-width: 380px;
 		font-size: 14px;
 		font-weight: 600;

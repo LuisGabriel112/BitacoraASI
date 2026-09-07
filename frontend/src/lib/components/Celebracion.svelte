@@ -114,12 +114,10 @@
 		transform: translateX(-50%);
 		z-index: 201;
 		background: var(--surface-raised);
-		backdrop-filter: var(--glass-blur);
-		-webkit-backdrop-filter: var(--glass-blur);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius-lg);
 		padding: 14px 40px 14px 18px;
-		box-shadow: 0 16px 40px -12px oklch(0 0 0 / 0.5);
+		box-shadow: var(--shadow-flat);
 		animation: entrar 0.35s ease;
 		max-width: 380px;
 	}

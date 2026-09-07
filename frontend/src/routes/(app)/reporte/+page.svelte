@@ -186,7 +186,7 @@
 		align-items: center;
 		justify-content: center;
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		width: 40px;
 		height: 40px;
@@ -200,7 +200,7 @@
 
 	.selector-semana input[type='week'] {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 7px 10px;
 		color: var(--text);
@@ -288,7 +288,7 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		padding: 8px 10px;
-		border-bottom: 1px solid var(--border-strong);
+		border-bottom: 2px solid var(--border-strong);
 	}
 
 	td {

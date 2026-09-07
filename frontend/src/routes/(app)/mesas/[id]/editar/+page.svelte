@@ -335,7 +335,7 @@
 	textarea,
 	select {
 		background: var(--surface);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);
@@ -374,7 +374,7 @@
 		flex-direction: column;
 		gap: 18px;
 		padding: 14px;
-		border: 1px dashed var(--border-strong);
+		border: 2px dashed var(--border-strong);
 		border-radius: var(--radius);
 	}
 

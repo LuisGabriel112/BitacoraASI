@@ -142,7 +142,7 @@
 
 	.opcion-trivia {
 		background: var(--surface-raised);
-		border: 1px solid var(--border-strong);
+		border: 2px solid var(--border-strong);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		font-size: 12px;
