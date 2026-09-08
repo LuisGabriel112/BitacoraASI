@@ -33,6 +33,10 @@
 	--font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 	--font-display: system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
 
+	/* velo para oscurecer lo que queda detrás de un modal o de un aviso
+	   flotante. Igual en ambos temas: oscurece el fondo, no lo tiñe. */
+	--scrim: oklch(0 0 0 / 0.5);
+
 	/* espaciado / radios / sombra plana (sin blur, offset duro) */
 	--radius: 8px;
 	--radius-lg: 14px;

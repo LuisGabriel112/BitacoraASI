@@ -145,7 +145,7 @@
 	.overlay {
 		position: fixed;
 		inset: 0;
-		background: oklch(0 0 0 / 0.5);
+		background: var(--scrim);
 		z-index: 250;
 		display: flex;
 		align-items: center;

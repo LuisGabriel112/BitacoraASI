@@ -19,6 +19,7 @@ colors:
   sistema-mediport: "#3987e5"
   sistema-pis: "#199e70"
   sistema-proactivanet: "#d95926"
+  scrim: "oklch(0 0 0 / 0.5)"
 typography:
   display:
     fontFamily: "system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
@@ -43,8 +44,10 @@ typography:
   mono:
     fontFamily: "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace"
 rounded:
+  xs: "4px"
   sm: "8px"
   lg: "14px"
+  pill: "999px"
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
@@ -150,7 +153,20 @@ Sistema plano con sombra offset como firma, no elevación difusa. Nada usa blur 
 
 ## Shapes
 
-Radios moderados, no pill/blob: `--radius` (8px) para inputs, botones y dropdowns; `--radius-lg` (14px) para tarjetas y modales. Todo elemento con superficie propia (tarjeta, tile, toast, modal, dropdown) lleva borde de 2px sólido en `--border-strong` — ese trazo, no el radio, es la firma de forma del sistema.
+Radios moderados: `--radius` (8px) para inputs, botones y dropdowns; `--radius-lg` (14px) para tarjetas y modales. Todo elemento con superficie propia (tarjeta, tile, toast, modal, dropdown) lleva borde de 2px sólido en `--border-strong` — ese trazo, no el radio, es la firma de forma del sistema.
+
+La escala completa, medida sobre el código:
+
+- **xs** (4px): detalles chicos — barras de progreso, segmentos, realces internos.
+- **sm** (8px, `--radius`): inputs, botones, dropdowns, toasts.
+- **lg** (14px, `--radius-lg`): tarjetas, modales, contenedores.
+- **pill** (999px): chips de sistema, badges, barras de vida y avisos flotantes. 19 usos en 12 archivos — es un paso deliberado, no una excepción.
+
+### Named Rules
+**La regla de los cuatro radios.** Solo existen 4px, 8px, 14px y 999px. Quedan
+en el código unos pocos 2px, 3px y 6px sueltos: son deriva heredada, no pasos
+sancionados, y deben converger a `xs` cuando se toque ese componente. El
+detector los marca a propósito.
 
 ## Components
 

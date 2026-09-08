@@ -493,7 +493,7 @@
 	}
 
 	.aviso {
-		background: oklch(0 0 0 / 0.5);
+		background: var(--scrim);
 		color: white;
 		font-weight: 700;
 		font-size: 15px;
