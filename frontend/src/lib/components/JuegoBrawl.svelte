@@ -371,7 +371,7 @@
 			onmouseleave={() => (disparando = false)}
 		>
 			{#if ComponenteEscena}
-				<ComponenteEscena bind:this={escena} ancho={640} alto={430} />
+				<ComponenteEscena bind:this={escena} ancho={960} alto={620} />
 			{/if}
 			<div class="avisos">
 				{#each avisos as aviso, i (aviso + i)}
@@ -409,7 +409,10 @@
 </div>
 
 <style>
+	/* Ocupa la fila completa del grid de minijuegos: en una columna de 280px la
+	   arena se escalaba a un tercio de su tamaño y no se distinguía nada. */
 	.tarjeta {
+		grid-column: 1 / -1;
 		background: var(--surface);
 		border: 2px solid var(--border-strong);
 		border-radius: var(--radius-lg);
@@ -471,9 +474,9 @@
 
 	.arena {
 		position: relative;
-		max-width: 640px;
+		max-width: 960px;
+		margin: 0 auto 14px;
 		cursor: crosshair;
-		margin-bottom: 14px;
 		touch-action: none;
 	}
 

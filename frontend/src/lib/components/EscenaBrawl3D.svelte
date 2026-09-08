@@ -263,7 +263,7 @@
 	function aplicarSacudida(ahora: number) {
 		const fuerza = intensidadSacudida(sacudidaInicial, sacudidaInicio, ahora) * 0.12;
 		camara.position.x = Math.sin(ahora / 18) * fuerza;
-		camara.position.z = 2.25 + Math.cos(ahora / 14) * fuerza;
+		camara.position.z = 3.0 + Math.cos(ahora / 14) * fuerza;
 	}
 
 	$effect(() => {
@@ -271,11 +271,15 @@
 		escena.background = new THREE.Color(0x0b0f16);
 		// Arranca más allá de la esquina lejana de la arena (~2.9 unidades de la
 		// cámara): con niebla desde 5 la mitad del mapa se perdía en el fondo.
-		escena.fog = new THREE.Fog(0x0b0f16, 6, 11);
+		// Empieza más allá de la esquina lejana (~6.5 desde la cámara): con niebla
+		// más cerca, media arena se perdía en el fondo.
+		escena.fog = new THREE.Fog(0x0b0f16, 8, 14);
 
+		// Encuadra la arena completa (4.5 x 3.25) con margen: desde más cerca, las
+		// esquinas cercanas caían fuera del cono horizontal y cortaban a los bots.
 		camara = new THREE.PerspectiveCamera(48, ancho / alto, 0.1, 100);
-		camara.position.set(0, 2.95, 2.25);
-		camara.lookAt(0, 0, 0.1);
+		camara.position.set(0, 4.0, 3.0);
+		camara.lookAt(0, 0, 0);
 
 		renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setSize(ancho, alto);
@@ -297,7 +301,7 @@
 			const ahora = performance.now();
 			actualizarParticulas(ahora);
 			aplicarSacudida(ahora);
-			camara.lookAt(0, 0, 0.1);
+			camara.lookAt(0, 0, 0);
 			renderer.render(escena, camara);
 		}
 		animar();
