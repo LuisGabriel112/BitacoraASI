@@ -27,6 +27,7 @@
 	const VIDA_MAX_JUGADOR = 8;
 	const VIDA_MAX_BOT = 4;
 	const MS_ENTRE_ENVIOS = 50;
+	const TIEMPO_ESPERA_BIENVENIDA_MS = 10_000;
 	const URL_BACKEND_WS = import.meta.env.VITE_BACKEND_WS_URL ?? '';
 
 	const TECLAS_DIRECCION: Record<string, [number, number]> = {
@@ -62,6 +63,7 @@
 	let disparando = false;
 	let ultimoEnvio = 0;
 	let cuadroId = 0;
+	let esperaBienvenida: ReturnType<typeof setTimeout>;
 	let bajasPrevias = 0;
 	let vidaPrevia = VIDA_MAX_JUGADOR;
 	let botsVivosPrevios = -1;
@@ -179,6 +181,7 @@
 		const mensaje = JSON.parse(evento.data);
 		if (mensaje.tipo === 'bienvenida') {
 			miId = mensaje.jugador_id;
+			clearTimeout(esperaBienvenida);
 			return;
 		}
 		if (mensaje.tipo === 'estado') manejarEstado(mensaje as EstadoSala);
@@ -227,11 +230,28 @@
 		conectando = false;
 	}
 
+	/** Si el ticket no sirve, el servidor cierra con 4401 — pero ese frame de
+	 *  cierre no siempre llega al navegador a través del proxy, y la partida se
+	 *  quedaba colgada en "Entrando a la arena…" para siempre. El saludo del
+	 *  servidor es la única señal confiable de que la conexión sirve. */
+	function vigilarBienvenida() {
+		clearTimeout(esperaBienvenida);
+		esperaBienvenida = setTimeout(() => {
+			if (miId) return;
+			error = 'La arena no respondió. Vuelve a intentar.';
+			jugando = false;
+			conectando = false;
+			socket?.close();
+			socket = null;
+		}, TIEMPO_ESPERA_BIENVENIDA_MS);
+	}
+
 	function abrirSocket(ticket: string) {
 		socket = new WebSocket(urlWebSocketBrawl(window.location.origin, URL_BACKEND_WS, ticket));
 		socket.onmessage = manejarMensaje;
 		socket.onerror = () => (error = 'Se perdió la conexión con la arena');
 		socket.onclose = () => terminarRonda();
+		vigilarBienvenida();
 	}
 
 	function reiniciarEstado() {
@@ -276,6 +296,7 @@
 	function terminarRonda() {
 		if (!jugando) return;
 		jugando = false;
+		clearTimeout(esperaBienvenida);
 		cancelAnimationFrame(cuadroId);
 		quitarEscuchas();
 		socket?.close();
