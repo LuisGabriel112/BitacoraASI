@@ -421,7 +421,7 @@
 
 	.juego-brawl h2 {
 		margin: 0 0 4px;
-		font-size: 16px;
+		font-size: 16px; /* paso Title de DESIGN.md */
 	}
 
 	.ayuda-juego {
@@ -493,7 +493,7 @@
 	}
 
 	.aviso {
-		background: oklch(0 0 0 / 0.55);
+		background: oklch(0 0 0 / 0.5);
 		color: white;
 		font-weight: 700;
 		font-size: 15px;

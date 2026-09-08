@@ -28,6 +28,18 @@ typography:
     fontFamily: "system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
     fontSize: "14px"
     lineHeight: 1.5
+  emphasis:
+    fontSize: "15px"
+    fontWeight: 600
+  title:
+    fontSize: "16px"
+    fontWeight: 600
+  secondary:
+    fontSize: "13px"
+  label:
+    fontSize: "12px"
+  micro:
+    fontSize: "11px"
   mono:
     fontFamily: "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace"
 rounded:
@@ -81,6 +93,9 @@ Paleta restringida: fondo/superficie neutros y opacos, un acento violeta que car
 - **Borde duro** — `--border-strong` (`oklch(0.93 0.01 250)` oscuro / `oklch(0.16 0.02 250)` claro): el trazo estructural de 2px que define cada tarjeta, input y elemento flotante; también el color de la sombra offset.
 - **Texto** — `--text` / `--text-muted` / `--text-faint`: jerarquía de lectura sobre superficie.
 
+### Velo (scrim)
+- **Velo de fondo** (`oklch(0 0 0 / 0.5)`): oscurece lo que queda detrás de un modal (`GestionCatalogos`) o de un aviso flotante sobre la arena 3D. Es el único negro translúcido del sistema — antes convivían un 0.5 y un 0.55 sin razón, y se unificaron al 0.5.
+
 ### Sistema (fijo, no explorar)
 - **Mediport** `#3987e5`, **PIS** `#199e70`, **ProactivaNet** `#d95926` (oscuro); `#1f5db3` / `#0f7a52` / `#b8451a` (claro). Trío validado CVD — cualquier cambio exige re-correr `validate_palette.js`.
 
@@ -96,9 +111,26 @@ Paleta restringida: fondo/superficie neutros y opacos, un acento violeta que car
 **Character:** una sola familia nativa para todo, sin webfont externo — prioriza densidad de lectura en tablas y velocidad de carga sobre personalidad tipográfica. El peso 700 en encabezados es lo único que distingue "display" de "body".
 
 ### Hierarchy
+
+La escala real medida sobre el código, de menor a mayor. No es una escala
+modular teórica: son los pasos que el proyecto ya usa, ordenados por frecuencia
+de uso real (13px es el más común con 89 apariciones, luego 12px con 69 y 11px
+con 37).
+
+- **Micro** (11px): metadatos de baja jerarquía — hora de un evento, autor de un daño, nivel del personaje.
+- **Label** (12px): etiquetas de formulario, textos de ayuda, chips, pies de tarjeta.
+- **Secondary** (13px): el peso de trabajo de la app — filas de tabla, subtítulos, descripciones, botones.
+- **Body** (400, 14px, line-height 1.5): base declarada en `body`; texto corrido y formularios.
+- **Emphasis** (600, 15px): marca del nav y etiqueta de semana en la barra lateral.
+- **Title** (600, 16px): encabezado de tarjeta (`h2` de minijuegos y paneles).
 - **Display** (700, tamaño nativo del navegador por nivel h1/h2/h3, `-0.01em`): títulos de página y de sección.
-- **Body** (400, 14px, line-height 1.5): texto general, formularios, tablas.
-- **Mono** (600 en usos como `.semana-label`): cifras, fechas, folios, badges de semana.
+- **Cifras destacadas** (18–44px): números grandes de KPI en `StatTile` y marcadores; se escogen por tile, no forman escala.
+- **Mono**: cifras, fechas, folios y badges de semana, en cualquiera de los pasos de arriba.
+
+### Named Rules
+**La regla de los pasos reales.** Cualquier `font-size` nuevo debe caer en
+11/12/13/14/15/16px, salvo cifras destacadas. Un paso fuera de esa lista es
+deriva, no diseño: si de verdad hace falta, se agrega aquí primero.
 
 ## Layout
 
