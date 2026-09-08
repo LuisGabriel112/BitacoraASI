@@ -48,6 +48,22 @@ async def test_iniciar_intento_rechaza_en_cooldown():
 
 
 @pytest.mark.asyncio
+async def test_un_pase_salta_el_cooldown():
+    """Jugar acompañado no gasta espera: si la gastara, coordinarse con un
+    compañero costaría el doble que jugar solo contra los bots."""
+    ultimo = _intento(created_at=AHORA - timedelta(minutes=1))
+    session = AsyncMock()
+    resultado_execute = MagicMock()
+    resultado_execute.scalar_one_or_none.return_value = ultimo
+    resultado_execute.scalars.return_value.all.return_value = []
+    session.execute.return_value = resultado_execute
+
+    await iniciar_intento(session, usuario_id=1, ahora=AHORA, ignorar_cooldown=True)
+
+    session.add.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_resolver_dos_de_tres_dana_al_jefe(monkeypatch):
     intento = _intento()
     session = AsyncMock()

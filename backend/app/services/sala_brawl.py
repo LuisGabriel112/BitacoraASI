@@ -21,7 +21,10 @@ from app.services.motor_brawl import (
     posicion_aparicion,
 )
 
-SEGUNDOS_ESPERA_EMPAREJAMIENTO = 6.0
+# Con 6 segundos el multijugador jamás se activaba: dos personas tendrían que
+# darle "Jugar" casi al mismo instante. La espera larga (con opción de arrancar
+# antes) es lo que hace que coincidir sea posible en un equipo de cinco.
+SEGUNDOS_ESPERA_EMPAREJAMIENTO = 75.0
 
 ESTADO_ESPERANDO = "esperando"
 ESTADO_JUGANDO = "jugando"
@@ -91,6 +94,34 @@ class RegistroSalas:
 def iniciar(sala: Sala) -> None:
     sala.estado = ESTADO_JUGANDO
     sala.ronda.bots = crear_bots(CANTIDAD_BOTS)
+
+
+class RegistroPases:
+    """Pases de una sola ronda que saltan el cooldown.
+
+    Viven en memoria como las salas. Se otorgan desde el servidor, nunca los
+    pide el cliente: si el cliente pudiera declarar "jugué acompañado", saltarse
+    la espera sería trivial.
+    """
+
+    def __init__(self) -> None:
+        self._con_pase: set[str] = set()
+
+    def otorgar(self, jugador_id: str) -> None:
+        self._con_pase.add(jugador_id)
+
+    def consumir(self, jugador_id: str) -> bool:
+        if jugador_id not in self._con_pase:
+            return False
+        self._con_pase.discard(jugador_id)
+        return True
+
+
+def otorgar_pases_si_hubo_rival(sala: Sala, pases: RegistroPases) -> None:
+    if len(sala.ronda.jugadores) < 2:
+        return
+    for jugador_id in sala.ronda.jugadores:
+        pases.otorgar(jugador_id)
 
 
 def _muros_para_cliente() -> list[dict]:

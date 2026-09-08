@@ -81,6 +81,22 @@ def test_el_jugador_puede_moverse_por_el_websocket(cliente):
         assert (estado["jugadores"][0]["x"], estado["jugadores"][0]["y"]) == (200.0, 120.0)
 
 
+def test_el_pase_por_rival_humano_llega_hasta_el_endpoint_de_iniciar():
+    """Cubre el cable completo: el bucle de la sala otorga el pase y
+    /juegos/brawl/iniciar lo consume para saltarse el cooldown."""
+    brawl_ws._pases = brawl_ws.sala_brawl.RegistroPases()
+    registro = brawl_ws.sala_brawl.RegistroSalas()
+    sala = registro.entrar("7", "Ana", "🙂", 0.0)
+    registro.entrar("9", "Beto", "🦉", 0.0)
+
+    assert brawl_ws.consumir_pase(7) is False
+
+    brawl_ws.sala_brawl.otorgar_pases_si_hubo_rival(sala, brawl_ws._pases)
+
+    assert brawl_ws.consumir_pase(7) is True
+    assert brawl_ws.consumir_pase(7) is False
+
+
 def test_al_desconectarse_el_jugador_sale_de_la_sala(cliente):
     with _abrir(cliente, crear_ticket_ws(USUARIO.id)) as ws:
         ws.receive_json()

@@ -35,9 +35,13 @@ async def _ultimo_intento(session: AsyncSession, usuario_id: int) -> IntentoBraw
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
-async def iniciar_intento(session: AsyncSession, usuario_id: int, ahora: datetime) -> IntentoBrawl:
+async def iniciar_intento(
+    session: AsyncSession, usuario_id: int, ahora: datetime, ignorar_cooldown: bool = False
+) -> IntentoBrawl:
+    """`ignorar_cooldown` lo decide el servidor tras una ronda con rival humano
+    (ver sala_brawl.RegistroPases), nunca el cliente."""
     ultimo = await _ultimo_intento(session, usuario_id)
-    if ultimo is not None:
+    if ultimo is not None and not ignorar_cooldown:
         bono = await tienda.bono_de_usuario(session, usuario_id, semana_de(date.today()))
         cooldown = cooldown_service.cooldown_efectivo(COOLDOWN_BRAWL, bono.cooldown_pct)
         if not cooldown_service.puede_jugar(ultimo.created_at, ahora, cooldown):

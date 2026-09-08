@@ -34,6 +34,26 @@ Característica: Salas del brawl multijugador
     Cuando se agota la espera de emparejamiento
     Entonces la sala empieza con los bots
 
+  Escenario: El jugador puede dejar de esperar y arrancar contra los bots
+    Dado una sala esperando con un jugador
+    Cuando el jugador pide empezar ya
+    Entonces la sala empieza sin agotar la espera
+
+  Escenario: Una ronda con rival humano deja pase para la siguiente
+    Dado una sala donde jugaron dos personas
+    Cuando termina la ronda
+    Entonces los dos quedan con pase para volver a entrar sin esperar
+
+  Escenario: Una ronda a solas contra bots no deja pase
+    Dado una sala con un solo jugador
+    Cuando termina la ronda
+    Entonces ese jugador no queda con pase
+
+  Escenario: El pase se usa una sola vez
+    Dado un jugador con pase
+    Cuando lo consume
+    Entonces la siguiente vez ya no tiene pase
+
   Escenario: La sala arranca de inmediato al llenarse
     Dado una sala esperando con un jugador
     Cuando entra el segundo jugador

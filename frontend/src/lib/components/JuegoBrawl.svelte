@@ -28,6 +28,7 @@
 	const VIDA_MAX_BOT = 4;
 	const MS_ENTRE_ENVIOS = 50;
 	const TIEMPO_ESPERA_BIENVENIDA_MS = 10_000;
+	const SEGUNDOS_ESPERA_RIVAL = 75;
 	const URL_BACKEND_WS = import.meta.env.VITE_BACKEND_WS_URL ?? '';
 
 	const TECLAS_DIRECCION: Record<string, [number, number]> = {
@@ -134,6 +135,10 @@
 			x: ((e.clientX - caja.left) / caja.width) * ANCHO_ARENA,
 			y: ((e.clientY - caja.top) / caja.height) * ALTO_ARENA
 		};
+	}
+
+	function empezarYa() {
+		enviar({ tipo: 'empezar_ya' });
 	}
 
 	function enviar(mensaje: object) {
@@ -350,7 +355,10 @@
 		</div>
 
 		{#if estadoSala?.estado === 'esperando'}
-			<p class="buscando">Buscando rival… si nadie llega, entras contra los bots.</p>
+			<div class="buscando">
+				<span>Buscando rival… si nadie llega en {SEGUNDOS_ESPERA_RIVAL}s, entras contra los bots.</span>
+				<button type="button" class="btn-secundario" onclick={empezarYa}>Empezar ya con bots</button>
+			</div>
 		{/if}
 
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -437,9 +445,28 @@
 	}
 
 	.buscando {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 10px;
 		margin: 0 0 8px;
 		font-size: 12px;
 		color: var(--text-muted);
+	}
+
+	.btn-secundario {
+		background: var(--surface-raised);
+		color: var(--text);
+		border: 2px solid var(--border-strong);
+		border-radius: var(--radius);
+		padding: 5px 12px;
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.btn-secundario:hover {
+		border-color: var(--accent);
 	}
 
 	.arena {

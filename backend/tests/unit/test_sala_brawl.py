@@ -1,8 +1,11 @@
 from app.services.motor_brawl import CANTIDAD_BOTS
 from app.services.sala_brawl import (
     SEGUNDOS_ESPERA_EMPAREJAMIENTO,
+    RegistroPases,
     RegistroSalas,
     estado_para_cliente,
+    iniciar,
+    otorgar_pases_si_hubo_rival,
 )
 
 AHORA = 1000.0
@@ -108,6 +111,51 @@ def test_el_estado_para_el_cliente_trae_el_mundo_completo():
     assert len(estado["jugadores"]) == 2
     assert len(estado["bots"]) == CANTIDAD_BOTS
     assert estado["muros"][0]["ancho"] > 0
+
+
+def test_el_jugador_puede_dejar_de_esperar_y_arrancar():
+    _, (sala,) = _registro_con("a")
+
+    iniciar(sala)
+
+    assert sala.estado == "jugando"
+    assert len(sala.ronda.bots) == CANTIDAD_BOTS
+
+
+def test_una_ronda_con_rival_humano_deja_pase_a_los_dos():
+    """Jugar acompañado no debe gastar el cooldown: si lo gastara, coordinarse
+    con un compañero costaría el doble de espera que jugar solo."""
+    registro = RegistroSalas()
+    pases = RegistroPases()
+    sala = registro.entrar("7", "Ana", "🙂", AHORA)
+    registro.entrar("9", "Beto", "🦉", AHORA)
+
+    otorgar_pases_si_hubo_rival(sala, pases)
+
+    assert pases.consumir("7") is True
+    assert pases.consumir("9") is True
+
+
+def test_una_ronda_a_solas_no_deja_pase():
+    registro = RegistroSalas()
+    pases = RegistroPases()
+    sala = registro.entrar("7", "Ana", "🙂", AHORA)
+
+    otorgar_pases_si_hubo_rival(sala, pases)
+
+    assert pases.consumir("7") is False
+
+
+def test_el_pase_se_usa_una_sola_vez():
+    pases = RegistroPases()
+    pases.otorgar("7")
+
+    assert pases.consumir("7") is True
+    assert pases.consumir("7") is False
+
+
+def test_consumir_pase_de_alguien_sin_pase_no_truena():
+    assert RegistroPases().consumir("fantasma") is False
 
 
 def test_el_estado_de_una_sala_esperando_no_trae_bots():

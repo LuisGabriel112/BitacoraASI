@@ -31,8 +31,15 @@ SEGUNDOS_POR_TICK = 1 / TICKS_POR_SEGUNDO
 CODIGO_NO_AUTORIZADO = 4401
 
 _registro = sala_brawl.RegistroSalas()
+_pases = sala_brawl.RegistroPases()
 _conexiones: dict[str, WebSocket] = {}
 _bucles: dict[str, asyncio.Task] = {}
+
+
+def consumir_pase(usuario_id: int) -> bool:
+    """Lo usa /juegos/brawl/iniciar para saltarse el cooldown tras jugar
+    acompañado. Vive aquí porque el registro de pases es de este proceso."""
+    return _pases.consumir(str(usuario_id))
 
 
 @router.post("/ticket")
@@ -60,6 +67,7 @@ async def _bucle_sala(sala: sala_brawl.Sala) -> None:
                 avanzar(sala.ronda)
                 if ronda_terminada(sala.ronda):
                     sala.estado = sala_brawl.ESTADO_TERMINADA
+                    sala_brawl.otorgar_pases_si_hubo_rival(sala, _pases)
             await _emitir_estado(sala)
             if sala.estado == sala_brawl.ESTADO_TERMINADA:
                 return
@@ -79,6 +87,8 @@ def _aplicar_mensaje(sala: sala_brawl.Sala, jugador_id: str, mensaje: dict) -> N
         mover_jugador(sala.ronda, jugador_id, float(mensaje.get("x", 0)), float(mensaje.get("y", 0)))
     elif tipo == "disparar":
         disparar_jugador(sala.ronda, jugador_id, float(mensaje.get("x", 0)), float(mensaje.get("y", 0)))
+    elif tipo == "empezar_ya" and sala.estado == sala_brawl.ESTADO_ESPERANDO:
+        sala_brawl.iniciar(sala)
 
 
 async def _autenticar(websocket: WebSocket, session: AsyncSession) -> Usuario | None:

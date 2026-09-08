@@ -29,6 +29,7 @@ from app.schemas import (
 from app.services.auth import get_usuario_actual
 from app.services.gato import MovimientoInvalido, buscar_o_crear_partida, cancelar_espera, jugar_movimiento
 from app.services.pelota import PelotaError, iniciar_intento, resolver_intento
+from app.routers import brawl_ws
 from app.services import brawl as brawl_service
 from app.services import memorama as memorama_service
 from app.services import reaccion as reaccion_service
@@ -253,7 +254,12 @@ async def iniciar_brawl(
     usuario: Usuario = Depends(get_usuario_actual), session: AsyncSession = Depends(get_session)
 ):
     try:
-        return await brawl_service.iniciar_intento(session, usuario.id, datetime.now(timezone.utc))
+        return await brawl_service.iniciar_intento(
+            session,
+            usuario.id,
+            datetime.now(timezone.utc),
+            ignorar_cooldown=brawl_ws.consumir_pase(usuario.id),
+        )
     except brawl_service.BrawlError as e:
         raise HTTPException(429, str(e))
 
