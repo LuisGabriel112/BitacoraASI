@@ -8,10 +8,12 @@ import pytest
 from app.config import settings
 from app.services.auth import (
     ALGORITMO,
+    crear_ticket_ws,
     crear_token,
     debe_bloquear,
     esta_en_linea,
     hash_pin,
+    leer_ticket_ws,
     leer_token,
     normalizar_nombre,
     sigue_bloqueado,
@@ -125,3 +127,35 @@ def test_justo_en_el_umbral_ya_no_esta_en_linea():
 
 def test_sin_actividad_nunca_no_esta_en_linea():
     assert esta_en_linea(None, datetime.now(timezone.utc)) is False
+
+
+def test_el_ticket_ws_identifica_al_usuario():
+    assert leer_ticket_ws(crear_ticket_ws(7)) == 7
+
+
+def test_un_ticket_ws_no_sirve_como_cookie_de_sesion():
+    """Viaja en la query string del WebSocket, donde acaba en logs y en el
+    historial: no debe poder reusarse como sesión."""
+    assert leer_token(crear_ticket_ws(7)) is None
+
+
+def test_una_cookie_de_sesion_no_sirve_como_ticket_ws():
+    assert leer_ticket_ws(crear_token(7)) is None
+
+
+def test_un_ticket_ws_vencido_se_rechaza():
+    vencido = jwt.encode(
+        {"usuario_id": 7, "exp": datetime.now(timezone.utc) - timedelta(seconds=1), "tipo": "ws"},
+        settings.secret_key,
+        algorithm=ALGORITMO,
+    )
+    assert leer_ticket_ws(vencido) is None
+
+
+def test_un_ticket_ws_firmado_con_otra_llave_se_rechaza():
+    ajeno = jwt.encode(
+        {"usuario_id": 7, "exp": datetime.now(timezone.utc) + timedelta(seconds=30), "tipo": "ws"},
+        "otra-llave",
+        algorithm=ALGORITMO,
+    )
+    assert leer_ticket_ws(ajeno) is None

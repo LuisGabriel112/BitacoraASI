@@ -14,6 +14,8 @@ from app.models import Usuario
 NOMBRE_COOKIE = "bitacora_sesion"
 ALGORITMO = "HS256"
 DIAS_EXPIRACION_TOKEN = 30
+TIPO_TICKET_WS = "ws"
+SEGUNDOS_EXPIRACION_TICKET = 30
 MAX_INTENTOS_FALLIDOS = 5
 MINUTOS_BLOQUEO = 5
 
@@ -39,6 +41,31 @@ def leer_token(token: str) -> int | None:
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITMO])
     except jwt.PyJWTError:
+        return None
+    if payload.get("tipo") is not None:
+        return None
+    return payload.get("usuario_id")
+
+
+def crear_ticket_ws(usuario_id: int) -> str:
+    """Ticket corto para abrir el WebSocket del brawl.
+
+    La cookie de sesión es SameSite=Lax, así que el navegador no la manda al
+    backend cuando vive en otro dominio (frontend en Vercel, backend en Render).
+    El ticket viaja en la query string; por eso expira en segundos y lleva
+    `tipo`, para que no sirva como cookie de sesión si alguien lo saca de un log.
+    """
+    expira = datetime.now(timezone.utc) + timedelta(seconds=SEGUNDOS_EXPIRACION_TICKET)
+    payload = {"usuario_id": usuario_id, "exp": expira, "tipo": TIPO_TICKET_WS}
+    return jwt.encode(payload, settings.secret_key, algorithm=ALGORITMO)
+
+
+def leer_ticket_ws(ticket: str) -> int | None:
+    try:
+        payload = jwt.decode(ticket, settings.secret_key, algorithms=[ALGORITMO])
+    except jwt.PyJWTError:
+        return None
+    if payload.get("tipo") != TIPO_TICKET_WS:
         return None
     return payload.get("usuario_id")
 

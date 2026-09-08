@@ -1,51 +1,39 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { tick as tickSvelte } from 'svelte';
 	import { ErrorApi, api } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
+	import { reproducirFanfarriaMexicana } from '$lib/sonidoMexicano';
+	import {
+		miJugador,
+		otrosJugadores,
+		urlWebSocketBrawl,
+		type EstadoSala,
+		type JugadorRemoto
+	} from '$lib/brawlRed';
 	import {
 		ALTO_ARENA,
 		ANCHO_ARENA,
-		MUROS,
-		POSICION_INICIAL_JUGADOR,
 		RADIO_PERSONAJE,
-		VELOCIDAD_BOT,
 		VELOCIDAD_JUGADOR,
 		moverConColision,
 		type Punto
 	} from '$lib/brawlArena';
-	import {
-		CANTIDAD_BOTS,
-		RADIO_PROYECTIL,
-		VIDA_BOT,
-		VIDA_JUGADOR,
-		avanzarProyectiles,
-		botDebeDisparar,
-		botsVivos,
-		crearBots,
-		crearProyectil,
-		direccionDeBot,
-		eliminados,
-		impactarBots,
-		impactarJugador,
-		todosEliminados,
-		type Bot,
-		type Proyectil
-	} from '$lib/brawlCombate';
+	import type EscenaBrawl3D from '$lib/components/EscenaBrawl3D.svelte';
 
-	// v2: la versión anterior marcaba cooldown ante cualquier error del servidor,
-	// así que dejaba una marca vieja que bloqueaba el juego. Cambiar de clave
-	// ignora esa marca envenenada en los navegadores que ya la tienen guardada.
 	const CLAVE_ULTIMO = 'bitacora-brawl-v2-ultimo-intento';
 	const COOLDOWN_BRAWL_MS = 2 * 60_000;
-	const DURACION_RONDA_MS = 30_000;
-	const CADENCIA_DISPARO_JUGADOR_MS = 260;
 	const STATUS_COOLDOWN = 429;
+	const VIDA_MAX_JUGADOR = 8;
+	const VIDA_MAX_BOT = 4;
+	const MS_ENTRE_ENVIOS = 50;
+	const URL_BACKEND_WS = import.meta.env.VITE_BACKEND_WS_URL ?? '';
 
 	const TECLAS_DIRECCION: Record<string, [number, number]> = {
-		ArrowUp: [0, -1],
-		ArrowDown: [0, 1],
-		ArrowLeft: [-1, 0],
-		ArrowRight: [1, 0],
+		arrowup: [0, -1],
+		arrowdown: [0, 1],
+		arrowleft: [-1, 0],
+		arrowright: [1, 0],
 		w: [0, -1],
 		s: [0, 1],
 		a: [-1, 0],
@@ -54,26 +42,32 @@
 
 	let intentoId = $state<number | null>(null);
 	let jugando = $state(false);
+	let conectando = $state(false);
 	let resultado = $state<{ acierto: boolean; eliminados: number } | null>(null);
 	let error = $state<string | null>(null);
 	let segundosRestantes = $state(0);
-	let canvas = $state<HTMLCanvasElement | undefined>(undefined);
 
-	let vidaJugador = $state(VIDA_JUGADOR);
-	let eliminadosHud = $state(0);
-	let segundosRonda = $state(DURACION_RONDA_MS / 1000);
+	let estadoSala = $state<EstadoSala | null>(null);
+	let miId = $state('');
+	let avisos = $state<string[]>([]);
 
-	let jugador: Punto = { ...POSICION_INICIAL_JUGADOR };
-	let bots: Bot[] = [];
-	let proyectiles: Proyectil[] = [];
+	let escena = $state<EscenaBrawl3D | undefined>(undefined);
+	let ComponenteEscena = $state<typeof EscenaBrawl3D | null>(null);
+	let lienzo = $state<HTMLDivElement | undefined>(undefined);
+
+	let socket: WebSocket | null = null;
+	let jugador: Punto = { x: ANCHO_ARENA / 2, y: ALTO_ARENA - 50 };
+	let mira: Punto = { x: ANCHO_ARENA / 2, y: 0 };
 	let teclas = new Set<string>();
-	let mira: Punto = { x: ANCHO_ARENA, y: ALTO_ARENA / 2 };
-	let ultimoDisparoMs = 0;
 	let disparando = false;
-	let inicioMs = 0;
-	let cuadro = 0;
-	let siguienteProyectilId = 0;
+	let ultimoEnvio = 0;
 	let cuadroId = 0;
+	let bajasPrevias = 0;
+	let vidaPrevia = VIDA_MAX_JUGADOR;
+	let botsVivosPrevios = -1;
+
+	const miJugadorActual = $derived(estadoSala ? miJugador(estadoSala, miId) : undefined);
+	const companeros = $derived(estadoSala ? otrosJugadores(estadoSala, miId) : ([] as JugadorRemoto[]));
 
 	function leerUltimoIntento(): number | null {
 		if (!browser) return null;
@@ -96,11 +90,16 @@
 		return () => clearInterval(id);
 	});
 
+	function anunciar(texto: string) {
+		avisos = [...avisos, texto].slice(-3);
+		setTimeout(() => (avisos = avisos.slice(1)), 1800);
+	}
+
 	function direccionDesdeTeclas(): [number, number] {
 		let dx = 0;
 		let dy = 0;
 		for (const tecla of teclas) {
-			const dir = TECLAS_DIRECCION[tecla.length === 1 ? tecla.toLowerCase() : tecla];
+			const dir = TECLAS_DIRECCION[tecla];
 			if (!dir) continue;
 			dx += dir[0];
 			dy += dir[1];
@@ -110,129 +109,163 @@
 	}
 
 	function manejarTeclaAbajo(e: KeyboardEvent) {
-		if (e.key === ' ') {
+		const tecla = e.key.toLowerCase();
+		if (tecla === ' ') {
 			e.preventDefault();
 			disparando = true;
 			return;
 		}
-		teclas.add(e.key);
+		if (TECLAS_DIRECCION[tecla]) e.preventDefault();
+		teclas.add(tecla);
 	}
 
 	function manejarTeclaArriba(e: KeyboardEvent) {
-		if (e.key === ' ') disparando = false;
-		teclas.delete(e.key);
+		const tecla = e.key.toLowerCase();
+		if (tecla === ' ') disparando = false;
+		teclas.delete(tecla);
 	}
 
-	function posicionEnArena(e: MouseEvent): Punto {
-		const caja = canvas!.getBoundingClientRect();
-		return {
+	function apuntar(e: MouseEvent) {
+		const caja = lienzo?.getBoundingClientRect();
+		if (!caja) return;
+		mira = {
 			x: ((e.clientX - caja.left) / caja.width) * ANCHO_ARENA,
 			y: ((e.clientY - caja.top) / caja.height) * ALTO_ARENA
 		};
 	}
 
-	function apuntar(e: MouseEvent) {
-		if (canvas) mira = posicionEnArena(e);
+	function enviar(mensaje: object) {
+		if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(mensaje));
 	}
 
-	function dispararJugador() {
-		const ahora = Date.now();
-		if (ahora - ultimoDisparoMs < CADENCIA_DISPARO_JUGADOR_MS) return;
-		ultimoDisparoMs = ahora;
-		proyectiles = [...proyectiles, crearProyectil(siguienteProyectilId++, jugador, mira, true)];
+	function celebrarBaja(estado: EstadoSala) {
+		const caido = estado.bots.find((b) => b.vida <= 0);
+		if (caido) escena?.explotar(caido.x, caido.y);
+		escena?.sacudir(1);
+		anunciar('¡Eliminado! 💥');
 	}
 
-	function dispararBots() {
-		const nuevos = botsVivos(bots)
-			.filter((b) => botDebeDisparar(cuadro, b.id))
-			.map((b) => crearProyectil(siguienteProyectilId++, b.pos, jugador, false));
-		proyectiles = [...proyectiles, ...nuevos];
+	function recibirGolpe() {
+		escena?.sacudir(0.6);
+		anunciar('¡Te dieron! 💢');
 	}
 
-	function moverBot(b: Bot): Bot {
-		if (b.vida <= 0) return b;
-		const { dx, dy } = direccionDeBot(b.pos, jugador);
-		return { ...b, pos: moverConColision(b.pos, dx, dy, VELOCIDAD_BOT, RADIO_PERSONAJE) };
+	/** Los avisos y la sacudida salen de comparar contra el estado anterior,
+	 *  porque el servidor manda el mundo completo, no eventos sueltos. */
+	function reaccionarA(estado: EstadoSala) {
+		const yo = miJugador(estado, miId);
+		if (!yo) return;
+		if (yo.bajas > bajasPrevias) celebrarBaja(estado);
+		if (yo.vida < vidaPrevia) recibirGolpe();
+		bajasPrevias = yo.bajas;
+		vidaPrevia = yo.vida;
 	}
 
-	function moverBots() {
-		bots = bots.map(moverBot);
+	function avisarBotsCaidos(estado: EstadoSala) {
+		const vivos = estado.bots.filter((b) => b.vida > 0).length;
+		if (botsVivosPrevios > 1 && vivos === 1) anunciar('¡Queda uno! 🔥');
+		botsVivosPrevios = vivos;
 	}
 
-	function resolverColisiones() {
-		const contraBots = impactarBots(proyectiles, bots);
-		bots = contraBots.bots;
-		const contraJugador = impactarJugador(contraBots.proyectiles, jugador);
-		proyectiles = contraJugador.proyectiles;
-		if (contraJugador.golpes > 0) vidaJugador = Math.max(0, vidaJugador - contraJugador.golpes);
-		eliminadosHud = eliminados(bots);
+	function manejarEstado(estado: EstadoSala) {
+		estadoSala = estado;
+		reaccionarA(estado);
+		avisarBotsCaidos(estado);
+		escena?.dibujarMuros(estado.muros);
+		if (estado.estado === 'terminada') terminarRonda();
 	}
 
-	function rondaTerminada(): boolean {
-		return vidaJugador <= 0 || todosEliminados(bots) || Date.now() - inicioMs >= DURACION_RONDA_MS;
+	function manejarMensaje(evento: MessageEvent) {
+		const mensaje = JSON.parse(evento.data);
+		if (mensaje.tipo === 'bienvenida') {
+			miId = mensaje.jugador_id;
+			return;
+		}
+		if (mensaje.tipo === 'estado') manejarEstado(mensaje as EstadoSala);
+	}
+
+	/** Mi personaje se dibuja con la posición local, no con la que regresa el
+	 *  servidor: esperar el eco de la red haría que moverse se sintiera lento. */
+	function jugadoresConMiPosicion(estado: EstadoSala): JugadorRemoto[] {
+		return estado.jugadores.map((j) => (j.id === miId ? { ...j, x: jugador.x, y: jugador.y } : j));
 	}
 
 	function paso() {
-		cuadro++;
+		cuadroId = requestAnimationFrame(paso);
 		const [dx, dy] = direccionDesdeTeclas();
 		if (dx || dy) jugador = moverConColision(jugador, dx, dy, VELOCIDAD_JUGADOR, RADIO_PERSONAJE);
-		if (disparando) dispararJugador();
-		dispararBots();
 
-		moverBots();
-		proyectiles = avanzarProyectiles(proyectiles);
-		resolverColisiones();
+		const ahora = performance.now();
+		if (ahora - ultimoEnvio >= MS_ENTRE_ENVIOS) {
+			ultimoEnvio = ahora;
+			enviar({ tipo: 'mover', x: jugador.x, y: jugador.y });
+			if (disparando) enviar({ tipo: 'disparar', x: mira.x, y: mira.y });
+		}
 
-		segundosRonda = Math.max(0, Math.ceil((DURACION_RONDA_MS - (Date.now() - inicioMs)) / 1000));
-		dibujar();
+		if (!estadoSala) return;
+		escena?.actualizar({
+			jugadores: jugadoresConMiPosicion(estadoSala),
+			bots: estadoSala.bots,
+			proyectiles: estadoSala.proyectiles,
+			miId,
+			vidaMaxJugador: VIDA_MAX_JUGADOR,
+			vidaMaxBot: VIDA_MAX_BOT,
+			mira
+		});
+	}
 
-		if (rondaTerminada()) return terminarRonda();
+	async function cargarEscena() {
+		if (ComponenteEscena) return;
+		ComponenteEscena = (await import('$lib/components/EscenaBrawl3D.svelte')).default;
+		await tickSvelte();
+	}
+
+	function manejarFalloAlIniciar(e: unknown) {
+		const esCooldown = e instanceof ErrorApi && e.status === STATUS_COOLDOWN;
+		error = e instanceof Error ? e.message : 'No se pudo iniciar la ronda';
+		if (esCooldown) marcarIntentoAhora();
+		conectando = false;
+	}
+
+	function abrirSocket(ticket: string) {
+		socket = new WebSocket(urlWebSocketBrawl(window.location.origin, URL_BACKEND_WS, ticket));
+		socket.onmessage = manejarMensaje;
+		socket.onerror = () => (error = 'Se perdió la conexión con la arena');
+		socket.onclose = () => terminarRonda();
+	}
+
+	function reiniciarEstado() {
+		jugador = { x: ANCHO_ARENA / 2, y: ALTO_ARENA - 50 };
+		mira = { x: ANCHO_ARENA / 2, y: 0 };
+		teclas = new Set();
+		disparando = false;
+		bajasPrevias = 0;
+		vidaPrevia = VIDA_MAX_JUGADOR;
+		botsVivosPrevios = -1;
+		avisos = [];
+		estadoSala = null;
+	}
+
+	async function iniciar() {
+		error = null;
+		resultado = null;
+		conectando = true;
+		reiniciarEstado();
+		try {
+			intentoId = (await api.iniciarBrawl()).id;
+			const { ticket } = await api.ticketBrawl();
+			await cargarEscena();
+			abrirSocket(ticket);
+		} catch (e) {
+			manejarFalloAlIniciar(e);
+			return;
+		}
+
+		conectando = false;
+		jugando = true;
+		window.addEventListener('keydown', manejarTeclaAbajo);
+		window.addEventListener('keyup', manejarTeclaArriba);
 		cuadroId = requestAnimationFrame(paso);
-	}
-
-	function color(nombre: string): string {
-		return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
-	}
-
-	function dibujarCirculo(ctx: CanvasRenderingContext2D, p: Punto, radio: number, relleno: string) {
-		ctx.fillStyle = relleno;
-		ctx.beginPath();
-		ctx.arc(p.x, p.y, radio, 0, Math.PI * 2);
-		ctx.fill();
-	}
-
-	function dibujarBarraVida(ctx: CanvasRenderingContext2D, p: Punto, vida: number, maximo: number) {
-		const ancho = 24;
-		ctx.fillStyle = color('--border');
-		ctx.fillRect(p.x - ancho / 2, p.y - RADIO_PERSONAJE - 8, ancho, 3);
-		ctx.fillStyle = color('--success');
-		ctx.fillRect(p.x - ancho / 2, p.y - RADIO_PERSONAJE - 8, (ancho * vida) / maximo, 3);
-	}
-
-	function dibujarEscenario(ctx: CanvasRenderingContext2D) {
-		ctx.fillStyle = color('--surface-raised');
-		ctx.fillRect(0, 0, ANCHO_ARENA, ALTO_ARENA);
-		ctx.fillStyle = color('--border-strong');
-		for (const muro of MUROS) ctx.fillRect(muro.x, muro.y, muro.ancho, muro.alto);
-	}
-
-	function dibujar() {
-		const ctx = canvas?.getContext('2d');
-		if (!ctx) return;
-		dibujarEscenario(ctx);
-
-		for (const bot of botsVivos(bots)) {
-			dibujarCirculo(ctx, bot.pos, RADIO_PERSONAJE, color('--danger'));
-			dibujarBarraVida(ctx, bot.pos, bot.vida, VIDA_BOT);
-		}
-		// Cada bando dispara en su propio color: con --accent-2 los proyectiles
-		// aliados salían rojos en tema patrio, idénticos a los enemigos.
-		for (const p of proyectiles) {
-			dibujarCirculo(ctx, p.pos, RADIO_PROYECTIL, color(p.aliado ? '--accent' : '--danger'));
-		}
-
-		dibujarCirculo(ctx, jugador, RADIO_PERSONAJE, color('--accent'));
-		dibujarBarraVida(ctx, jugador, vidaJugador, VIDA_JUGADOR);
 	}
 
 	function quitarEscuchas() {
@@ -241,62 +274,28 @@
 	}
 
 	function terminarRonda() {
+		if (!jugando) return;
+		jugando = false;
 		cancelAnimationFrame(cuadroId);
 		quitarEscuchas();
-		jugando = false;
+		socket?.close();
+		socket = null;
 		marcarIntentoAhora();
 		reportarResultado();
 	}
 
 	async function reportarResultado() {
 		if (intentoId === null) return;
-		const total = eliminados(bots);
+		const total = bajasPrevias;
 		try {
 			const r = await api.reportarBrawl(intentoId, total);
 			resultado = { acierto: r.acierto, eliminados: total };
+			if (r.acierto) reproducirFanfarriaMexicana();
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo resolver la ronda';
 		} finally {
 			intentoId = null;
 		}
-	}
-
-	/** Solo un 429 significa cooldown real. Marcar la espera ante cualquier otro
-	 *  error (500, red caída) dejaba al jugador bloqueado sin haber jugado. */
-	function manejarFalloAlIniciar(e: unknown) {
-		const esCooldown = e instanceof ErrorApi && e.status === STATUS_COOLDOWN;
-		error = e instanceof Error ? e.message : 'No se pudo iniciar la ronda';
-		if (esCooldown) marcarIntentoAhora();
-	}
-
-	function reiniciarEstado() {
-		jugador = { ...POSICION_INICIAL_JUGADOR };
-		bots = crearBots(CANTIDAD_BOTS);
-		proyectiles = [];
-		teclas = new Set();
-		vidaJugador = VIDA_JUGADOR;
-		eliminadosHud = 0;
-		segundosRonda = DURACION_RONDA_MS / 1000;
-		disparando = false;
-		cuadro = 0;
-		inicioMs = Date.now();
-	}
-
-	async function iniciar() {
-		error = null;
-		resultado = null;
-		try {
-			intentoId = (await api.iniciarBrawl()).id;
-		} catch (e) {
-			manejarFalloAlIniciar(e);
-			return;
-		}
-
-		reiniciarEstado();
-		jugando = true;
-		window.addEventListener('keydown', manejarTeclaAbajo);
-		window.addEventListener('keyup', manejarTeclaArriba);
-		cuadroId = requestAnimationFrame(paso);
 	}
 
 	function formatearTiempo(segundos: number) {
@@ -308,45 +307,72 @@
 	$effect(() => () => {
 		cancelAnimationFrame(cuadroId);
 		quitarEscuchas();
+		socket?.close();
 	});
 </script>
 
 <div class="tarjeta juego-brawl">
-	<h2 class="font-display">⚔️ Arena rápida</h2>
+	<h2 class="font-display">⚔️ Arena 3D</h2>
 	<p class="ayuda-juego">
-		WASD o flechas para moverte, apunta con el mouse y dispara con click o espacio. Usa los muros de
-		cobertura. Elimina 2 de {CANTIDAD_BOTS} y le bajas vida al jefe.
+		WASD para moverte, apunta con el mouse, dispara con click o espacio. Cúbrete tras los muros.
+		Elimina 2 de 3 y le bajas vida al jefe.
 	</p>
 
 	{#if jugando}
 		<div class="hud">
-			<span class="hud-dato">❤️ {vidaJugador}/{VIDA_JUGADOR}</span>
-			<span class="hud-dato">💀 {eliminadosHud}/{CANTIDAD_BOTS}</span>
-			<span class="hud-dato">⏱ {segundosRonda}s</span>
+			<span class="hud-dato">❤️ {miJugadorActual?.vida ?? VIDA_MAX_JUGADOR}/{VIDA_MAX_JUGADOR}</span>
+			<span class="hud-dato">💀 {miJugadorActual?.bajas ?? 0}</span>
+			<span class="hud-dato">⏱ {estadoSala?.segundos_restantes ?? 30}s</span>
+			{#each companeros as c (c.id)}
+				<span class="hud-aliado" title="Tu compañero de sala">{c.avatar} {c.nombre}</span>
+			{/each}
 		</div>
+
+		{#if estadoSala?.estado === 'esperando'}
+			<p class="buscando">Buscando rival… si nadie llega, entras contra los bots.</p>
+		{/if}
+
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<canvas
-			bind:this={canvas}
-			width={ANCHO_ARENA}
-			height={ALTO_ARENA}
+		<div
 			class="arena"
+			bind:this={lienzo}
 			onmousemove={apuntar}
 			onmousedown={() => (disparando = true)}
 			onmouseup={() => (disparando = false)}
 			onmouseleave={() => (disparando = false)}
-		></canvas>
+		>
+			{#if ComponenteEscena}
+				<ComponenteEscena bind:this={escena} ancho={640} alto={430} />
+			{/if}
+			<div class="avisos">
+				{#each avisos as aviso, i (aviso + i)}
+					<span class="aviso">{aviso}</span>
+				{/each}
+			</div>
+		</div>
 	{:else if resultado}
 		<p class="resultado-brawl" class:acierto={resultado.acierto}>
 			{resultado.acierto
-				? `¡Eliminaste ${resultado.eliminados} y le bajaste vida al jefe!`
-				: `Solo eliminaste ${resultado.eliminados}, necesitas al menos 2.`}
+				? `¡${resultado.eliminados} bajas y le bajaste vida al jefe!`
+				: `Solo ${resultado.eliminados} bajas, necesitas al menos 2.`}
 		</p>
 		<button type="button" class="btn-jugar" onclick={iniciar} disabled={segundosRestantes > 0}>
-			{segundosRestantes > 0 ? `Espera ${formatearTiempo(segundosRestantes)}` : 'Jugar de nuevo'}
+			{segundosRestantes > 0 ? `Espera ${formatearTiempo(segundosRestantes)}` : 'Revancha'}
 		</button>
 	{:else}
-		<button type="button" class="btn-jugar" onclick={iniciar} disabled={segundosRestantes > 0}>
-			{segundosRestantes > 0 ? `Espera ${formatearTiempo(segundosRestantes)}` : 'Jugar'}
+		<button
+			type="button"
+			class="btn-jugar"
+			onclick={iniciar}
+			disabled={segundosRestantes > 0 || conectando}
+		>
+			{#if conectando}
+				Entrando a la arena…
+			{:else if segundosRestantes > 0}
+				Espera {formatearTiempo(segundosRestantes)}
+			{:else}
+				Jugar
+			{/if}
 		</button>
 	{/if}
 
@@ -374,6 +400,8 @@
 
 	.hud {
 		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
 		gap: 14px;
 		margin-bottom: 8px;
 		font-family: var(--font-mono);
@@ -381,16 +409,57 @@
 		font-weight: 600;
 	}
 
+	.hud-aliado {
+		margin-left: auto;
+		color: var(--text-muted);
+		font-family: var(--font-display);
+	}
+
+	.buscando {
+		margin: 0 0 8px;
+		font-size: 12px;
+		color: var(--text-muted);
+	}
+
 	.arena {
-		display: block;
-		width: 100%;
-		max-width: 360px;
-		height: auto;
-		border: 2px solid var(--border-strong);
-		border-radius: var(--radius);
+		position: relative;
+		max-width: 640px;
 		cursor: crosshair;
 		margin-bottom: 14px;
 		touch-action: none;
+	}
+
+	.avisos {
+		position: absolute;
+		top: 12px;
+		left: 0;
+		right: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		pointer-events: none;
+	}
+
+	.aviso {
+		background: oklch(0 0 0 / 0.55);
+		color: white;
+		font-weight: 700;
+		font-size: 15px;
+		padding: 4px 12px;
+		border-radius: 999px;
+		animation: subir 0.25s ease;
+	}
+
+	@keyframes subir {
+		from {
+			transform: translateY(8px) scale(0.9);
+			opacity: 0;
+		}
+		to {
+			transform: translateY(0) scale(1);
+			opacity: 1;
+		}
 	}
 
 	.resultado-brawl {

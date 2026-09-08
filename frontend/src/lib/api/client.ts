@@ -313,6 +313,8 @@ export const api = {
 
 	jugarRuleta: () => json<ResultadoRuleta>('/juegos/ruleta/jugar', { method: 'POST' }),
 
+	ticketBrawl: () => json<{ ticket: string }>('/juegos/brawl/ticket', { method: 'POST' }),
+
 	iniciarBrawl: () => json<IntentoBrawl>('/juegos/brawl/iniciar', { method: 'POST' }),
 
 	reportarBrawl: (id: number, enemigosEliminados: number) =>
