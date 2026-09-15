@@ -32,8 +32,12 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(catalogos.router)
 app.include_router(registros.router)
-app.include_router(mesas.router)
+# sintesis_soluciones antes que mesas: registra GET /mesas/sintesis, una ruta
+# estática que /mesas/{mesa_id} (dinámica, en mesas.router) capturaría primero
+# si se registrara después — Starlette prueba las rutas en orden de registro
+# entre routers, no solo dentro de cada uno.
 app.include_router(sintesis_soluciones.router)
+app.include_router(mesas.router)
 app.include_router(jefes.router)
 app.include_router(chat.router)
 app.include_router(juegos.router)

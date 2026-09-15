@@ -59,13 +59,13 @@
 		descripcion = m.descripcion;
 		ventanaId = m.ventana?.id ?? null;
 		ventanaNombre = m.ventana?.nombre ?? '';
-		categoriaId = m.categoria.id;
-		categoriaNombre = m.categoria.nombre;
+		categoriaId = m.categoria?.id ?? null;
+		categoriaNombre = m.categoria?.nombre ?? '';
 		solicitanteId = m.solicitante.id;
 		solicitanteNombre = m.solicitante.nombre;
 		resolutorId = m.resolutor.id;
 		resolutorNombre = m.resolutor.nombre;
-		fechaEstimadaResolucion = m.fecha_estimada_resolucion.slice(0, 16);
+		fechaEstimadaResolucion = m.fecha_estimada_resolucion?.slice(0, 16) ?? '';
 		prioridad = m.prioridad;
 		destacada = m.destacada;
 		cerrada = !!m.fecha_cierre_real;

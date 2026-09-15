@@ -57,6 +57,8 @@
 
 	let cerrandoId = $state<number | null>(null);
 	let ventanaCierreId = $state<number | null>(null);
+	let categoriaCierreId = $state<number | null>(null);
+	let fechaEstimadaCierre = $state('');
 	let solucionTexto = $state('');
 	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>('Modificación en BD');
 	let fechaCierreReal = $state(ahora());
@@ -111,26 +113,34 @@
 		cerrandoId = id;
 		errorCierre = null;
 		ventanaCierreId = null;
+		categoriaCierreId = null;
+		fechaEstimadaCierre = ahora();
 		solucionTexto = '';
 		tipoSolucion = 'Modificación en BD';
 		fechaCierreReal = ahora();
 		medidasImpactoCierre = false;
 	}
 
-	async function confirmarCierre(id: number) {
+	async function confirmarCierre(m: Mesa) {
 		if (!ventanaCierreId) return (errorCierre = 'Falta seleccionar ventana');
 		if (!solucionTexto.trim()) return (errorCierre = 'Falta describir la solución');
+		if (!m.categoria && !categoriaCierreId) return (errorCierre = 'Falta seleccionar categoría');
+		if (!m.fecha_estimada_resolucion && !fechaEstimadaCierre) {
+			return (errorCierre = 'Falta fecha estimada de resolución');
+		}
 		guardandoCierre = true;
 		errorCierre = null;
 		try {
-			const actualizada = await api.cerrarMesa(id, {
+			const actualizada = await api.cerrarMesa(m.id, {
 				ventana_id: ventanaCierreId,
 				solucion: solucionTexto.trim(),
 				tipo_solucion: tipoSolucion,
 				fecha_cierre_real: fechaCierreReal,
-				medidas_impacto: medidasImpactoCierre
+				medidas_impacto: medidasImpactoCierre,
+				...(m.categoria ? {} : { categoria_id: categoriaCierreId }),
+				...(m.fecha_estimada_resolucion ? {} : { fecha_estimada_resolucion: fechaEstimadaCierre })
 			});
-			items = items.map((m) => (m.id === id ? actualizada : m));
+			items = items.map((it) => (it.id === m.id ? actualizada : it));
 			cerrandoId = null;
 			celebracion?.mostrar(actualizada.logros);
 		} catch (e) {
@@ -369,7 +379,7 @@
 									<div class="detalle-grid">
 										<div class="detalle-campo">
 											<span class="detalle-etiqueta">Categoría</span>
-											<p class="detalle-texto">{m.categoria.nombre}</p>
+											<p class="detalle-texto">{m.categoria?.nombre ?? 'Sin categoría'}</p>
 										</div>
 										<div class="detalle-campo">
 											<span class="detalle-etiqueta">Ventana</span>
@@ -377,7 +387,7 @@
 										</div>
 										<div class="detalle-campo">
 											<span class="detalle-etiqueta">Fecha estimada de resolución</span>
-											<p class="detalle-texto">{formatearFechaHora(m.fecha_estimada_resolucion)}</p>
+											<p class="detalle-texto">{m.fecha_estimada_resolucion ? formatearFechaHora(m.fecha_estimada_resolucion) : '—'}</p>
 										</div>
 										{#if m.fecha_cierre_real}
 											<div class="detalle-campo">
@@ -423,12 +433,18 @@
 										</select>
 									</div>
 									<FechaHoraInput id="fecha-cierre-{m.id}" label="Fecha y hora real de cierre" bind:value={fechaCierreReal} />
+									{#if !m.categoria}
+										<ComboboxCreatable id="categoria-cierre-{m.id}" catalogo="categorias-mesa" label="Categoría (la mesa no tiene)" bind:selectedId={categoriaCierreId} />
+									{/if}
+									{#if !m.fecha_estimada_resolucion}
+										<FechaHoraInput id="fecha-estimada-cierre-{m.id}" label="Fecha estimada de resolución (la mesa no tiene)" bind:value={fechaEstimadaCierre} />
+									{/if}
 									<label class="check-medidas">
 										<input type="checkbox" bind:checked={medidasImpactoCierre} />
 										Medidas para disminuir el impacto
 									</label>
 									<div class="acciones-cierre">
-										<button class="btn-guardar-cierre" disabled={guardandoCierre} onclick={() => confirmarCierre(m.id)}>
+										<button class="btn-guardar-cierre" disabled={guardandoCierre} onclick={() => confirmarCierre(m)}>
 											{guardandoCierre ? 'Guardando…' : 'Guardar cierre'}
 										</button>
 										<button class="btn-cancelar" onclick={() => (cerrandoId = null)}>Cancelar</button>

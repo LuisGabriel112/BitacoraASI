@@ -119,6 +119,56 @@ async def test_cerrar_mesa_ya_cerrada_da_400():
     assert info.value.status_code == 400
 
 
+@pytest.mark.asyncio
+async def test_cerrar_mesa_sin_categoria_ni_fecha_estimada_propias_ni_en_payload_da_422():
+    session = AsyncMock()
+    session.get.return_value = _mesa()
+    session.get.return_value.categoria_id = None
+    session.get.return_value.fecha_estimada_resolucion = None
+    payload = MesaCerrar(ventana_id=1, solucion="...", tipo_solucion="Modificación en BD", fecha_cierre_real=date(2026, 8, 3))
+
+    with pytest.raises(HTTPException) as info:
+        await mesas.cerrar_mesa(1, payload, session)
+
+    assert info.value.status_code == 422
+    session.commit.assert_not_awaited()
+
+
+def _mesa_completa(**overrides) -> SimpleNamespace:
+    base = dict(
+        id=1, enlace=None, codigo="TCK-001", titulo="Falla login",
+        fecha_carga=datetime(2026, 8, 3, 14, 30), semana="SEM 32 - 2026",
+        descripcion="No entra al portal", fecha_estimada_resolucion=None,
+        solucion=None, tipo_solucion=None, fecha_cierre_real=None,
+        medidas_impacto=False, prioridad=False, destacada=False,
+        created_at=datetime(2026, 8, 3, 16, 0),
+        ventana=None, categoria=None, categoria_id=None,
+        solicitante=_catalogo_item(1, "Sol"), resolutor=_catalogo_item(1, "Ana", usuario_id=42),
+    )
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
+@pytest.mark.asyncio
+async def test_cerrar_mesa_usa_categoria_y_fecha_del_payload_si_la_mesa_no_las_tiene(monkeypatch):
+    mesa = _mesa_completa()
+    session = AsyncMock()
+    session.get.return_value = mesa
+    monkeypatch.setattr(mesas, "_obtener_mesa", AsyncMock(return_value=mesa))
+    monkeypatch.setattr(mesas, "evaluar_logros", AsyncMock(return_value=[]))
+    monkeypatch.setattr(mesas, "_otorgar_xp_cierre", AsyncMock())
+    payload = MesaCerrar(
+        ventana_id=1, solucion="...", tipo_solucion="Modificación en BD", fecha_cierre_real=date(2026, 8, 3),
+        categoria_id=7, fecha_estimada_resolucion=date(2026, 8, 5),
+    )
+
+    await mesas.cerrar_mesa(1, payload, session)
+
+    assert mesa.categoria_id == 7
+    assert mesa.fecha_estimada_resolucion == datetime(2026, 8, 5)
+    session.commit.assert_awaited_once()
+
+
 def test_campos_a_actualizar_solo_incluye_lo_enviado():
     payload = MesaUpdate(titulo="Nuevo título")
 
@@ -151,6 +201,22 @@ async def test_editar_mesa_traduce_codigo_duplicado_a_409():
 
     assert info.value.status_code == 409
     session.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_editar_mesa_que_recien_se_cierra_sin_categoria_ni_fecha_da_422():
+    mesa = _mesa()
+    mesa.categoria_id = None
+    mesa.fecha_estimada_resolucion = None
+    session = AsyncMock()
+    session.get.return_value = mesa
+    payload = MesaUpdate(fecha_cierre_real=date(2026, 8, 3))
+
+    with pytest.raises(HTTPException) as info:
+        await mesas.editar_mesa(1, payload, session)
+
+    assert info.value.status_code == 422
+    session.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio

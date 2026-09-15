@@ -108,7 +108,7 @@ export type Mesa = {
 	fecha_carga: string;
 	semana: string;
 	descripcion: string;
-	fecha_estimada_resolucion: string;
+	fecha_estimada_resolucion: string | null;
 	solucion: string | null;
 	tipo_solucion: string | null;
 	fecha_cierre_real: string | null;
@@ -117,7 +117,7 @@ export type Mesa = {
 	destacada: boolean;
 	created_at: string;
 	ventana: Catalogo | null;
-	categoria: Catalogo;
+	categoria: Catalogo | null;
 	solicitante: Catalogo;
 	resolutor: Catalogo;
 	logros: string[];
@@ -454,10 +454,10 @@ export const api = {
 		titulo: string;
 		fecha_carga: string;
 		descripcion: string;
-		categoria_id: number;
+		categoria_id?: number | null;
 		solicitante_id: number;
 		resolutor_id: number;
-		fecha_estimada_resolucion: string;
+		fecha_estimada_resolucion?: string | null;
 		ventana_id?: number | null;
 		solucion?: string | null;
 		tipo_solucion?: string | null;
@@ -497,6 +497,8 @@ export const api = {
 			tipo_solucion: string;
 			fecha_cierre_real: string;
 			medidas_impacto?: boolean;
+			categoria_id?: number | null;
+			fecha_estimada_resolucion?: string | null;
 		}
 	) => json<Mesa>(`/mesas/${id}/cerrar`, { method: 'POST', body: JSON.stringify(payload) }),
 

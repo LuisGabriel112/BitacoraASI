@@ -16,6 +16,10 @@ _CAMPOS_APERTURA = dict(
     fecha_estimada_resolucion=datetime(2026, 8, 5, 9, 0),
 )
 
+_CAMPOS_APERTURA_SIN_CATEGORIA_NI_FECHA = {
+    k: v for k, v in _CAMPOS_APERTURA.items() if k not in ("categoria_id", "fecha_estimada_resolucion")
+}
+
 _CAMPOS_CIERRE = dict(
     ventana_id=1,
     solucion="Se reinició el servicio",
@@ -53,3 +57,21 @@ def test_crear_mesa_con_solo_fecha_cierre_se_rechaza():
 def test_crear_mesa_con_solo_ventana_se_rechaza():
     with pytest.raises(ValidationError, match="juntos"):
         MesaCreate(**_CAMPOS_APERTURA, ventana_id=1)
+
+
+def test_crear_mesa_abierta_sin_categoria_ni_fecha_estimada_es_valida():
+    mesa = MesaCreate(**_CAMPOS_APERTURA_SIN_CATEGORIA_NI_FECHA)
+
+    assert mesa.categoria_id is None
+    assert mesa.fecha_estimada_resolucion is None
+
+
+def test_crear_mesa_cerrada_sin_categoria_ni_fecha_estimada_se_rechaza():
+    with pytest.raises(ValidationError, match="categoría y fecha estimada"):
+        MesaCreate(**_CAMPOS_APERTURA_SIN_CATEGORIA_NI_FECHA, **_CAMPOS_CIERRE)
+
+
+def test_crear_mesa_cerrada_sin_categoria_se_rechaza():
+    campos = {**_CAMPOS_APERTURA_SIN_CATEGORIA_NI_FECHA, "fecha_estimada_resolucion": datetime(2026, 8, 5, 9, 0)}
+    with pytest.raises(ValidationError, match="categoría y fecha estimada"):
+        MesaCreate(**campos, **_CAMPOS_CIERRE)

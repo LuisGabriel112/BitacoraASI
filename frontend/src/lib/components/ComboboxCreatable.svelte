@@ -76,6 +76,17 @@
 		else await crear();
 	}
 
+	// nombreSeleccionado solo siembra el texto inicial (al montar o al
+	// restaurar un borrador); una vez que el usuario elige una opción, el
+	// padre no vuelve a saber el nombre mostrado, así que un simple cambio de
+	// prop no alcanza para vaciar el combobox desde afuera — de ahí este
+	// método explícito.
+	export function limpiar() {
+		texto = '';
+		selectedId = null;
+		abierto = false;
+	}
+
 	function alTeclado(e: KeyboardEvent) {
 		if (!abierto && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
 			abierto = true;

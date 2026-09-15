@@ -115,7 +115,7 @@
 					<h2 class="titulo-manual font-display">{m.titulo}</h2>
 				</div>
 				<div class="badges-manual">
-					<span class="badge-manual">{m.categoria.nombre}</span>
+					<span class="badge-manual">{m.categoria?.nombre ?? 'Sin categoría'}</span>
 					{#if m.ventana}<span class="badge-manual">{m.ventana.nombre}</span>{/if}
 					{#if m.tipo_solucion}<span class="badge-manual badge-tipo">{m.tipo_solucion}</span>{/if}
 				</div>

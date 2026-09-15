@@ -191,10 +191,10 @@ class Mesa(Base):
     )
     descripcion: Mapped[str] = mapped_column(Text)
     ventana_id: Mapped[int | None] = mapped_column(ForeignKey("ventanas_mesa.id"), nullable=True)
-    categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias_mesa.id"))
+    categoria_id: Mapped[int | None] = mapped_column(ForeignKey("categorias_mesa.id"), nullable=True)
     solicitante_id: Mapped[int] = mapped_column(ForeignKey("solicitantes_mesa.id"))
     resolutor_id: Mapped[int] = mapped_column(ForeignKey("resolutores_mesa.id"))
-    fecha_estimada_resolucion: Mapped[datetime] = mapped_column(DateTime)
+    fecha_estimada_resolucion: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     solucion: Mapped[str | None] = mapped_column(Text, nullable=True)
     tipo_solucion: Mapped[str | None] = mapped_column(Text, nullable=True)
     fecha_cierre_real: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -205,7 +205,7 @@ class Mesa(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     ventana: Mapped[VentanaMesa | None] = relationship(lazy="joined")
-    categoria: Mapped[CategoriaMesa] = relationship(lazy="joined")
+    categoria: Mapped[CategoriaMesa | None] = relationship(lazy="joined")
     solicitante: Mapped[SolicitanteMesa] = relationship(lazy="joined")
     resolutor: Mapped[ResolutorMesa] = relationship(lazy="joined")
 

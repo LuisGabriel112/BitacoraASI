@@ -155,15 +155,6 @@
 		precargarResolutorDeCuenta();
 	});
 
-	function vaciarCierre() {
-		ventanaId = null;
-		ventanaNombre = '';
-		solucionTexto = '';
-		tipoSolucion = 'Modificación en BD';
-		fechaCierreReal = ahora();
-		medidasImpacto = false;
-	}
-
 	function camposVaciosDelFormulario() {
 		return {
 			enlace: '', codigo: '', titulo: '', fechaCarga: ahora(), descripcion: '',
@@ -200,15 +191,47 @@
 		if (browser) sessionStorage.removeItem(CLAVE_BORRADOR);
 	}
 
+	function vaciarTodo() {
+		const vacio = camposVaciosDelFormulario();
+		enlace = vacio.enlace;
+		codigo = vacio.codigo;
+		titulo = vacio.titulo;
+		fechaCarga = vacio.fechaCarga;
+		descripcion = vacio.descripcion;
+		ventanaId = vacio.ventanaId;
+		ventanaNombre = vacio.ventanaNombre;
+		categoriaId = vacio.categoriaId;
+		categoriaNombre = vacio.categoriaNombre;
+		solicitanteId = vacio.solicitanteId;
+		solicitanteNombre = vacio.solicitanteNombre;
+		resolutorId = vacio.resolutorId;
+		resolutorNombre = vacio.resolutorNombre;
+		fechaEstimadaResolucion = vacio.fechaEstimadaResolucion;
+		yaResuelta = vacio.yaResuelta;
+		solucionTexto = vacio.solucionTexto;
+		tipoSolucion = vacio.tipoSolucion;
+		fechaCierreReal = vacio.fechaCierreReal;
+		medidasImpacto = vacio.medidasImpacto;
+		resultado = null;
+		if (browser) sessionStorage.removeItem(CLAVE_BORRADOR);
+		// las props nombreSeleccionado de arriba no alcanzan si el combobox ya
+		// estaba desincronizado del padre (ver comentario en limpiar() de
+		// ComboboxCreatable) — se limpia cada uno directamente.
+		comboboxCategoria.limpiar();
+		comboboxSolicitante.limpiar();
+		comboboxResolutor.limpiar();
+		comboboxVentana?.limpiar();
+	}
+
 	function validar(): string | null {
 		if (!codigo.trim()) return 'Falta código de la mesa';
 		if (!titulo.trim()) return 'Falta título';
 		if (!fechaCarga) return 'Falta fecha de carga';
 		if (!descripcion.trim()) return 'Falta descripción';
-		if (!categoriaId) return 'Falta seleccionar categoría';
 		if (!solicitanteId) return 'Falta seleccionar solicitante';
 		if (!resolutorId) return 'Falta seleccionar resolutor';
-		if (!fechaEstimadaResolucion) return 'Falta fecha estimada de resolución';
+		if (yaResuelta && !categoriaId) return 'Falta seleccionar categoría';
+		if (yaResuelta && !fechaEstimadaResolucion) return 'Falta fecha estimada de resolución';
 		if (yaResuelta && !ventanaId) return 'Falta seleccionar ventana';
 		if (yaResuelta && !solucionTexto.trim()) return 'Falta describir la solución';
 		if (yaResuelta && !fechaCierreReal) return 'Falta la fecha real de cierre';
@@ -251,10 +274,10 @@
 				titulo: titulo.trim(),
 				fecha_carga: fechaCarga,
 				descripcion: descripcion.trim(),
-				categoria_id: categoriaId!,
+				categoria_id: categoriaId,
 				solicitante_id: solicitanteId!,
 				resolutor_id: resolutorId!,
-				fecha_estimada_resolucion: fechaEstimadaResolucion,
+				fecha_estimada_resolucion: fechaEstimadaResolucion || null,
 				...(yaResuelta
 					? {
 							ventana_id: ventanaId!,
@@ -369,33 +392,38 @@
 			<div class="grid-campos">
 				<CampoGrupo grupo="a">
 					<div class="campo">
-						<label for="codigo">Código de la mesa</label>
-						<input id="codigo" type="text" bind:value={codigo} placeholder="TCK-001" />
+						<label for="enlace">Enlace en Proactivanet</label>
+						<input id="enlace" type="text" bind:value={enlace} placeholder="https://…" />
 					</div>
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
 					<div class="campo">
-						<label for="titulo">Título</label>
-						<input id="titulo" type="text" bind:value={titulo} />
+						<label for="codigo">Código de la mesa</label>
+						<input id="codigo" type="text" bind:value={codigo} placeholder="TCK-001" />
 					</div>
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
 					<FechaHoraInput id="fecha_carga" label="Fecha y hora de carga" bind:value={fechaCarga} comoTexto />
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
-					<div class="campo">
-						<label for="enlace">Enlace en Proactivanet</label>
-						<input id="enlace" type="text" bind:value={enlace} placeholder="https://…" />
+					<ComboboxCreatable bind:this={comboboxSolicitante} id="solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} nombreSeleccionado={solicitanteNombre} />
+				</CampoGrupo>
+				<CampoGrupo grupo="a">
+					<div class="campo campo-ancho">
+						<label for="titulo">Título</label>
+						<input id="titulo" type="text" bind:value={titulo} />
 					</div>
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
-					<ComboboxCreatable bind:this={comboboxCategoria} id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
+					<div class="campo campo-ancho">
+						<label for="descripcion">Descripción</label>
+						<textarea id="descripcion" rows="4" bind:value={descripcion} placeholder="Qué se reportó…"></textarea>
+					</div>
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
-					<ComboboxCreatable bind:this={comboboxSolicitante} id="solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} nombreSeleccionado={solicitanteNombre} />
-				</CampoGrupo>
-				<CampoGrupo grupo="b">
-					<ComboboxCreatable bind:this={comboboxResolutor} id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
+					<div class="campo-ancho">
+						<ComboboxCreatable bind:this={comboboxCategoria} id="categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} nombreSeleccionado={categoriaNombre} />
+					</div>
 				</CampoGrupo>
 				<CampoGrupo grupo="a">
 					<FechaHoraInput
@@ -405,14 +433,10 @@
 					comoTexto
 				/>
 				</CampoGrupo>
+				<CampoGrupo grupo="b">
+					<ComboboxCreatable bind:this={comboboxResolutor} id="resolutor" catalogo="resolutores-mesa" label="Resolutor" bind:selectedId={resolutorId} nombreSeleccionado={resolutorNombre} />
+				</CampoGrupo>
 			</div>
-
-			<CampoGrupo grupo="a">
-				<div class="campo">
-					<label for="descripcion">Descripción</label>
-					<textarea id="descripcion" rows="4" bind:value={descripcion} placeholder="Qué se reportó…"></textarea>
-				</div>
-			</CampoGrupo>
 
 			<div class="fila-toggle-cierre">
 				<button
@@ -424,8 +448,8 @@
 					{#if yaResuelta}<Icon nombre="check" tamano={13} />{/if}
 					{yaResuelta ? 'Información de cierre agregada' : '+ Agregar información de cierre'}
 				</button>
-				<button type="button" class="btn-vaciar-cierre" onclick={vaciarCierre}>
-					Vaciar cierre
+				<button type="button" class="btn-vaciar-cierre" onclick={vaciarTodo}>
+					Vaciar campos
 				</button>
 			</div>
 
@@ -675,6 +699,10 @@
 		gap: 16px;
 	}
 
+	.grid-campos > :global(.campo-grupo:has(.campo-ancho)) {
+		grid-column: 1 / -1;
+	}
+
 	.grid-cierre {
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
@@ -738,18 +766,17 @@
 
 	.btn-vaciar-cierre {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 2px solid var(--danger);
 		border-radius: var(--radius);
 		padding: 12px 16px;
 		font-size: 13px;
-		color: var(--text-muted);
+		color: var(--danger);
 		cursor: pointer;
 		min-height: 44px;
 	}
 
 	.btn-vaciar-cierre:hover {
-		border-color: var(--danger);
-		color: var(--danger);
+		background: color-mix(in srgb, var(--danger) 12%, transparent);
 	}
 
 	.btn-info-cierre {

@@ -174,7 +174,7 @@
 						</div>
 						<p class="prioritaria-descripcion">{m.descripcion}</p>
 						<div class="prioritaria-meta">
-							<span class="mini-categoria">{m.categoria.nombre}</span>
+							<span class="mini-categoria">{m.categoria?.nombre ?? 'Sin categoría'}</span>
 							<span class="mini-solicitante">{m.solicitante.nombre}</span>
 						</div>
 					</li>

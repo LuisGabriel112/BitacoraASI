@@ -57,7 +57,12 @@ router = APIRouter(prefix="/mesas", tags=["mesas"], dependencies=[Depends(get_us
 
 
 async def _obtener_mesa(session: AsyncSession, mesa_id: int) -> Mesa:
-    stmt = select(Mesa).where(Mesa.id == mesa_id)
+    # populate_existing: sin esto, SQLAlchemy no pisa relaciones ya cargadas
+    # (categoria/ventana) en el objeto que sigue en el identity map desde el
+    # session.get() de más arriba en cerrar_mesa/editar_mesa — la respuesta
+    # quedaría con la categoría/ventana vieja (o None) aunque el commit ya
+    # haya guardado el nuevo valor en la BD.
+    stmt = select(Mesa).where(Mesa.id == mesa_id).execution_options(populate_existing=True)
     return (await session.execute(stmt)).scalar_one()
 
 
@@ -159,6 +164,17 @@ async def cerrar_mesa(mesa_id: int, payload: MesaCerrar, session: AsyncSession =
     if _ya_cerrada(mesa):
         raise HTTPException(400, "La mesa ya está cerrada")
 
+    categoria_id = payload.categoria_id if payload.categoria_id is not None else mesa.categoria_id
+    fecha_estimada = (
+        payload.fecha_estimada_resolucion
+        if payload.fecha_estimada_resolucion is not None
+        else mesa.fecha_estimada_resolucion
+    )
+    if categoria_id is None or fecha_estimada is None:
+        raise HTTPException(422, "Para cerrar la mesa hacen falta categoría y fecha estimada de resolución")
+
+    mesa.categoria_id = categoria_id
+    mesa.fecha_estimada_resolucion = fecha_estimada
     mesa.ventana_id = payload.ventana_id
     mesa.solucion = payload.solucion
     mesa.tipo_solucion = payload.tipo_solucion
@@ -182,6 +198,15 @@ async def editar_mesa(mesa_id: int, payload: MesaUpdate, session: AsyncSession =
         raise HTTPException(404, "Mesa no encontrada")
 
     recien_cerrada = mesa.fecha_cierre_real is None and payload.fecha_cierre_real is not None
+    if recien_cerrada:
+        categoria_id = payload.categoria_id if payload.categoria_id is not None else mesa.categoria_id
+        fecha_estimada = (
+            payload.fecha_estimada_resolucion
+            if payload.fecha_estimada_resolucion is not None
+            else mesa.fecha_estimada_resolucion
+        )
+        if categoria_id is None or fecha_estimada is None:
+            raise HTTPException(422, "Para cerrar la mesa hacen falta categoría y fecha estimada de resolución")
 
     for campo, valor in _campos_a_actualizar(payload).items():
         setattr(mesa, campo, valor)
@@ -523,7 +548,7 @@ def _generar_xlsx_mesas(encabezados: list[str], mesas_filtradas: list[Mesa]) -> 
         ws.cell(i, 1, celda_segura(m.codigo))
         ws.cell(i, 2, celda_segura(m.titulo))
         ws.cell(i, 3, m.fecha_carga).number_format = "yyyy-mm-dd hh:mm"
-        ws.cell(i, 4, celda_segura(m.categoria.nombre))
+        ws.cell(i, 4, celda_segura(m.categoria.nombre if m.categoria else "Sin categoría"))
         ws.cell(i, 5, celda_segura(m.solicitante.nombre))
         ws.cell(i, 6, celda_segura(m.resolutor.nombre))
         ws.cell(i, 7, celda_segura(m.ventana.nombre if m.ventana else ""))
@@ -587,7 +612,7 @@ async def exportar_mesas(
         filas = [
             [
                 celda_segura(m.codigo), celda_segura(m.titulo), m.fecha_carga.strftime("%Y-%m-%d %H:%M"),
-                celda_segura(m.categoria.nombre), celda_segura(m.solicitante.nombre),
+                celda_segura(m.categoria.nombre if m.categoria else "Sin categoría"), celda_segura(m.solicitante.nombre),
                 celda_segura(m.resolutor.nombre), celda_segura(m.ventana.nombre if m.ventana else ""),
                 celda_segura(m.descripcion), "Cerrada" if m.fecha_cierre_real else "Abierta",
                 celda_segura(m.solucion or ""),

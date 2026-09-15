@@ -348,10 +348,10 @@ class MesaCreate(BaseModel):
     titulo: str
     fecha_carga: datetime
     descripcion: str
-    categoria_id: int
+    categoria_id: int | None = None
     solicitante_id: int
     resolutor_id: int
-    fecha_estimada_resolucion: datetime
+    fecha_estimada_resolucion: datetime | None = None
     ventana_id: int | None = None
     solucion: str | None = None
     tipo_solucion: TipoSolucion | None = None
@@ -363,10 +363,17 @@ class MesaCreate(BaseModel):
         # ventana se determina con criterio propio al resolver, no al abrir la mesa:
         # va junto con el resto de la información de cierre, todo o nada.
         campos_cierre = (self.solucion, self.tipo_solucion, self.fecha_cierre_real, self.ventana_id)
-        if any(campos_cierre) and not all(campos_cierre):
+        cerrando = any(campos_cierre)
+        if cerrando and not all(campos_cierre):
             raise ValueError(
                 "Para colocar la información de cierre al crear, se deben dar ventana, solución, "
                 "tipo de solución y fecha real de cierre juntos"
+            )
+        # categoría y fecha estimada solo son obligatorias si la mesa se cierra
+        # de una vez; una mesa que queda abierta puede completarse después.
+        if cerrando and (self.categoria_id is None or self.fecha_estimada_resolucion is None):
+            raise ValueError(
+                "Para cerrar la mesa al crearla, también se deben dar categoría y fecha estimada de resolución"
             )
         return self
 
@@ -377,6 +384,11 @@ class MesaCerrar(BaseModel):
     tipo_solucion: TipoSolucion
     fecha_cierre_real: datetime
     medidas_impacto: bool = False
+    # opcionales: solo hace falta mandarlos si la mesa todavía no los tiene
+    # (se creó abierta y sin categoría/fecha estimada); el router los exige
+    # en ese caso y conserva los existentes si ya estaban cargados.
+    categoria_id: int | None = None
+    fecha_estimada_resolucion: datetime | None = None
 
 
 class MesaUpdate(BaseModel):
@@ -407,7 +419,7 @@ class MesaOut(BaseModel):
     fecha_carga: datetime
     semana: str
     descripcion: str
-    fecha_estimada_resolucion: datetime
+    fecha_estimada_resolucion: datetime | None
     solucion: str | None
     tipo_solucion: str | None
     fecha_cierre_real: datetime | None
@@ -416,7 +428,7 @@ class MesaOut(BaseModel):
     destacada: bool
     created_at: datetime
     ventana: CatalogoOut | None
-    categoria: CatalogoOut
+    categoria: CatalogoOut | None
     solicitante: CatalogoOut
     resolutor: CatalogoOut
     logros: list[str] = []
