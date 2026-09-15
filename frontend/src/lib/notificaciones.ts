@@ -1,5 +1,8 @@
 export type TipoAviso = 'exito' | 'error';
 
+// Pool fijo de respaldo: es lo que la app reproducía antes del catálogo en
+// base de datos (/sonidos). Hoy solo se usa si el catálogo no pudo cargarse
+// (ver sonidosDeRespaldo en sonidos.ts); la fuente de verdad es la tabla.
 export const SONIDOS_EXITO = [
 	'/sonidos/pop-succes.ogg',
 	'/sonidos/success-2.ogg',
@@ -19,8 +22,4 @@ export const SONIDOS_ERROR = [
 export function elegirSonidoAleatorio(opciones: readonly string[], aleatorio: () => number = Math.random): string {
 	const indice = Math.floor(aleatorio() * opciones.length);
 	return opciones[indice];
-}
-
-export function rutaSonidoParaAviso(tipo: TipoAviso, aleatorio: () => number = Math.random): string {
-	return elegirSonidoAleatorio(tipo === 'exito' ? SONIDOS_EXITO : SONIDOS_ERROR, aleatorio);
 }

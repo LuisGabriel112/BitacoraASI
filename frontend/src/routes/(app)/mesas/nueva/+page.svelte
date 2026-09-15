@@ -17,7 +17,6 @@
 	import { resolutorVinculadoA } from '$lib/resolutorCuenta';
 	import { catalogoCompleto } from '$lib/catalogoCache';
 	import { fechaHoraActualLocal } from '$lib/fechaHora';
-	import { reproducirFanfarriaMexicana } from '$lib/sonidoMexicano';
 	import { tick } from 'svelte';
 
 	let celebracion: Celebracion;
@@ -291,7 +290,7 @@
 			cargarMesasRecientes();
 			celebracion?.mostrar(resultado.logros);
 			mostrarAnimacionExito();
-			aviso?.mostrar('exito', `Mesa ${resultado.codigo} guardada en la bitácora administrativa.`, reproducirFanfarriaMexicana);
+			aviso?.mostrar('exito', `Mesa ${resultado.codigo} guardada en la bitácora administrativa.`, { evento: 'guardar_mesa' });
 			limpiar();
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar la mesa';

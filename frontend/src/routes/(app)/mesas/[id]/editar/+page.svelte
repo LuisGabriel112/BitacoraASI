@@ -8,6 +8,7 @@
 	import Celebracion from '$lib/components/Celebracion.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Mesa } from '$lib/api/client';
+	import { reproducirEvento } from '$lib/sonidos.svelte';
 
 	let celebracion: Celebracion;
 
@@ -41,6 +42,8 @@
 	let destacada = $state(false);
 
 	let cerrada = $state(false);
+	// distingue "guardar cambios" de "cerrar la mesa" al elegir qué sonido toca
+	let estabaCerrada = $state(false);
 	let solucionTexto = $state('');
 	let tipoSolucion = $state<'Modificación en BD' | 'Seguimiento de proceso'>('Modificación en BD');
 	let fechaCierreReal = $state('');
@@ -69,6 +72,7 @@
 		prioridad = m.prioridad;
 		destacada = m.destacada;
 		cerrada = !!m.fecha_cierre_real;
+		estabaCerrada = cerrada;
 		solucionTexto = m.solucion ?? '';
 		tipoSolucion = (m.tipo_solucion as 'Modificación en BD' | 'Seguimiento de proceso') ?? 'Modificación en BD';
 		fechaCierreReal = m.fecha_cierre_real?.slice(0, 16) ?? ahora();
@@ -93,22 +97,29 @@
 		cargar();
 	});
 
+	function validar(): string | null {
+		if (!codigo.trim()) return 'Falta código de la mesa';
+		if (!titulo.trim()) return 'Falta título';
+		if (!fechaCarga) return 'Falta fecha de carga';
+		if (!descripcion.trim()) return 'Falta descripción';
+		if (!categoriaId) return 'Falta seleccionar categoría';
+		if (!solicitanteId) return 'Falta seleccionar solicitante';
+		if (!resolutorId) return 'Falta seleccionar resolutor';
+		if (!fechaEstimadaResolucion) return 'Falta fecha estimada de resolución';
+		if (cerrada && !ventanaId) return 'Falta seleccionar ventana';
+		if (cerrada && !solucionTexto.trim()) return 'Falta describir la solución';
+		if (cerrada && !fechaCierreReal) return 'Falta la fecha real de cierre';
+		return null;
+	}
+
 	async function guardar() {
-		errorValidacion = null;
 		errorGuardado = null;
 		guardadoOk = false;
-
-		if (!codigo.trim()) return (errorValidacion = 'Falta código de la mesa');
-		if (!titulo.trim()) return (errorValidacion = 'Falta título');
-		if (!fechaCarga) return (errorValidacion = 'Falta fecha de carga');
-		if (!descripcion.trim()) return (errorValidacion = 'Falta descripción');
-		if (!categoriaId) return (errorValidacion = 'Falta seleccionar categoría');
-		if (!solicitanteId) return (errorValidacion = 'Falta seleccionar solicitante');
-		if (!resolutorId) return (errorValidacion = 'Falta seleccionar resolutor');
-		if (!fechaEstimadaResolucion) return (errorValidacion = 'Falta fecha estimada de resolución');
-		if (cerrada && !ventanaId) return (errorValidacion = 'Falta seleccionar ventana');
-		if (cerrada && !solucionTexto.trim()) return (errorValidacion = 'Falta describir la solución');
-		if (cerrada && !fechaCierreReal) return (errorValidacion = 'Falta la fecha real de cierre');
+		errorValidacion = validar();
+		if (errorValidacion) {
+			reproducirEvento('error');
+			return;
+		}
 
 		guardando = true;
 		try {
@@ -119,9 +130,9 @@
 				fecha_carga: fechaCarga,
 				descripcion: descripcion.trim(),
 				ventana_id: cerrada ? ventanaId : null,
-				categoria_id: categoriaId,
-				solicitante_id: solicitanteId,
-				resolutor_id: resolutorId,
+				categoria_id: categoriaId!,
+				solicitante_id: solicitanteId!,
+				resolutor_id: resolutorId!,
 				fecha_estimada_resolucion: fechaEstimadaResolucion,
 				prioridad,
 				destacada,
@@ -131,9 +142,13 @@
 				medidas_impacto: cerrada ? medidasImpacto : false
 			});
 			guardadoOk = true;
+			const seCerroAhora = !estabaCerrada && !!actualizada.fecha_cierre_real;
+			reproducirEvento(seCerroAhora ? 'cerrar_mesa' : 'guardar_mesa');
+			estabaCerrada = !!actualizada.fecha_cierre_real;
 			celebracion?.mostrar(actualizada.logros);
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar la mesa';
+			reproducirEvento('error');
 		} finally {
 			guardando = false;
 		}

@@ -2,10 +2,50 @@
 	import Header from '$lib/components/Header.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import Icon from '$lib/components/Icon.svelte';
-	import { api, type MensajeChat } from '$lib/api/client';
+	import { fade } from 'svelte/transition';
+	import { api, type MensajeChat, type RankingItem } from '$lib/api/client';
 	import { extraerImagenDePortapapeles, extraerPrimerArchivoSoltado } from '$lib/chatAdjuntos';
 
 	const INTERVALO_MS = 4_000;
+	const INTERVALO_EN_LINEA_MS = 10_000;
+
+	// Quién está en línea vive aquí (antes era la página /hub): panel a la
+	// derecha del chat cuando hay espacio, botón desplegable cuando no.
+	let enLinea = $state<RankingItem[]>([]);
+	let cargandoEnLinea = $state(true);
+	let mostrarEnLinea = $state(false);
+	let barraChat: HTMLDivElement;
+
+	$effect(() => {
+		let cancelado = false;
+
+		async function tick() {
+			if (document.visibilityState === 'hidden') return;
+			try {
+				const respuesta = await api.enLinea();
+				if (!cancelado) enLinea = respuesta;
+			} catch {
+				// un fallo de un ciclo de polling no debe romper la UI
+			} finally {
+				if (!cancelado) cargandoEnLinea = false;
+			}
+		}
+
+		tick();
+		const id = setInterval(tick, INTERVALO_EN_LINEA_MS);
+		return () => {
+			cancelado = true;
+			clearInterval(id);
+		};
+	});
+
+	function alClicGlobal(e: MouseEvent) {
+		if (mostrarEnLinea && barraChat && !barraChat.contains(e.target as Node)) mostrarEnLinea = false;
+	}
+
+	function alTeclaGlobal(e: KeyboardEvent) {
+		if (e.key === 'Escape') mostrarEnLinea = false;
+	}
 
 	let mensajes = $state<MensajeChat[]>([]);
 	let cargando = $state(true);
@@ -132,8 +172,30 @@
 	}
 </script>
 
-<Header titulo="Chat del equipo" subtitulo="Mensajes y archivos, se actualiza solo." />
+<svelte:window onclick={alClicGlobal} onkeydown={alTeclaGlobal} />
 
+<Header titulo="Chat del equipo" subtitulo="Mensajes, archivos y quién está en línea — se actualiza solo." />
+
+{#snippet listaEnLinea()}
+	{#if cargandoEnLinea}
+		<p class="en-linea-vacio">Cargando…</p>
+	{:else if enLinea.length === 0}
+		<p class="en-linea-vacio">Nadie está en línea ahora mismo.</p>
+	{:else}
+		<ul class="lista-en-linea">
+			{#each enLinea as u (u.nombre)}
+				<li in:fade={{ duration: 200 }}>
+					<span class="punto-en-linea" aria-hidden="true"></span>
+					<span class="avatar-en-linea" aria-hidden="true">{u.avatar}</span>
+					<span class="nombre-en-linea">{u.nombre}</span>
+					<span class="nivel-en-linea">Nv. {u.nivel}</span>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+{/snippet}
+
+<div class="chat-y-en-linea">
 <div
 	class="chat"
 	class:arrastrando
@@ -143,6 +205,27 @@
 	ondragleave={() => (arrastrando = false)}
 	ondrop={alSoltar}
 >
+	<div class="barra-chat" bind:this={barraChat}>
+		<button
+			type="button"
+			class="btn-en-linea"
+			class:abierto={mostrarEnLinea}
+			aria-expanded={mostrarEnLinea}
+			aria-controls="desplegable-en-linea"
+			onclick={() => (mostrarEnLinea = !mostrarEnLinea)}
+		>
+			<Icon nombre="users" tamano={15} />
+			En línea
+			<span class="conteo-en-linea">{enLinea.length}</span>
+			<span class="chevron" class:girado={mostrarEnLinea} aria-hidden="true"><Icon nombre="chevron-down" tamano={13} /></span>
+		</button>
+		{#if mostrarEnLinea}
+			<div class="desplegable-en-linea" id="desplegable-en-linea">
+				{@render listaEnLinea()}
+			</div>
+		{/if}
+	</div>
+
 	<div class="mensajes" bind:this={contenedor}>
 		{#if cargando}
 			<p class="cargando">Cargando mensajes…</p>
@@ -206,12 +289,182 @@
 	</form>
 </div>
 
+<aside class="panel-en-linea" aria-label="Usuarios en línea">
+	<h2 class="font-display">
+		<Icon nombre="users" tamano={15} />
+		En línea
+		<span class="conteo-en-linea">{enLinea.length}</span>
+	</h2>
+	{@render listaEnLinea()}
+</aside>
+</div>
+
 <style>
+	/* El contenedor decide el modo por su propio ancho (container query), no
+	   por el viewport: así el panel lateral aparece solo cuando de verdad
+	   sobra espacio a la derecha del chat. */
+	.chat-y-en-linea {
+		container-type: inline-size;
+		container-name: chat;
+		display: flex;
+		align-items: stretch;
+		gap: 18px;
+		height: calc(100vh - 140px);
+	}
+
 	.chat {
 		display: flex;
 		flex-direction: column;
-		height: calc(100vh - 140px);
+		flex: 1;
+		min-width: 0;
 		max-width: 720px;
+	}
+
+	/* --- en línea: panel lateral (modo ancho) --- */
+	.panel-en-linea {
+		width: 240px;
+		flex-shrink: 0;
+		align-self: flex-start;
+		max-height: 100%;
+		overflow-y: auto;
+		background: var(--surface);
+		border: 2px solid var(--border-strong);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-flat);
+		padding: 14px;
+	}
+
+	.panel-en-linea h2 {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0 0 12px;
+		font-size: 13px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-muted);
+	}
+
+	.conteo-en-linea {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--success);
+		background: color-mix(in srgb, var(--success) 16%, transparent);
+		border-radius: 999px;
+		padding: 1px 8px;
+	}
+
+	.lista-en-linea {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.lista-en-linea li {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 7px 8px;
+		border-radius: var(--radius);
+		background: var(--surface-raised);
+	}
+
+	.punto-en-linea {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--success);
+		flex-shrink: 0;
+	}
+
+	.avatar-en-linea {
+		font-size: 16px;
+	}
+
+	.nombre-en-linea {
+		flex: 1;
+		min-width: 0;
+		font-size: 13px;
+		font-weight: 600;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.nivel-en-linea {
+		font-size: 11px;
+		color: var(--text-muted);
+		font-family: var(--font-mono);
+	}
+
+	.en-linea-vacio {
+		margin: 0;
+		font-size: 12px;
+		color: var(--text-muted);
+	}
+
+	/* --- en línea: botón desplegable (modo angosto) --- */
+	.barra-chat {
+		display: none;
+		position: relative;
+		margin-bottom: 10px;
+	}
+
+	.btn-en-linea {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		min-height: 36px;
+		padding: 6px 12px;
+		background: var(--surface);
+		border: 2px solid var(--border-strong);
+		border-radius: var(--radius);
+		color: var(--text);
+		font-size: 13px;
+		cursor: pointer;
+	}
+
+	.btn-en-linea:hover,
+	.btn-en-linea.abierto {
+		border-color: var(--accent);
+	}
+
+	.chevron {
+		display: flex;
+		transition: transform 0.15s ease;
+	}
+
+	.chevron.girado {
+		transform: rotate(180deg);
+	}
+
+	.desplegable-en-linea {
+		position: absolute;
+		top: calc(100% + 6px);
+		left: 0;
+		z-index: 20;
+		width: 280px;
+		max-height: 320px;
+		overflow-y: auto;
+		background: var(--surface);
+		border: 2px solid var(--border-strong);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow-flat);
+		padding: 10px;
+	}
+
+	@container chat (max-width: 819px) {
+		.panel-en-linea {
+			display: none;
+		}
+
+		.barra-chat {
+			display: flex;
+		}
 	}
 
 	.chat.arrastrando {

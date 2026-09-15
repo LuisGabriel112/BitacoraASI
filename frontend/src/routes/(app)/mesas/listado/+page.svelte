@@ -9,6 +9,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { semanaActual } from '$lib/semana';
 	import { api, type Mesa } from '$lib/api/client';
+	import { reproducirEvento } from '$lib/sonidos.svelte';
 
 	let celebracion: Celebracion;
 	let gestionCatalogos: GestionCatalogos;
@@ -121,18 +122,24 @@
 		medidasImpactoCierre = false;
 	}
 
+	function validarCierre(m: Mesa): string | null {
+		if (!ventanaCierreId) return 'Falta seleccionar ventana';
+		if (!solucionTexto.trim()) return 'Falta describir la solución';
+		if (!m.categoria && !categoriaCierreId) return 'Falta seleccionar categoría';
+		if (!m.fecha_estimada_resolucion && !fechaEstimadaCierre) return 'Falta fecha estimada de resolución';
+		return null;
+	}
+
 	async function confirmarCierre(m: Mesa) {
-		if (!ventanaCierreId) return (errorCierre = 'Falta seleccionar ventana');
-		if (!solucionTexto.trim()) return (errorCierre = 'Falta describir la solución');
-		if (!m.categoria && !categoriaCierreId) return (errorCierre = 'Falta seleccionar categoría');
-		if (!m.fecha_estimada_resolucion && !fechaEstimadaCierre) {
-			return (errorCierre = 'Falta fecha estimada de resolución');
+		errorCierre = validarCierre(m);
+		if (errorCierre) {
+			reproducirEvento('error');
+			return;
 		}
 		guardandoCierre = true;
-		errorCierre = null;
 		try {
 			const actualizada = await api.cerrarMesa(m.id, {
-				ventana_id: ventanaCierreId,
+				ventana_id: ventanaCierreId!,
 				solucion: solucionTexto.trim(),
 				tipo_solucion: tipoSolucion,
 				fecha_cierre_real: fechaCierreReal,
@@ -142,9 +149,11 @@
 			});
 			items = items.map((it) => (it.id === m.id ? actualizada : it));
 			cerrandoId = null;
+			reproducirEvento('cerrar_mesa');
 			celebracion?.mostrar(actualizada.logros);
 		} catch (e) {
 			errorCierre = e instanceof Error ? e.message : 'No se pudo cerrar la mesa';
+			reproducirEvento('error');
 		} finally {
 			guardandoCierre = false;
 		}

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { rutaSonidoParaAviso, type TipoAviso } from '$lib/notificaciones';
+	import type { TipoAviso } from '$lib/notificaciones';
+	import type { FuenteSonido } from '$lib/sonidos';
+	import { reproducirEvento, reproducirFuente } from '$lib/sonidos.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let visible = $state(false);
@@ -7,18 +9,26 @@
 	let mensaje = $state('');
 	let timer: ReturnType<typeof setTimeout>;
 
-	function reproducirSonido(fuente: string | (() => void)) {
+	function reproducirSonido(fuente: FuenteSonido) {
+		if (fuente === null) return;
 		if (typeof fuente === 'function') {
 			fuente();
 			return;
 		}
-		const audio = new Audio(fuente);
-		audio.play().catch(() => {});
+		if (typeof fuente === 'string') {
+			reproducirFuente(fuente);
+			return;
+		}
+		reproducirEvento(fuente.evento);
 	}
 
-	export function mostrar(t: TipoAviso, m: string, sonidoOverride?: string | (() => void)) {
+	/** Un error siempre suena con la preferencia del usuario para "error".
+	 *  El éxito no tiene acción implícita: quien lo muestra pasa la fuente
+	 *  ({ evento: 'guardar_mesa' }, una ruta, una función) o null para silencio. */
+	export function mostrar(t: TipoAviso, m: string, sonido?: FuenteSonido) {
 		clearTimeout(timer);
-		reproducirSonido(sonidoOverride ?? rutaSonidoParaAviso(t));
+		const fuente: FuenteSonido = sonido === undefined ? (t === 'error' ? { evento: 'error' } : null) : sonido;
+		reproducirSonido(fuente);
 		tipo = t;
 		mensaje = m;
 		visible = true;

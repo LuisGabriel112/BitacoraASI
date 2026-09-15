@@ -12,6 +12,7 @@ from app.routers import (
     mesas,
     registros,
     sintesis_soluciones,
+    sonidos,
     tienda,
 )
 
@@ -43,6 +44,7 @@ app.include_router(chat.router)
 app.include_router(juegos.router)
 app.include_router(brawl_ws.router)
 app.include_router(tienda.router)
+app.include_router(sonidos.router)
 
 
 @app.get("/health")

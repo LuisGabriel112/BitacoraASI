@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SONIDOS_ERROR, SONIDOS_EXITO, elegirSonidoAleatorio, rutaSonidoParaAviso } from './notificaciones';
+import { SONIDOS_ERROR, SONIDOS_EXITO, elegirSonidoAleatorio } from './notificaciones';
 
 describe('elegirSonidoAleatorio', () => {
 	it('elige el primer elemento cuando el azar da 0', () => {
@@ -15,21 +15,13 @@ describe('elegirSonidoAleatorio', () => {
 	});
 });
 
-describe('rutaSonidoParaAviso', () => {
+describe('pool de respaldo', () => {
 	it('hay más de un sonido de éxito y de error registrados', () => {
 		expect(SONIDOS_EXITO.length).toBeGreaterThan(1);
 		expect(SONIDOS_ERROR.length).toBeGreaterThan(1);
 	});
 
-	it('devuelve siempre uno de los sonidos de éxito registrados', () => {
-		for (let i = 0; i < 20; i++) {
-			expect(SONIDOS_EXITO).toContain(rutaSonidoParaAviso('exito'));
-		}
-	});
-
-	it('devuelve siempre uno de los sonidos de error registrados', () => {
-		for (let i = 0; i < 20; i++) {
-			expect(SONIDOS_ERROR).toContain(rutaSonidoParaAviso('error'));
-		}
+	it('todos apuntan a la carpeta estática de sonidos', () => {
+		for (const ruta of [...SONIDOS_EXITO, ...SONIDOS_ERROR]) expect(ruta).toMatch(/^\/sonidos\//);
 	});
 });

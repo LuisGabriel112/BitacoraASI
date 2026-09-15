@@ -4,6 +4,7 @@
 	import { semanaActual } from '$lib/semana';
 	import { api } from '$lib/api/client';
 	import { estadoPersonaje, limpiarPersonaje } from '$lib/personaje.svelte';
+	import { limpiarSonidos } from '$lib/sonidos.svelte';
 	import Reloj from '$lib/components/Reloj.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import PapelPicado from '$lib/components/PapelPicado.svelte';
@@ -15,6 +16,7 @@
 	async function cerrarSesion() {
 		await api.cerrarSesion();
 		limpiarPersonaje();
+		limpiarSonidos();
 		await goto('/login');
 	}
 
@@ -37,8 +39,8 @@
 		{ href: '/jefe', label: 'Jefe semanal', icon: 'skull' },
 		{ href: '/tienda', label: 'Tienda', icon: 'shopping-bag' },
 		{ href: '/mascotas', label: 'Mascotas', icon: 'trophy' },
-		{ href: '/hub', label: 'En línea', icon: 'circle' },
-		{ href: '/chat', label: 'Chat', icon: 'message-circle' }
+		{ href: '/chat', label: 'Chat', icon: 'message-circle' },
+		{ href: '/sonidos', label: 'Sonidos', icon: 'volume-2' }
 	];
 
 	const grupos = [

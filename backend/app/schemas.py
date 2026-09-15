@@ -248,6 +248,50 @@ class MensajeChatCreate(BaseModel):
         return self
 
 
+class SolicitudUrlSubida(BaseModel):
+    nombre_archivo: str
+    content_type: str
+
+
+class UrlSubidaOut(BaseModel):
+    url_subida: str
+    url_publica: str
+
+
+CategoriaSonido = Literal["exito", "error"]
+EventoSonido = Literal["guardar_mesa", "cerrar_mesa", "error"]
+
+
+class SonidoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    categoria: CategoriaSonido
+    nombre: str
+    url: str
+    activo: bool
+    created_at: datetime
+
+
+class SonidoCreate(BaseModel):
+    categoria: CategoriaSonido
+    nombre: str = Field(min_length=1, max_length=80)
+    url: str = Field(min_length=1)
+
+
+class PreferenciaSonidoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    evento: EventoSonido
+    sonido_id: int | None
+    silenciado: bool
+
+
+class PreferenciaSonidoUpdate(BaseModel):
+    evento: EventoSonido
+    # sonido_id=None y silenciado=False vuelve a "aleatorio"
+    sonido_id: int | None = None
+    silenciado: bool = False
+
+
 class CatalogoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

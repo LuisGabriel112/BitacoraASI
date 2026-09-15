@@ -323,6 +323,16 @@ class Sonido(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class SonidoPreferencia(Base):
+    __tablename__ = "sonidos_preferencias"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    evento: Mapped[str] = mapped_column(Text)
+    sonido_id: Mapped[int | None] = mapped_column(ForeignKey("sonidos.id"), nullable=True)
+    silenciado: Mapped[bool] = mapped_column(default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class InventarioItem(Base):
     __tablename__ = "inventario_items"
     id: Mapped[int] = mapped_column(primary_key=True)

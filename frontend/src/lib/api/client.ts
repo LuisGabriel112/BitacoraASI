@@ -41,6 +41,18 @@ export type DanioJefeEvento = {
 	created_at: string;
 };
 
+export type CategoriaSonido = 'exito' | 'error';
+export type EventoSonido = 'guardar_mesa' | 'cerrar_mesa' | 'error';
+export type Sonido = {
+	id: number;
+	categoria: CategoriaSonido;
+	nombre: string;
+	url: string;
+	activo: boolean;
+	created_at: string;
+};
+export type PreferenciaSonido = { evento: EventoSonido; sonido_id: number | null; silenciado: boolean };
+
 export type AutorChat = { nombre: string; avatar: string };
 export type MensajeChat = {
 	id: number;
@@ -343,6 +355,26 @@ export const api = {
 
 	mensajesChat: (despuesDe?: number) =>
 		json<MensajeChat[]>(`/chat/mensajes${despuesDe !== undefined ? `?despues_de=${despuesDe}` : ''}`),
+
+	sonidos: () => json<Sonido[]>('/sonidos'),
+
+	crearUrlSubidaSonido: (nombreArchivo: string, contentType: string) =>
+		json<{ url_subida: string; url_publica: string }>('/sonidos/subir-url', {
+			method: 'POST',
+			body: JSON.stringify({ nombre_archivo: nombreArchivo, content_type: contentType })
+		}),
+
+	crearSonido: (payload: { categoria: CategoriaSonido; nombre: string; url: string }) =>
+		json<Sonido>('/sonidos', { method: 'POST', body: JSON.stringify(payload) }),
+
+	activarSonido: (id: number) => json<Sonido>(`/sonidos/${id}/activar`, { method: 'POST' }),
+
+	desactivarSonido: (id: number) => json<Sonido>(`/sonidos/${id}/desactivar`, { method: 'POST' }),
+
+	preferenciasSonido: () => json<PreferenciaSonido[]>('/sonidos/preferencias'),
+
+	guardarPreferenciaSonido: (payload: { evento: EventoSonido; sonido_id?: number | null; silenciado?: boolean }) =>
+		json<PreferenciaSonido>('/sonidos/preferencias', { method: 'POST', body: JSON.stringify(payload) }),
 
 	catalogo: (nombre: NombreCatalogo, q = '', limit?: number) => {
 		const qs = new URLSearchParams();

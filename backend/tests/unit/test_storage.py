@@ -38,6 +38,40 @@ def test_dos_keys_del_mismo_nombre_no_colisionan():
     assert generar_key_archivo("captura.png") != generar_key_archivo("captura.png")
 
 
+def test_key_con_carpeta_queda_bajo_esa_carpeta_y_conserva_extension():
+    key = generar_key_archivo("tada final.OGG", carpeta="sonidos")
+    assert key.startswith("sonidos/")
+    assert key.endswith(".OGG")
+    assert key.count("/") == 1
+
+
+def test_carpeta_con_barras_sobrantes_se_normaliza():
+    assert generar_key_archivo("a.ogg", carpeta="/sonidos/").startswith("sonidos/")
+    assert "/" not in generar_key_archivo("a.ogg", carpeta="  ")
+
+
+@pytest.mark.asyncio
+async def test_sin_supabase_configurado_avisa_con_storage_error(monkeypatch):
+    monkeypatch.setattr(storage_module.settings, "supabase_url", "")
+
+    with pytest.raises(StorageError) as info:
+        await crear_url_subida("captura.png", "image/png")
+
+    assert "no configurado" in str(info.value)
+
+
+@pytest.mark.asyncio
+async def test_la_url_publica_incluye_la_carpeta(monkeypatch):
+    respuesta = httpx.Response(200, json={"url": "/object/upload/sign/chat-adjuntos/sonidos/abc.ogg?token=xyz"})
+    cliente = _ClienteFalso(respuesta)
+    monkeypatch.setattr(storage_module.httpx, "AsyncClient", lambda **_kwargs: cliente)
+
+    _url_subida, url_publica = await crear_url_subida("tada.ogg", "audio/ogg", carpeta="sonidos")
+
+    assert "/object/public/chat-adjuntos/sonidos/" in url_publica
+    assert url_publica.endswith(".ogg")
+
+
 @pytest.mark.asyncio
 async def test_cualquier_content_type_genera_url_de_subida(monkeypatch):
     respuesta = httpx.Response(200, json={"url": "/object/upload/sign/chat-adjuntos/abc123.html?token=xyz"})

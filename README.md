@@ -60,6 +60,23 @@ Cada registro nuevo crea una tarjeta en la lista `TRELLO_LIST_ID`. Si Trello fal
 igual queda guardado en Postgres — la pantalla de Nuevo Registro ofrece reintentar la creación
 de la tarjeta sin perder el registro.
 
+## Sonidos
+
+Los avisos sonoros (guardar mesa, cerrar mesa, mensaje de error) salen del catálogo
+en la tabla `sonidos` (migraciones `0020` y `0034`), administrable desde **Modo RPG →
+Sonidos**: ahí se cargan sonidos nuevos, se escuchan y se habilitan/deshabilitan para
+todo el equipo. Cada usuario elige además qué sonido quiere para cada acción (o lo
+silencia) en `sonidos_preferencias`; sin preferencia suena uno al azar de los habilitados.
+
+- Los archivos nuevos se suben directo a Supabase Storage con el mismo flujo del chat,
+  dentro de la carpeta `sonidos/` del bucket `CHAT_BUCKET` (no hace falta otro bucket).
+  Sin `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` la subida avisa que el almacenamiento no
+  está configurado; el resto del catálogo funciona igual.
+- Los sonidos "de fábrica" viven en `frontend/static/sonidos/`; la fanfarria mariachi es
+  sintetizada (Web Audio) y está en el catálogo con la URL `sintetizado:fanfarria-mexicana`.
+- Si el catálogo no carga (backend caído), el frontend cae al pool fijo de
+  `frontend/src/lib/notificaciones.ts` para que el aviso siga sonando.
+
 ## Catálogo de módulos
 
 La tabla `modulos` arranca vacía a propósito: crece por uso real desde el combobox creatable

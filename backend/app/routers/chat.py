@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
 from app.models import MensajeChat, Usuario
-from app.schemas import AutorChatOut, MensajeChatCreate, MensajeChatOut
+from app.schemas import AutorChatOut, MensajeChatCreate, MensajeChatOut, SolicitudUrlSubida, UrlSubidaOut
 from app.services.auth import get_usuario_actual
 from app.services.storage import StorageError, crear_url_subida
 
@@ -22,16 +21,6 @@ def _mensaje_out(m: MensajeChat) -> MensajeChatOut:
         archivo_tipo=m.archivo_tipo,
         created_at=m.created_at,
     )
-
-
-class SolicitudUrlSubida(BaseModel):
-    nombre_archivo: str
-    content_type: str
-
-
-class UrlSubidaOut(BaseModel):
-    url_subida: str
-    url_publica: str
 
 
 @router.post("/subir-url", response_model=UrlSubidaOut)
