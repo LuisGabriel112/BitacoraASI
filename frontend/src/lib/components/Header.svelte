@@ -24,7 +24,7 @@
 		<div class="badge-semana" title="Semana ISO en curso">
 			<span class="semana-etiqueta">{semana.etiqueta}</span>
 			<div class="semana-barra">
-				<div class="semana-progreso" style="width: {semana.progreso * 100}%"></div>
+				<div class="semana-progreso" style="transform: scaleX({semana.progreso})"></div>
 			</div>
 		</div>
 
@@ -103,9 +103,11 @@
 	}
 
 	.semana-progreso {
+		width: 100%;
 		height: 100%;
 		background: var(--success);
-		transition: width 0.3s ease;
+		transform-origin: left;
+		transition: transform 0.3s ease;
 	}
 
 	.usuario {
