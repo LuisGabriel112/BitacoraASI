@@ -4,6 +4,7 @@
 	import { api } from '$lib/api/client';
 	import { limpiarPersonaje } from '$lib/personaje.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import { leerNavColapsado, guardarNavColapsado } from '$lib/navColapsado';
 	import type { NombreIcono } from '$lib/icons';
 
 	async function cerrarSesion() {
@@ -58,34 +59,63 @@
 		colapsadas = { ...colapsadas, [clave]: !colapsadas[clave] };
 		localStorage.setItem(CLAVE_ALMACENAMIENTO, JSON.stringify(colapsadas));
 	}
+
+	function almacen() {
+		return typeof localStorage === 'undefined' ? null : localStorage;
+	}
+
+	let barraOculta = $state(leerNavColapsado(almacen()));
+
+	function alternarBarra() {
+		barraOculta = !barraOculta;
+		guardarNavColapsado(almacen(), barraOculta);
+	}
 </script>
 
-<aside class="nav">
+<aside class="nav" class:oculta={barraOculta}>
 	<div class="marca">
 		<span class="marca-icono"><Icon nombre="anchor" tamano={18} /></span>
-		<span class="font-display marca-texto">Bitácora ASIPONA</span>
+		{#if !barraOculta}
+			<span class="font-display marca-texto">Bitácora ASIPONA</span>
+		{/if}
+		<button
+			type="button"
+			class="alternar-barra"
+			onclick={alternarBarra}
+			aria-expanded={!barraOculta}
+			aria-label={barraOculta ? 'Mostrar la barra lateral' : 'Ocultar la barra lateral'}
+			title={barraOculta ? 'Mostrar la barra lateral' : 'Ocultar la barra lateral'}
+		>
+			<Icon nombre={barraOculta ? 'chevron-right' : 'chevron-left'} tamano={16} />
+		</button>
 	</div>
 
 	<div class="secciones">
 		{#each grupos as grupo}
 			<div class="seccion">
-				<button
-					type="button"
-					class="seccion-titulo"
-					onclick={() => alternarSeccion(grupo.clave)}
-					aria-expanded={!colapsadas[grupo.clave]}
-				>
-					<span>{grupo.titulo}</span>
-					<span class="chevron" class:girado={colapsadas[grupo.clave]} aria-hidden="true">
-						<Icon nombre="chevron-down" tamano={12} />
-					</span>
-				</button>
-				{#if !colapsadas[grupo.clave]}
+				{#if !barraOculta}
+					<button
+						type="button"
+						class="seccion-titulo"
+						onclick={() => alternarSeccion(grupo.clave)}
+						aria-expanded={!colapsadas[grupo.clave]}
+					>
+						<span>{grupo.titulo}</span>
+						<span class="chevron" class:girado={colapsadas[grupo.clave]} aria-hidden="true">
+							<Icon nombre="chevron-down" tamano={12} />
+						</span>
+					</button>
+				{/if}
+				{#if barraOculta || !colapsadas[grupo.clave]}
 					<nav>
 						{#each grupo.items as item}
-							<a href={item.href} class:activo={$page.url.pathname === item.href}>
+							<a
+								href={item.href}
+								class:activo={$page.url.pathname === item.href}
+								title={barraOculta ? item.label : undefined}
+							>
 								<span class="icono"><Icon nombre={item.icon} tamano={16} /></span>
-								{item.label}
+								{#if !barraOculta}{item.label}{/if}
 							</a>
 						{/each}
 					</nav>
@@ -94,9 +124,14 @@
 		{/each}
 	</div>
 
-	<button type="button" class="cerrar-sesion" onclick={cerrarSesion}>
+	<button
+		type="button"
+		class="cerrar-sesion"
+		onclick={cerrarSesion}
+		title={barraOculta ? 'Cerrar sesión' : undefined}
+	>
 		<span class="icono"><Icon nombre="power" tamano={16} /></span>
-		Cerrar sesión
+		{#if !barraOculta}Cerrar sesión{/if}
 	</button>
 </aside>
 
@@ -111,7 +146,15 @@
 		position: sticky;
 		top: 0;
 		overflow-y: auto;
+		overflow-x: hidden;
 		padding: 0 12px 16px;
+		transition: width 0.18s ease;
+	}
+
+	/* colapsada deja solo los iconos en vez de desaparecer: si la barra se
+	   ocultara por completo haría falta un control flotante para recuperarla */
+	.nav.oculta {
+		width: 64px;
 	}
 
 	.marca {
@@ -120,6 +163,31 @@
 		gap: 10px;
 		padding: 20px 8px 18px;
 		font-size: 15px;
+	}
+
+	.nav.oculta .marca {
+		flex-direction: column;
+		gap: 8px;
+		padding: 20px 0 18px;
+	}
+
+	.alternar-barra {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		flex-shrink: 0;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		background: none;
+		color: var(--text-faint);
+		cursor: pointer;
+	}
+
+	.alternar-barra:hover {
+		border-color: var(--accent);
+		color: var(--accent-strong);
 	}
 
 	.marca-icono {
@@ -208,6 +276,13 @@
 		background: var(--accent-gradient);
 		color: white;
 		box-shadow: var(--shadow-accent);
+	}
+
+	.nav.oculta nav a,
+	.nav.oculta .cerrar-sesion {
+		justify-content: center;
+		gap: 0;
+		padding: 10px 0;
 	}
 
 	.icono {

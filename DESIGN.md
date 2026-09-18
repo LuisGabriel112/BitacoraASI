@@ -219,6 +219,7 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 - El relleno se pinta con el color del sistema y se escala con `transform: scaleX()`; la fracción se mide contra el sistema más alto, no contra la suma.
 
 ### Navigation
+- **Sidebar colapsable:** el botón de la marca alterna entre 240px y 64px, y la preferencia se guarda en `localStorage` (`bitacora-nav-colapsado`). Colapsada deja solo los iconos, con el nombre de cada destino en `title`; no desaparece del todo porque entonces haría falta un control flotante para recuperarla.
 - **Sidebar:** sobre `--bg`, sin borde derecho. Ítems inactivos en `--text-muted` con icono `--text-faint`; ítem activo con `--accent-gradient`, texto e icono blancos y `--shadow-accent`. Títulos de sección en 11px mayúsculas `--text-faint`, colapsables y persistidos en `localStorage`.
 - **Topbar:** identidad del usuario como pastilla (`--radius-pill`) con avatar en gradiente, nombre y nivel.
 
