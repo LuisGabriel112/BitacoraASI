@@ -3,8 +3,18 @@
 	import Header from '$lib/components/Header.svelte';
 	import Personaje3D from '$lib/components/Personaje3D.svelte';
 	import StatTile from '$lib/components/StatTile.svelte';
-	import { ACCESORIOS } from '$lib/apariencia';
-	import { api, type Accesorio, type Catalogo, type EventoXp, type Personaje, type RankingItem } from '$lib/api/client';
+	import { ACCESORIOS, CARAS, ESPALDAS, FORMAS_CUERPO } from '$lib/apariencia';
+	import {
+		api,
+		type Accesorio,
+		type Cara,
+		type Catalogo,
+		type Espalda,
+		type EventoXp,
+		type FormaCuerpo,
+		type Personaje,
+		type RankingItem
+	} from '$lib/api/client';
 	import { actualizarPersonaje } from '$lib/personaje.svelte';
 
 	const MOTIVOS: Record<string, string> = {
@@ -40,6 +50,10 @@
 	let colorPielEdit = $state('#f2c9a1');
 	let colorCuerpoEdit = $state('#3b82f6');
 	let accesorioEdit = $state<Accesorio>('ninguno');
+	let colorDetalleEdit = $state('#222222');
+	let formaCuerpoEdit = $state<FormaCuerpo>('normal');
+	let caraEdit = $state<Cara>('feliz');
+	let espaldaEdit = $state<Espalda>('ninguna');
 	let inicializadoApariencia = $state(false);
 	let guardandoApariencia = $state(false);
 	let errorApariencia = $state<string | null>(null);
@@ -50,6 +64,10 @@
 		colorPielEdit = personaje.color_piel;
 		colorCuerpoEdit = personaje.color_cuerpo;
 		accesorioEdit = personaje.accesorio;
+		colorDetalleEdit = personaje.color_detalle;
+		formaCuerpoEdit = personaje.forma_cuerpo;
+		caraEdit = personaje.cara;
+		espaldaEdit = personaje.espalda;
 		inicializadoApariencia = true;
 	});
 
@@ -61,7 +79,11 @@
 			personaje = await api.actualizarApariencia({
 				color_piel: colorPielEdit,
 				color_cuerpo: colorCuerpoEdit,
-				accesorio: accesorioEdit
+				accesorio: accesorioEdit,
+				color_detalle: colorDetalleEdit,
+				forma_cuerpo: formaCuerpoEdit,
+				cara: caraEdit,
+				espalda: espaldaEdit
 			});
 			actualizarPersonaje(personaje);
 			okApariencia = true;
@@ -147,7 +169,16 @@
 
 	<div class="columnas">
 		<section class="tarjeta ficha">
-			<Personaje3D colorPiel={colorPielEdit} colorCuerpo={colorCuerpoEdit} accesorio={accesorioEdit} tamano={200} />
+			<Personaje3D
+				colorPiel={colorPielEdit}
+				colorCuerpo={colorCuerpoEdit}
+				accesorio={accesorioEdit}
+				colorDetalle={colorDetalleEdit}
+				formaCuerpo={formaCuerpoEdit}
+				cara={caraEdit}
+				espalda={espaldaEdit}
+				tamano={200}
+			/>
 			<h2 class="font-display">{personaje.nombre}</h2>
 			<span class="titulo-nivel">Nivel {personaje.nivel} · {personaje.titulo}</span>
 			<div class="barra-xp" title="{personaje.xp_en_nivel_actual} / {personaje.xp_para_siguiente_nivel} XP">
@@ -168,11 +199,39 @@
 						Ropa
 						<input type="color" bind:value={colorCuerpoEdit} />
 					</label>
+					<label>
+						Detalle
+						<input type="color" bind:value={colorDetalleEdit} />
+					</label>
 				</div>
 				<label class="campo-accesorio">
 					Accesorio
 					<select bind:value={accesorioEdit}>
 						{#each ACCESORIOS as opcion}
+							<option value={opcion.valor}>{opcion.etiqueta}</option>
+						{/each}
+					</select>
+				</label>
+				<label class="campo-accesorio">
+					Complexión
+					<select bind:value={formaCuerpoEdit}>
+						{#each FORMAS_CUERPO as opcion}
+							<option value={opcion.valor}>{opcion.etiqueta}</option>
+						{/each}
+					</select>
+				</label>
+				<label class="campo-accesorio">
+					Cara
+					<select bind:value={caraEdit}>
+						{#each CARAS as opcion}
+							<option value={opcion.valor}>{opcion.etiqueta}</option>
+						{/each}
+					</select>
+				</label>
+				<label class="campo-accesorio">
+					Espalda
+					<select bind:value={espaldaEdit}>
+						{#each ESPALDAS as opcion}
 							<option value={opcion.valor}>{opcion.etiqueta}</option>
 						{/each}
 					</select>

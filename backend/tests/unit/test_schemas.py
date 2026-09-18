@@ -26,7 +26,38 @@ def test_accesorio_de_la_lista_se_acepta():
 
 def test_accesorio_fuera_de_la_lista_se_rechaza():
     with pytest.raises(ValidationError):
-        AparienciaUpdate(color_piel="#f2c9a1", color_cuerpo="#3b82f6", accesorio="sombrero")
+        AparienciaUpdate(color_piel="#f2c9a1", color_cuerpo="#3b82f6", accesorio="pinata_gigante")
+
+
+def test_accesorio_nuevo_del_catalogo_ampliado_se_acepta():
+    apariencia = AparienciaUpdate(color_piel="#f2c9a1", color_cuerpo="#3b82f6", accesorio="corona")
+    assert apariencia.accesorio == "corona"
+
+
+def test_apariencia_sin_ejes_nuevos_usa_valores_por_defecto():
+    apariencia = AparienciaUpdate(color_piel="#f2c9a1", color_cuerpo="#3b82f6", accesorio="ninguno")
+    assert apariencia.color_detalle == "#222222"
+    assert apariencia.forma_cuerpo == "normal"
+    assert apariencia.cara == "feliz"
+    assert apariencia.espalda == "ninguna"
+
+
+def test_forma_cuerpo_de_la_lista_se_acepta():
+    apariencia = AparienciaUpdate(
+        color_piel="#f2c9a1", color_cuerpo="#3b82f6", accesorio="ninguno", forma_cuerpo="robusto"
+    )
+    assert apariencia.forma_cuerpo == "robusto"
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor"),
+    [("forma_cuerpo", "gelatina"), ("cara", "dormido"), ("espalda", "jetpack"), ("color_detalle", "negro")],
+)
+def test_eje_de_apariencia_fuera_de_la_lista_se_rechaza(campo, valor):
+    with pytest.raises(ValidationError):
+        AparienciaUpdate(
+            color_piel="#f2c9a1", color_cuerpo="#3b82f6", accesorio="ninguno", **{campo: valor}
+        )
 
 
 def test_registro_sin_apariencia_usa_valores_por_defecto():
@@ -34,3 +65,7 @@ def test_registro_sin_apariencia_usa_valores_por_defecto():
     assert registro.color_piel == "#f2c9a1"
     assert registro.color_cuerpo == "#3b82f6"
     assert registro.accesorio == "ninguno"
+    assert registro.color_detalle == "#222222"
+    assert registro.forma_cuerpo == "normal"
+    assert registro.cara == "feliz"
+    assert registro.espalda == "ninguna"

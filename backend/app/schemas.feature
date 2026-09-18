@@ -24,8 +24,33 @@ Característica: Validación de apariencia del personaje 3D
     Entonces se acepta
 
   Escenario: Un accesorio fuera de la lista se rechaza
-    Dado el accesorio "sombrero"
+    Dado el accesorio "pinata_gigante"
     Cuando se valida el accesorio
+    Entonces se rechaza
+
+  Escenario: Los ejes nuevos de apariencia tienen valores por defecto
+    Dado un registro sin apariencia
+    Cuando se valida
+    Entonces color_detalle es "#222222", forma_cuerpo es "normal", cara es "feliz" y espalda es "ninguna"
+
+  Escenario: Una complexión de la lista se acepta
+    Dada la forma de cuerpo "robusto"
+    Cuando se valida la apariencia
+    Entonces se acepta
+
+  Escenario: Una complexión fuera de la lista se rechaza
+    Dada la forma de cuerpo "gelatina"
+    Cuando se valida la apariencia
+    Entonces se rechaza
+
+  Escenario: Una cara fuera de la lista se rechaza
+    Dada la cara "dormido"
+    Cuando se valida la apariencia
+    Entonces se rechaza
+
+  Escenario: Un accesorio de espalda fuera de la lista se rechaza
+    Dada la espalda "jetpack"
+    Cuando se valida la apariencia
     Entonces se rechaza
 
   Escenario: El registro sin apariencia usa los valores por defecto

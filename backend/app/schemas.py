@@ -4,7 +4,14 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-AccesorioTipo = Literal["ninguno", "gorra", "casco", "antenas"]
+AccesorioTipo = Literal[
+    "ninguno", "gorra", "casco", "antenas", "sombrero", "diadema", "aureola", "cuernos", "visor", "corona"
+]
+FormaCuerpoTipo = Literal["normal", "robusto", "delgado"]
+CaraTipo = Literal["feliz", "serio", "enojado", "kawaii", "robot"]
+EspaldaTipo = Literal["ninguna", "capa", "mochila", "alas"]
+
+COLOR_HEX = r"^#[0-9a-fA-F]{6}$"
 
 
 class PersonajeOut(BaseModel):
@@ -14,6 +21,10 @@ class PersonajeOut(BaseModel):
     color_piel: str
     color_cuerpo: str
     accesorio: AccesorioTipo
+    color_detalle: str
+    forma_cuerpo: FormaCuerpoTipo
+    cara: CaraTipo
+    espalda: EspaldaTipo
     xp: int
     nivel: int
     xp_en_nivel_actual: int
@@ -25,15 +36,23 @@ class UsuarioRegistro(BaseModel):
     nombre: str
     pin: str = Field(min_length=4, max_length=72)
     avatar: str = "🙂"
-    color_piel: str = Field(default="#f2c9a1", pattern=r"^#[0-9a-fA-F]{6}$")
-    color_cuerpo: str = Field(default="#3b82f6", pattern=r"^#[0-9a-fA-F]{6}$")
+    color_piel: str = Field(default="#f2c9a1", pattern=COLOR_HEX)
+    color_cuerpo: str = Field(default="#3b82f6", pattern=COLOR_HEX)
     accesorio: AccesorioTipo = "ninguno"
+    color_detalle: str = Field(default="#222222", pattern=COLOR_HEX)
+    forma_cuerpo: FormaCuerpoTipo = "normal"
+    cara: CaraTipo = "feliz"
+    espalda: EspaldaTipo = "ninguna"
 
 
 class AparienciaUpdate(BaseModel):
-    color_piel: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
-    color_cuerpo: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
+    color_piel: str = Field(pattern=COLOR_HEX)
+    color_cuerpo: str = Field(pattern=COLOR_HEX)
     accesorio: AccesorioTipo
+    color_detalle: str = Field(default="#222222", pattern=COLOR_HEX)
+    forma_cuerpo: FormaCuerpoTipo = "normal"
+    cara: CaraTipo = "feliz"
+    espalda: EspaldaTipo = "ninguna"
 
 
 class UsuarioLogin(BaseModel):

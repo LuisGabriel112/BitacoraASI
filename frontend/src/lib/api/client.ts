@@ -1,6 +1,30 @@
 export type Catalogo = { id: number; nombre: string; usuario_id?: number | null };
 
-export type Accesorio = 'ninguno' | 'gorra' | 'casco' | 'antenas';
+export type Accesorio =
+	| 'ninguno'
+	| 'gorra'
+	| 'casco'
+	| 'antenas'
+	| 'sombrero'
+	| 'diadema'
+	| 'aureola'
+	| 'cuernos'
+	| 'visor'
+	| 'corona';
+
+export type FormaCuerpo = 'normal' | 'robusto' | 'delgado';
+export type Cara = 'feliz' | 'serio' | 'enojado' | 'kawaii' | 'robot';
+export type Espalda = 'ninguna' | 'capa' | 'mochila' | 'alas';
+
+export type Apariencia = {
+	color_piel: string;
+	color_cuerpo: string;
+	accesorio: Accesorio;
+	color_detalle: string;
+	forma_cuerpo: FormaCuerpo;
+	cara: Cara;
+	espalda: Espalda;
+};
 
 export type Personaje = {
 	id: number;
@@ -9,6 +33,10 @@ export type Personaje = {
 	color_piel: string;
 	color_cuerpo: string;
 	accesorio: Accesorio;
+	color_detalle: string;
+	forma_cuerpo: FormaCuerpo;
+	cara: Cara;
+	espalda: Espalda;
 	xp: number;
 	nivel: number;
 	xp_en_nivel_actual: number;
@@ -235,14 +263,14 @@ export const api = {
 		nombre: string,
 		pin: string,
 		avatar: string,
-		apariencia: { color_piel: string; color_cuerpo: string; accesorio: Accesorio }
+		apariencia: Apariencia
 	) =>
 		json<Personaje>('/auth/registro', {
 			method: 'POST',
 			body: JSON.stringify({ nombre, pin, avatar, ...apariencia })
 		}),
 
-	actualizarApariencia: (apariencia: { color_piel: string; color_cuerpo: string; accesorio: Accesorio }) =>
+	actualizarApariencia: (apariencia: Apariencia) =>
 		json<Personaje>('/auth/apariencia', { method: 'POST', body: JSON.stringify(apariencia) }),
 
 	iniciarSesion: (nombre: string, pin: string) =>

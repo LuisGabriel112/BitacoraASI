@@ -34,6 +34,18 @@ NOMBRES_JEFE = [
     "El SLA Vencido",
     "Caos de Prioridades",
     "El Reinicio Eterno",
+    "La Cola Sin Fin",
+    "El Escalamiento Perdido",
+    "Cadena de Reprocesos",
+    "El Servidor Caprichoso",
+    "La Llamada Interminable",
+    "El Respaldo Que No Fue",
+    "Tormenta de Tickets",
+    "El Módulo Maldito",
+    "La Contraseña Olvidada",
+    "El Inventario Fantasma",
+    "El Cierre de Mes",
+    "La Impresora Rebelde",
 ]
 
 NOMBRES_JEFE_BONUS = [
@@ -43,6 +55,14 @@ NOMBRES_JEFE_BONUS = [
     "El Deploy de Viernes",
     "El Merge Conflict",
     "La Caché Corrupta",
+    "El Timeout Tímido",
+    "La Sesión Colgada",
+    "El Índice Perdido",
+    "El Cron Dormido",
+    "La Columna Nula",
+    "El Log Silencioso",
+    "El Certificado Vencido",
+    "La Cola Atorada",
 ]
 
 

@@ -2,8 +2,16 @@
 	import { goto } from '$app/navigation';
 	import Toast from '$lib/components/Toast.svelte';
 	import type Personaje3D from '$lib/components/Personaje3D.svelte';
-	import { ACCESORIOS, COLOR_CUERPO_DEFECTO, COLOR_PIEL_DEFECTO } from '$lib/apariencia';
-	import { api, type Accesorio } from '$lib/api/client';
+	import {
+		ACCESORIOS,
+		CARAS,
+		COLOR_CUERPO_DEFECTO,
+		COLOR_DETALLE_DEFECTO,
+		COLOR_PIEL_DEFECTO,
+		ESPALDAS,
+		FORMAS_CUERPO
+	} from '$lib/apariencia';
+	import { api, type Accesorio, type Cara, type Espalda, type FormaCuerpo } from '$lib/api/client';
 
 	const AVATARES = ['🙂', '🦾', '🛡️', '🧠', '🚀', '🐉', '🦉', '⚡'];
 
@@ -15,6 +23,10 @@
 	let colorPiel = $state(COLOR_PIEL_DEFECTO);
 	let colorCuerpo = $state(COLOR_CUERPO_DEFECTO);
 	let accesorio = $state<Accesorio>('ninguno');
+	let colorDetalle = $state(COLOR_DETALLE_DEFECTO);
+	let formaCuerpo = $state<FormaCuerpo>('normal');
+	let cara = $state<Cara>('feliz');
+	let espalda = $state<Espalda>('ninguna');
 	let enviando = $state(false);
 	let error = $state<string | null>(null);
 	let inputNombre: HTMLInputElement;
@@ -52,7 +64,16 @@
 		enviando = true;
 		try {
 			if (modo === 'login') await api.iniciarSesion(nombre.trim(), pin);
-			else await api.registrarse(nombre.trim(), pin, avatar, { color_piel: colorPiel, color_cuerpo: colorCuerpo, accesorio });
+			else
+				await api.registrarse(nombre.trim(), pin, avatar, {
+					color_piel: colorPiel,
+					color_cuerpo: colorCuerpo,
+					accesorio,
+					color_detalle: colorDetalle,
+					forma_cuerpo: formaCuerpo,
+					cara,
+					espalda
+				});
 			await goto('/', { invalidateAll: true });
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo continuar';
@@ -102,7 +123,16 @@
 
 			<div class="preview-3d">
 				{#if ComponentePersonaje3D}
-					<ComponentePersonaje3D {colorPiel} {colorCuerpo} {accesorio} tamano={160} />
+					<ComponentePersonaje3D
+						{colorPiel}
+						{colorCuerpo}
+						{accesorio}
+						{colorDetalle}
+						{formaCuerpo}
+						{cara}
+						{espalda}
+						tamano={160}
+					/>
 				{:else}
 					<div class="skeleton preview-3d-cargando" aria-hidden="true"></div>
 				{/if}
@@ -115,10 +145,38 @@
 						Ropa
 						<input type="color" bind:value={colorCuerpo} />
 					</label>
+					<label>
+						Detalle
+						<input type="color" bind:value={colorDetalle} />
+					</label>
 					<label class="campo-accesorio-3d">
 						Accesorio
 						<select bind:value={accesorio}>
 							{#each ACCESORIOS as opcion}
+								<option value={opcion.valor}>{opcion.etiqueta}</option>
+							{/each}
+						</select>
+					</label>
+					<label class="campo-accesorio-3d">
+						Complexión
+						<select bind:value={formaCuerpo}>
+							{#each FORMAS_CUERPO as opcion}
+								<option value={opcion.valor}>{opcion.etiqueta}</option>
+							{/each}
+						</select>
+					</label>
+					<label class="campo-accesorio-3d">
+						Cara
+						<select bind:value={cara}>
+							{#each CARAS as opcion}
+								<option value={opcion.valor}>{opcion.etiqueta}</option>
+							{/each}
+						</select>
+					</label>
+					<label class="campo-accesorio-3d">
+						Espalda
+						<select bind:value={espalda}>
+							{#each ESPALDAS as opcion}
 								<option value={opcion.valor}>{opcion.etiqueta}</option>
 							{/each}
 						</select>

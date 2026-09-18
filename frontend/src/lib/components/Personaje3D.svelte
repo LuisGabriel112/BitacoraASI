@@ -1,68 +1,38 @@
 <script lang="ts">
 	import * as THREE from 'three';
 	import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+	import type { Accesorio, Cara, Espalda, FormaCuerpo } from '$lib/api/client';
+	import { agregarAccesorio, agregarCara, agregarEspalda, construirCuerpo } from '$lib/modelosPersonaje';
 
 	let {
 		colorPiel,
 		colorCuerpo,
 		accesorio,
+		colorDetalle = '#222222',
+		formaCuerpo = 'normal',
+		cara = 'feliz',
+		espalda = 'ninguna',
 		tamano = 220
-	}: { colorPiel: string; colorCuerpo: string; accesorio: string; tamano?: number } = $props();
+	}: {
+		colorPiel: string;
+		colorCuerpo: string;
+		accesorio: Accesorio;
+		colorDetalle?: string;
+		formaCuerpo?: FormaCuerpo;
+		cara?: Cara;
+		espalda?: Espalda;
+		tamano?: number;
+	} = $props();
 
 	let contenedor: HTMLDivElement;
 
-	function agregarAccesorio(grupo: THREE.Group, tipo: string) {
-		const material = new THREE.MeshStandardMaterial({ color: 0x222222 });
-
-		if (tipo === 'gorra') {
-			const gorra = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.3, 16), material);
-			gorra.position.y = 2.05;
-			grupo.add(gorra);
-		} else if (tipo === 'casco') {
-			const casco = new THREE.Mesh(
-				new THREE.SphereGeometry(0.55, 16, 16),
-				new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.6, roughness: 0.3 })
-			);
-			casco.position.y = 1.6;
-			grupo.add(casco);
-		} else if (tipo === 'antenas') {
-			const antenaIzq = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5), material);
-			antenaIzq.position.set(-0.25, 2.25, 0);
-			grupo.add(antenaIzq);
-			const antenaDer = antenaIzq.clone();
-			antenaDer.position.x = 0.25;
-			grupo.add(antenaDer);
-		}
-	}
-
-	function construirPersonaje(colorPielHex: number, colorCuerpoHex: number, tipoAccesorio: string): THREE.Group {
+	function construirPersonaje(): THREE.Group {
 		const grupo = new THREE.Group();
-		const matPiel = new THREE.MeshStandardMaterial({ color: colorPielHex });
-		const matCuerpo = new THREE.MeshStandardMaterial({ color: colorCuerpoHex });
-
-		const cabeza = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), matPiel);
-		cabeza.position.y = 1.55;
-		grupo.add(cabeza);
-
-		const torso = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 0.6), matCuerpo);
-		torso.position.y = 0.6;
-		grupo.add(torso);
-
-		const brazoIzq = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.1, 0.35), matPiel);
-		brazoIzq.position.set(-0.7, 0.6, 0);
-		grupo.add(brazoIzq);
-		const brazoDer = brazoIzq.clone();
-		brazoDer.position.x = 0.7;
-		grupo.add(brazoDer);
-
-		const piernaIzq = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.1, 0.4), matCuerpo);
-		piernaIzq.position.set(-0.3, -0.55, 0);
-		grupo.add(piernaIzq);
-		const piernaDer = piernaIzq.clone();
-		piernaDer.position.x = 0.3;
-		grupo.add(piernaDer);
-
-		agregarAccesorio(grupo, tipoAccesorio);
+		const hexDetalle = new THREE.Color(colorDetalle).getHex();
+		construirCuerpo(grupo, formaCuerpo, new THREE.Color(colorPiel).getHex(), new THREE.Color(colorCuerpo).getHex());
+		agregarCara(grupo, cara, hexDetalle);
+		agregarAccesorio(grupo, accesorio, hexDetalle);
+		agregarEspalda(grupo, espalda, hexDetalle);
 		return grupo;
 	}
 
@@ -81,11 +51,7 @@
 		luzDireccional.position.set(2, 4, 3);
 		escena.add(luzDireccional);
 
-		const personaje = construirPersonaje(
-			new THREE.Color(colorPiel).getHex(),
-			new THREE.Color(colorCuerpo).getHex(),
-			accesorio
-		);
+		const personaje = construirPersonaje();
 		personaje.position.y = -0.4;
 		escena.add(personaje);
 

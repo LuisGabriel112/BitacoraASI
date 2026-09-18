@@ -37,6 +37,10 @@ def _personaje_de(usuario: Usuario) -> PersonajeOut:
         color_piel=usuario.color_piel,
         color_cuerpo=usuario.color_cuerpo,
         accesorio=usuario.accesorio,
+        color_detalle=usuario.color_detalle,
+        forma_cuerpo=usuario.forma_cuerpo,
+        cara=usuario.cara,
+        espalda=usuario.espalda,
         xp=usuario.xp,
         nivel=info.nivel,
         xp_en_nivel_actual=info.xp_en_nivel_actual,
@@ -81,6 +85,10 @@ async def registro(
         color_piel=payload.color_piel,
         color_cuerpo=payload.color_cuerpo,
         accesorio=payload.accesorio,
+        color_detalle=payload.color_detalle,
+        forma_cuerpo=payload.forma_cuerpo,
+        cara=payload.cara,
+        espalda=payload.espalda,
     )
     session.add(usuario)
     try:
@@ -168,6 +176,10 @@ async def actualizar_apariencia(
     usuario.color_piel = payload.color_piel
     usuario.color_cuerpo = payload.color_cuerpo
     usuario.accesorio = payload.accesorio
+    usuario.color_detalle = payload.color_detalle
+    usuario.forma_cuerpo = payload.forma_cuerpo
+    usuario.cara = payload.cara
+    usuario.espalda = payload.espalda
     await session.commit()
     await session.refresh(usuario)
     return _personaje_de(usuario)
