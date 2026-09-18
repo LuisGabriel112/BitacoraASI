@@ -344,14 +344,14 @@
 	.columnas {
 		display: grid;
 		grid-template-columns: minmax(280px, 360px) 1fr;
-		gap: 24px;
+		gap: var(--gap-bloques);
 		align-items: start;
 	}
 
 	.columna-izquierda {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: var(--gap-bloques);
 		min-width: 0;
 	}
 

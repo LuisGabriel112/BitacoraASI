@@ -142,6 +142,8 @@ Paleta restringida de neutros fríos casi acromáticos, un acento violeta que ca
 
 Shell de dos columnas: sidebar fijo (`--nav-width: 240px`, `position: sticky`) sobre el mismo `--bg` que la página, sin borde divisorio, y `<main>` con `padding: 24px 28px`.
 
+La separación entre bloques es un token, `--gap-bloques` (8px), y lo usan todos los contenedores de tarjetas. No baja a 0 porque con radio de 16px las esquinas dejarían huecos triangulares en cada unión. Las filas de tarjetas llevan `align-items: start`: una tarjeta mide lo que mide su contenido y nunca se estira para igualar a su vecina más alta.
+
 Dentro de `main`, cada pantalla abre con la topbar (`Header.svelte`): título y subtítulo a la izquierda; reloj, semana ISO, toggle de tema e identidad del usuario a la derecha, separados por un divisor de 1px.
 
 El panel principal no se apila en bandas de ancho completo: tiene un cuerpo ancho y una columna lateral constante (`.fila-ancha`, grid `minmax(0, 2fr) minmax(280px, 1fr)`), de modo que la mirada baja por la izquierda y el contexto vive a la derecha.

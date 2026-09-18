@@ -299,7 +299,7 @@
 		display: grid;
 		grid-template-columns: minmax(240px, 320px) 1fr;
 		grid-template-rows: auto auto;
-		gap: 18px;
+		gap: var(--gap-bloques);
 	}
 
 	.tarjeta {

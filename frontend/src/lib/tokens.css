@@ -53,6 +53,10 @@
 	--radius-pill: 999px;
 	--nav-width: 240px;
 
+	/* separación entre bloques de una pantalla. No baja a 0: con radio de 16px
+	   las esquinas dejarían huecos triangulares en cada unión. */
+	--gap-bloques: 8px;
+
 	/* sombras suaves: la elevación sustituye al borde duro como señal de capa */
 	--shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.35);
 	--shadow-md: 0 8px 24px -6px oklch(0 0 0 / 0.5);
@@ -216,20 +220,23 @@ textarea {
 .pantalla {
 	display: flex;
 	flex-direction: column;
-	gap: 18px;
+	gap: var(--gap-bloques);
 }
 
+/* align-items: start evita que las tarjetas chicas se estiren a la altura de
+   la destacada: cada una mide lo que mide su contenido, sin aire sobrante */
 .fila-tiles {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
-	gap: 18px;
+	align-items: start;
+	gap: var(--gap-bloques);
 }
 
 .fila-ancha {
 	display: grid;
 	grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
 	align-items: start;
-	gap: 18px;
+	gap: var(--gap-bloques);
 }
 
 .fila-ancha.invertida {
@@ -239,13 +246,14 @@ textarea {
 .columna-lateral {
 	display: flex;
 	flex-direction: column;
-	gap: 18px;
+	gap: var(--gap-bloques);
 }
 
 .par-tiles {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
-	gap: 18px;
+	align-items: start;
+	gap: var(--gap-bloques);
 }
 
 @media (max-width: 1100px) {
