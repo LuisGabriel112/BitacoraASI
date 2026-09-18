@@ -148,7 +148,6 @@
 		overflow-y: auto;
 		overflow-x: hidden;
 		padding: 0 12px 16px;
-		transition: width 0.18s ease;
 	}
 
 	/* colapsada deja solo los iconos en vez de desaparecer: si la barra se

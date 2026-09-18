@@ -151,7 +151,7 @@
 			<h2 class="font-display">{personaje.nombre}</h2>
 			<span class="titulo-nivel">Nivel {personaje.nivel} · {personaje.titulo}</span>
 			<div class="barra-xp" title="{personaje.xp_en_nivel_actual} / {personaje.xp_para_siguiente_nivel} XP">
-				<div class="barra-xp-relleno" style="width: {porcentajeXp}%"></div>
+				<div class="barra-xp-relleno" style="transform: scaleX({porcentajeXp / 100})"></div>
 			</div>
 			<span class="xp-detalle">
 				{personaje.xp_en_nivel_actual} / {personaje.xp_para_siguiente_nivel} XP para el siguiente nivel ·
@@ -345,9 +345,11 @@
 	}
 
 	.barra-xp-relleno {
+		width: 100%;
 		height: 100%;
 		background: var(--accent);
-		transition: width 0.3s ease;
+		transform-origin: left;
+		transition: transform 0.3s ease;
 	}
 
 	.xp-detalle {
