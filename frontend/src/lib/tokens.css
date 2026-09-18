@@ -13,10 +13,10 @@
 	--text-muted: oklch(0.72 0.008 286);
 	--text-faint: oklch(0.56 0.008 286);
 
-	/* acento — violeta plano; marca la tarjeta destacada y el item de
+	/* acento — guinda plano; marca la tarjeta destacada y el item de
 	   navegación activo. Ninguna superficie lleva degradado. */
-	--accent: oklch(0.62 0.21 293);
-	--accent-strong: oklch(0.7 0.2 296);
+	--accent: oklch(0.55 0.18 12);
+	--accent-strong: oklch(0.66 0.16 14);
 	--accent-2: oklch(0.83 0.17 95);
 	--success: #34d399;
 	--warning: #fbbf24;
@@ -59,7 +59,7 @@
 	/* sombras suaves: la elevación sustituye al borde duro como señal de capa */
 	--shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.35);
 	--shadow-md: 0 8px 24px -6px oklch(0 0 0 / 0.5);
-	--shadow-accent: 0 10px 28px -8px oklch(0.55 0.22 292 / 0.55);
+	--shadow-accent: 0 10px 28px -8px oklch(0.5 0.18 12 / 0.55);
 
 	/* icono chevron-down (Lucide) para indicadores CSS ::after — se pinta con
 	   mask-image + background-color para heredar el color del tema */
@@ -79,8 +79,8 @@
 		--text-muted: oklch(0.48 0.01 286);
 		--text-faint: oklch(0.62 0.008 286);
 
-		--accent: oklch(0.52 0.22 293);
-		--accent-strong: oklch(0.45 0.22 293);
+		--accent: oklch(0.44 0.17 12);
+		--accent-strong: oklch(0.37 0.16 12);
 		--accent-2: oklch(0.68 0.16 95);
 		--success: #0f7a52;
 		--warning: #a85c02;
@@ -92,7 +92,7 @@
 
 		--shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.06);
 		--shadow-md: 0 8px 24px -6px oklch(0 0 0 / 0.12);
-		--shadow-accent: 0 10px 28px -8px oklch(0.52 0.22 293 / 0.35);
+		--shadow-accent: 0 10px 28px -8px oklch(0.44 0.17 12 / 0.35);
 	}
 }
 
@@ -106,8 +106,8 @@
 	--text: oklch(0.98 0.002 286);
 	--text-muted: oklch(0.72 0.008 286);
 	--text-faint: oklch(0.56 0.008 286);
-	--accent: oklch(0.62 0.21 293);
-	--accent-strong: oklch(0.7 0.2 296);
+	--accent: oklch(0.55 0.18 12);
+	--accent-strong: oklch(0.66 0.16 14);
 	--accent-2: oklch(0.83 0.17 95);
 	--success: #34d399;
 	--warning: #fbbf24;
@@ -117,7 +117,7 @@
 	--sistema-proactivanet: #d95926;
 	--shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.35);
 	--shadow-md: 0 8px 24px -6px oklch(0 0 0 / 0.5);
-	--shadow-accent: 0 10px 28px -8px oklch(0.55 0.22 292 / 0.55);
+	--shadow-accent: 0 10px 28px -8px oklch(0.5 0.18 12 / 0.55);
 }
 
 :root[data-theme='light'] {
@@ -129,8 +129,8 @@
 	--text: oklch(0.21 0.012 286);
 	--text-muted: oklch(0.48 0.01 286);
 	--text-faint: oklch(0.62 0.008 286);
-	--accent: oklch(0.52 0.22 293);
-	--accent-strong: oklch(0.45 0.22 293);
+	--accent: oklch(0.44 0.17 12);
+	--accent-strong: oklch(0.37 0.16 12);
 	--accent-2: oklch(0.68 0.16 95);
 	--success: #0f7a52;
 	--warning: #a85c02;
@@ -140,7 +140,7 @@
 	--sistema-proactivanet: #b8451a;
 	--shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.06);
 	--shadow-md: 0 8px 24px -6px oklch(0 0 0 / 0.12);
-	--shadow-accent: 0 10px 28px -8px oklch(0.52 0.22 293 / 0.35);
+	--shadow-accent: 0 10px 28px -8px oklch(0.44 0.17 12 / 0.35);
 }
 
 * {

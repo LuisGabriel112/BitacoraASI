@@ -72,9 +72,12 @@
 		color: var(--text-muted);
 	}
 
+	/* el guinda es más oscuro que el violeta anterior, pero también menos
+	   luminoso bajo el texto: la etiqueta sube de 82% a 92% para no perder
+	   contraste sobre el relleno */
 	.destacada .label,
 	.destacada .nota {
-		color: oklch(1 0 0 / 0.82);
+		color: oklch(1 0 0 / 0.92);
 	}
 
 	.valor {

@@ -1,6 +1,6 @@
 ---
 name: Bitácora ASIPONA
-description: Bitácora interna de soporte operativo portuario — panel oscuro de superficies elevadas, borde mínimo y acento violeta plano.
+description: Bitácora interna de soporte operativo portuario — panel oscuro de superficies elevadas, borde mínimo y acento guinda plano.
 colors:
   bg: "oklch(0.19 0.004 286)"
   surface: "oklch(0.24 0.005 286)"
@@ -10,8 +10,8 @@ colors:
   text: "oklch(0.98 0.002 286)"
   text-muted: "oklch(0.72 0.008 286)"
   text-faint: "oklch(0.56 0.008 286)"
-  accent: "oklch(0.62 0.21 293)"
-  accent-strong: "oklch(0.7 0.2 296)"
+  accent: "oklch(0.55 0.18 12)"
+  accent-strong: "oklch(0.66 0.16 14)"
   accent-2: "oklch(0.83 0.17 95)"
   success: "#34d399"
   warning: "#fbbf24"
@@ -73,24 +73,24 @@ components:
 
 Bitácora dejó la identidad plana de trazo duro ("el expediente plano": bordes de 2px y sombra offset sin desenfoque) por un panel de control oscuro de superficies elevadas. La página es casi negra; cada tarjeta se separa del lienzo porque está un escalón más clara y lleva una sombra suave, no porque esté delineada. El borde baja a 1px y pasa a ser un divisor discreto, no la firma del sistema.
 
-Sigue siendo una herramienta de trabajo diario para soporte operativo y jefatura de un puerto — no un producto de venta. Por eso la energía visual se concentra en un solo lugar: el violeta pleno, reservado a la cifra principal de cada pantalla y al ítem de navegación activo. Todo lo demás es neutro, y las cifras mandan.
+Sigue siendo una herramienta de trabajo diario para soporte operativo y jefatura de un puerto — no un producto de venta. Por eso la energía visual se concentra en un solo lugar: el guinda pleno, reservado a la cifra principal de cada pantalla y al ítem de navegación activo. Todo lo demás es neutro, y las cifras mandan.
 
 Los tres colores de sistema (Mediport azul, PIS verde, ProactivaNet naranja) se preservan intactos: están validados por contraste y distinguibilidad CVD (deuteranopía/protanopía) y quedan fuera de esta exploración estética.
 
 **Key Characteristics:**
 - Jerarquía por elevación: `--bg` < `--surface` < `--surface-raised`, más sombra suave. El borde no define la tarjeta.
-- Un solo acento violeta, siempre plano: `--accent` rellena la tarjeta destacada y el ítem de nav activo, y también marca foco, enlaces y estado. Cero degradados.
+- Un solo acento guinda, siempre plano: `--accent` rellena la tarjeta destacada y el ítem de nav activo, y también marca foco, enlaces y estado. Cero degradados.
 - Borde de 1px en `--border` como divisor de baja jerarquía, uniforme en tarjetas, inputs, tabla y nav.
 - Radios más generosos (16px en tarjetas, 10px en controles) y filas de tabla más altas: menos densidad, más aire.
 - Badges y chips como pastillas tintadas: el color semántico vive en el texto, el relleno es el mismo color al 16–18%.
 
 ## Colors
 
-Paleta restringida de neutros fríos casi acromáticos, un acento violeta que carga toda la acción primaria, más los semánticos y de sistema.
+Paleta restringida de neutros fríos casi acromáticos, un acento guinda que carga toda la acción primaria, más los semánticos y de sistema.
 
 ### Primary
-- **Violeta** (`--accent`, `oklch(0.62 0.21 293)` oscuro / `oklch(0.52 0.22 293)` claro): botón primario, foco, enlaces de acción, estado.
-- **Relleno violeta** (`--accent` a superficie completa): la única superficie con saturación fuerte. Exclusivo de la tarjeta destacada (`StatTile destacada`), del ítem de nav activo, del icono de marca y del avatar.
+- **Guinda** (`--accent`, `oklch(0.55 0.18 12)` oscuro / `oklch(0.44 0.17 12)` claro): botón primario, foco, enlaces de acción, estado.
+- **Relleno guinda** (`--accent` a superficie completa): la única superficie con saturación fuerte. Exclusivo de la tarjeta destacada (`StatTile destacada`), del ítem de nav activo, del icono de marca y del avatar.
 
 ### Neutral
 - **Lienzo** — `--bg` (`oklch(0.19 0.004 286)` oscuro / `oklch(0.97 0.003 286)` claro): fondo de página y del sidebar. Sin gradiente decorativo.
@@ -111,7 +111,7 @@ Paleta restringida de neutros fríos casi acromáticos, un acento violeta que ca
 - **Mediport** `#3987e5`, **PIS** `#199e70`, **ProactivaNet** `#d95926` (oscuro); `#1f5db3` / `#0f7a52` / `#b8451a` (claro). Trío validado CVD — cualquier cambio exige re-correr `validate_palette.js`.
 
 ### Named Rules
-**La regla del relleno único.** El violeta pleno marca una sola cosa por pantalla: dónde está la cifra que importa. Si dos superficies lo llevan al mismo tiempo, ninguna destaca y la regla está rota. El ítem de nav activo es la excepción permanente, porque nunca compite por la misma mirada.
+**La regla del relleno único.** El guinda pleno marca una sola cosa por pantalla: dónde está la cifra que importa. Si dos superficies lo llevan al mismo tiempo, ninguna destaca y la regla está rota. El ítem de nav activo es la excepción permanente, porque nunca compite por la misma mirada.
 
 ## Typography
 
@@ -146,7 +146,7 @@ Dentro de `main`, cada pantalla abre con la topbar (`Header.svelte`): título y 
 
 El panel principal no se apila en bandas de ancho completo: tiene un cuerpo ancho y una columna lateral constante (`.fila-ancha`, grid `minmax(0, 2fr) minmax(280px, 1fr)`), de modo que la mirada baja por la izquierda y el contexto vive a la derecha.
 
-1. **Fila de cifras** — cuatro `StatTile` en grid de 4 columnas; la primera va rellena de violeta.
+1. **Fila de cifras** — cuatro `StatTile` en grid de 4 columnas; la primera va rellena de guinda.
 2. **Banda de análisis** — volumen diario en el cuerpo; en el lateral, distribución por módulo más dos tiles chicos (días hábiles, última actualización).
 3. **Banda de detalle** — tabla de registros recientes en el cuerpo; volumen por sistema (`ListaSistemas`) en el lateral.
 
@@ -170,7 +170,7 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 ### Shadow Vocabulary
 - **`--shadow-sm`** (`0 1px 2px 0` negro al 35% en oscuro / 6% en claro): tarjetas, tiles, tabla. Es el default de toda superficie.
 - **`--shadow-md`** (`0 8px 24px -6px`): elementos que flotan sobre el contenido — dropdowns, toasts, avisos, modales.
-- **`--shadow-accent`** (`0 10px 28px -8px` violeta): halo de la tarjeta destacada y del ítem de nav activo. Es la única sombra teñida.
+- **`--shadow-accent`** (`0 10px 28px -8px` guinda): halo de la tarjeta destacada y del ítem de nav activo. Es la única sombra teñida.
 
 ### Named Rules
 **La regla de la capa.** Si un elemento flota sobre el contenido, sube a `--shadow-md`; si vive en el flujo, se queda en `--shadow-sm`. No existe un tercer nivel neutro.
@@ -220,7 +220,7 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 ### Navigation
 - **Sidebar colapsable:** el botón de la marca alterna entre 240px y 64px, y la preferencia se guarda en `localStorage` (`bitacora-nav-colapsado`). Colapsada deja solo los iconos, con el nombre de cada destino en `title`; no desaparece del todo porque entonces haría falta un control flotante para recuperarla.
 - **Sidebar:** sobre `--bg`, sin borde derecho. Ítems inactivos en `--text-muted` con icono `--text-faint`; ítem activo con `--accent` plano, texto e icono blancos y `--shadow-accent`. Títulos de sección en 11px mayúsculas `--text-faint`, colapsables y persistidos en `localStorage`.
-- **Topbar:** identidad del usuario como pastilla (`--radius-pill`) con avatar en violeta plano, nombre y nivel.
+- **Topbar:** identidad del usuario como pastilla (`--radius-pill`) con avatar en guinda plano, nombre y nivel.
 
 ## Do's and Don'ts
 
@@ -234,5 +234,6 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 - **Don't** reintroducir bordes de 2px ni sombras offset sin desenfoque — es exactamente el sistema que este rediseño reemplazó.
 - **Don't** usar `backdrop-filter`, superficies translúcidas ni blobs animados de fondo.
 - **Don't** usar degradados en ninguna superficie de UI: fondos, tarjetas, botones, avatares o ítems de nav van en color plano. El `conic-gradient` del donut y el shimmer del skeleton son funcionales y quedan exceptuados.
-- **Don't** introducir un segundo color de marca saturado compitiendo con el violeta; `--accent-2` es solo realce puntual.
+- **Don't** introducir un segundo color de marca saturado compitiendo con el guinda; `--accent-2` es solo realce puntual.
+- **Don't** usar el acento para señalar error: el guinda y `--danger` comparten familia de color, así que el peligro se distingue por el tinte `--danger-soft` y por el texto, nunca por un relleno guinda.
 - **Don't** aplicar este sistema a los avatares/creaturas 3D (Enemigo3D, Gatito3D, Personaje3D) ni a los minijuegos — son arte de la capa RPG, fuera del alcance de este rediseño operativo.
