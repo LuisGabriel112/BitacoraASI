@@ -127,7 +127,7 @@
 		width: 32px;
 		height: 32px;
 		border-radius: 50%;
-		background: var(--accent-gradient);
+		background: var(--accent);
 		display: flex;
 		align-items: center;
 		justify-content: center;

@@ -44,7 +44,7 @@
 	/* la tarjeta destacada es la única superficie con gradiente: marca de un
 	   vistazo cuál es la cifra principal de la pantalla */
 	.tile.destacada {
-		background: var(--accent-gradient);
+		background: var(--accent);
 		border-color: transparent;
 		box-shadow: var(--shadow-accent);
 		color: white;

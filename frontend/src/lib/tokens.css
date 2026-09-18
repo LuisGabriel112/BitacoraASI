@@ -13,11 +13,10 @@
 	--text-muted: oklch(0.72 0.008 286);
 	--text-faint: oklch(0.56 0.008 286);
 
-	/* acento — violeta; el gradiente es la marca de la tarjeta destacada y del
-	   item de navegación activo */
+	/* acento — violeta plano; marca la tarjeta destacada y el item de
+	   navegación activo. Ninguna superficie lleva degradado. */
 	--accent: oklch(0.62 0.21 293);
 	--accent-strong: oklch(0.7 0.2 296);
-	--accent-gradient: linear-gradient(140deg, oklch(0.72 0.19 300), oklch(0.55 0.22 288));
 	--accent-2: oklch(0.83 0.17 95);
 	--success: #34d399;
 	--warning: #fbbf24;
@@ -82,7 +81,6 @@
 
 		--accent: oklch(0.52 0.22 293);
 		--accent-strong: oklch(0.45 0.22 293);
-		--accent-gradient: linear-gradient(140deg, oklch(0.6 0.21 300), oklch(0.46 0.23 288));
 		--accent-2: oklch(0.68 0.16 95);
 		--success: #0f7a52;
 		--warning: #a85c02;
@@ -110,7 +108,6 @@
 	--text-faint: oklch(0.56 0.008 286);
 	--accent: oklch(0.62 0.21 293);
 	--accent-strong: oklch(0.7 0.2 296);
-	--accent-gradient: linear-gradient(140deg, oklch(0.72 0.19 300), oklch(0.55 0.22 288));
 	--accent-2: oklch(0.83 0.17 95);
 	--success: #34d399;
 	--warning: #fbbf24;
@@ -134,7 +131,6 @@
 	--text-faint: oklch(0.62 0.008 286);
 	--accent: oklch(0.52 0.22 293);
 	--accent-strong: oklch(0.45 0.22 293);
-	--accent-gradient: linear-gradient(140deg, oklch(0.6 0.21 300), oklch(0.46 0.23 288));
 	--accent-2: oklch(0.68 0.16 95);
 	--success: #0f7a52;
 	--warning: #a85c02;

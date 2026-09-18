@@ -1,6 +1,6 @@
 ---
 name: Bitácora ASIPONA
-description: Bitácora interna de soporte operativo portuario — panel oscuro de superficies elevadas, borde mínimo y acento violeta en gradiente.
+description: Bitácora interna de soporte operativo portuario — panel oscuro de superficies elevadas, borde mínimo y acento violeta plano.
 colors:
   bg: "oklch(0.19 0.004 286)"
   surface: "oklch(0.24 0.005 286)"
@@ -12,8 +12,6 @@ colors:
   text-faint: "oklch(0.56 0.008 286)"
   accent: "oklch(0.62 0.21 293)"
   accent-strong: "oklch(0.7 0.2 296)"
-  accent-gradient: "linear-gradient(140deg, oklch(0.72 0.19 300), oklch(0.55 0.22 288))"
-  accent-gradient-light: "linear-gradient(140deg, oklch(0.6 0.21 300), oklch(0.46 0.23 288))"
   accent-2: "oklch(0.83 0.17 95)"
   success: "#34d399"
   warning: "#fbbf24"
@@ -75,13 +73,13 @@ components:
 
 Bitácora dejó la identidad plana de trazo duro ("el expediente plano": bordes de 2px y sombra offset sin desenfoque) por un panel de control oscuro de superficies elevadas. La página es casi negra; cada tarjeta se separa del lienzo porque está un escalón más clara y lleva una sombra suave, no porque esté delineada. El borde baja a 1px y pasa a ser un divisor discreto, no la firma del sistema.
 
-Sigue siendo una herramienta de trabajo diario para soporte operativo y jefatura de un puerto — no un producto de venta. Por eso la energía visual se concentra en un solo lugar: el gradiente violeta, reservado a la cifra principal de cada pantalla y al ítem de navegación activo. Todo lo demás es neutro, y las cifras mandan.
+Sigue siendo una herramienta de trabajo diario para soporte operativo y jefatura de un puerto — no un producto de venta. Por eso la energía visual se concentra en un solo lugar: el violeta pleno, reservado a la cifra principal de cada pantalla y al ítem de navegación activo. Todo lo demás es neutro, y las cifras mandan.
 
 Los tres colores de sistema (Mediport azul, PIS verde, ProactivaNet naranja) se preservan intactos: están validados por contraste y distinguibilidad CVD (deuteranopía/protanopía) y quedan fuera de esta exploración estética.
 
 **Key Characteristics:**
 - Jerarquía por elevación: `--bg` < `--surface` < `--surface-raised`, más sombra suave. El borde no define la tarjeta.
-- Un solo acento violeta, con una forma nueva: `--accent-gradient` para la tarjeta destacada y el ítem de nav activo; `--accent` plano para foco, enlaces y estado.
+- Un solo acento violeta, siempre plano: `--accent` rellena la tarjeta destacada y el ítem de nav activo, y también marca foco, enlaces y estado. Cero degradados.
 - Borde de 1px en `--border` como divisor de baja jerarquía, uniforme en tarjetas, inputs, tabla y nav.
 - Radios más generosos (16px en tarjetas, 10px en controles) y filas de tabla más altas: menos densidad, más aire.
 - Badges y chips como pastillas tintadas: el color semántico vive en el texto, el relleno es el mismo color al 16–18%.
@@ -92,7 +90,7 @@ Paleta restringida de neutros fríos casi acromáticos, un acento violeta que ca
 
 ### Primary
 - **Violeta** (`--accent`, `oklch(0.62 0.21 293)` oscuro / `oklch(0.52 0.22 293)` claro): botón primario, foco, enlaces de acción, estado.
-- **Gradiente violeta** (`--accent-gradient`, `linear-gradient(140deg, …)`): la única superficie con saturación fuerte. Exclusivo de la tarjeta destacada (`StatTile destacada`), del ítem de nav activo, del icono de marca y del avatar.
+- **Relleno violeta** (`--accent` a superficie completa): la única superficie con saturación fuerte. Exclusivo de la tarjeta destacada (`StatTile destacada`), del ítem de nav activo, del icono de marca y del avatar.
 
 ### Neutral
 - **Lienzo** — `--bg` (`oklch(0.19 0.004 286)` oscuro / `oklch(0.97 0.003 286)` claro): fondo de página y del sidebar. Sin gradiente decorativo.
@@ -113,7 +111,7 @@ Paleta restringida de neutros fríos casi acromáticos, un acento violeta que ca
 - **Mediport** `#3987e5`, **PIS** `#199e70`, **ProactivaNet** `#d95926` (oscuro); `#1f5db3` / `#0f7a52` / `#b8451a` (claro). Trío validado CVD — cualquier cambio exige re-correr `validate_palette.js`.
 
 ### Named Rules
-**La regla del gradiente único.** El gradiente violeta marca una sola cosa por pantalla: dónde está la cifra que importa. Si dos superficies lo llevan al mismo tiempo, ninguna destaca y la regla está rota. El ítem de nav activo es la excepción permanente, porque nunca compite por la misma mirada.
+**La regla del relleno único.** El violeta pleno marca una sola cosa por pantalla: dónde está la cifra que importa. Si dos superficies lo llevan al mismo tiempo, ninguna destaca y la regla está rota. El ítem de nav activo es la excepción permanente, porque nunca compite por la misma mirada.
 
 ## Typography
 
@@ -148,7 +146,7 @@ Dentro de `main`, cada pantalla abre con la topbar (`Header.svelte`): título y 
 
 El panel principal no se apila en bandas de ancho completo: tiene un cuerpo ancho y una columna lateral constante (`.fila-ancha`, grid `minmax(0, 2fr) minmax(280px, 1fr)`), de modo que la mirada baja por la izquierda y el contexto vive a la derecha.
 
-1. **Fila de cifras** — cuatro `StatTile` en grid de 4 columnas; la primera es la destacada con gradiente y sparkline.
+1. **Fila de cifras** — cuatro `StatTile` en grid de 4 columnas; la primera va rellena de violeta.
 2. **Banda de análisis** — volumen diario en el cuerpo; en el lateral, distribución por módulo más dos tiles chicos (días hábiles, última actualización).
 3. **Banda de detalle** — tabla de registros recientes en el cuerpo; volumen por sistema (`ListaSistemas`) en el lateral.
 
@@ -204,7 +202,7 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 ### StatTile
 - Chip de icono de 32px (`--radius`, fondo `--accent-soft`) sobre la etiqueta.
 - Etiqueta 12px muted, cifra 28px peso 700, nota 12px faint debajo.
-- Variante `destacada`: fondo `--accent-gradient`, texto blanco, `--shadow-accent`, sin borde.
+- Variante `destacada`: fondo `--accent` plano, texto blanco, `--shadow-accent`, sin borde.
 - No admite contenido extra: el tile muestra una cifra y nada más. La sparkline que llevaba la tarjeta destacada se quitó, junto con el componente `Sparkline`; el volumen de la semana ya se lee en su propia tarjeta de barras.
 
 ### Inputs / Fields
@@ -221,20 +219,20 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 
 ### Navigation
 - **Sidebar colapsable:** el botón de la marca alterna entre 240px y 64px, y la preferencia se guarda en `localStorage` (`bitacora-nav-colapsado`). Colapsada deja solo los iconos, con el nombre de cada destino en `title`; no desaparece del todo porque entonces haría falta un control flotante para recuperarla.
-- **Sidebar:** sobre `--bg`, sin borde derecho. Ítems inactivos en `--text-muted` con icono `--text-faint`; ítem activo con `--accent-gradient`, texto e icono blancos y `--shadow-accent`. Títulos de sección en 11px mayúsculas `--text-faint`, colapsables y persistidos en `localStorage`.
-- **Topbar:** identidad del usuario como pastilla (`--radius-pill`) con avatar en gradiente, nombre y nivel.
+- **Sidebar:** sobre `--bg`, sin borde derecho. Ítems inactivos en `--text-muted` con icono `--text-faint`; ítem activo con `--accent` plano, texto e icono blancos y `--shadow-accent`. Títulos de sección en 11px mayúsculas `--text-faint`, colapsables y persistidos en `localStorage`.
+- **Topbar:** identidad del usuario como pastilla (`--radius-pill`) con avatar en violeta plano, nombre y nivel.
 
 ## Do's and Don'ts
 
 ### Do:
 - **Do** separar superficies con elevación (`--surface` + `--shadow-sm`), no con trazo.
-- **Do** reservar `--accent-gradient` a una sola superficie por pantalla más el ítem de nav activo.
+- **Do** reservar el relleno `--accent` a una sola superficie por pantalla más el ítem de nav activo.
 - **Do** usar los tokens `*-soft` para el relleno de cualquier badge o chip de estado.
 - **Do** preservar los tres colores de sistema (Mediport/PIS/ProactivaNet) exactamente como están — están validados por contraste y CVD.
 
 ### Don't:
 - **Don't** reintroducir bordes de 2px ni sombras offset sin desenfoque — es exactamente el sistema que este rediseño reemplazó.
 - **Don't** usar `backdrop-filter`, superficies translúcidas ni blobs animados de fondo.
-- **Don't** poner gradiente decorativo en el fondo de página ni en tarjetas normales (el `conic-gradient` del donut y el shimmer del skeleton son funcionales y quedan exceptuados).
+- **Don't** usar degradados en ninguna superficie de UI: fondos, tarjetas, botones, avatares o ítems de nav van en color plano. El `conic-gradient` del donut y el shimmer del skeleton son funcionales y quedan exceptuados.
 - **Don't** introducir un segundo color de marca saturado compitiendo con el violeta; `--accent-2` es solo realce puntual.
 - **Don't** aplicar este sistema a los avatares/creaturas 3D (Enemigo3D, Gatito3D, Personaje3D) ni a los minijuegos — son arte de la capa RPG, fuera del alcance de este rediseño operativo.

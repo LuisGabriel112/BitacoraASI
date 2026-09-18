@@ -197,7 +197,7 @@
 		width: 30px;
 		height: 30px;
 		border-radius: var(--radius);
-		background: var(--accent-gradient);
+		background: var(--accent);
 		color: white;
 		flex-shrink: 0;
 	}
@@ -273,7 +273,7 @@
 	}
 
 	nav a.activo {
-		background: var(--accent-gradient);
+		background: var(--accent);
 		color: white;
 		box-shadow: var(--shadow-accent);
 	}
