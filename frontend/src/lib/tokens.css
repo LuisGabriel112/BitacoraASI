@@ -209,6 +209,62 @@ textarea {
 	box-shadow: var(--shadow-sm);
 }
 
+/* primitivas de distribución compartidas por todas las pantallas. Viven aquí y
+   no en cada página porque el rediseño exige que panel, listado, reporte, mesas
+   y personaje se lean con la misma estructura: un cuerpo ancho y una columna
+   lateral constante, nunca bandas apiladas de ancho completo. */
+.pantalla {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.fila-tiles {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 18px;
+}
+
+.fila-ancha {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+	align-items: start;
+	gap: 18px;
+}
+
+.fila-ancha.invertida {
+	grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
+}
+
+.columna-lateral {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.par-tiles {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 18px;
+}
+
+@media (max-width: 1100px) {
+	.fila-tiles {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.fila-ancha,
+	.fila-ancha.invertida {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 640px) {
+	.fila-tiles {
+		grid-template-columns: 1fr;
+	}
+}
+
 .nav,
 .sidebar,
 .tabla-wrap,

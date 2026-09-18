@@ -2,7 +2,11 @@
 	import { fade } from 'svelte/transition';
 	import BarChartHorizontal from '$lib/components/BarChartHorizontal.svelte';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
+	import Header from '$lib/components/Header.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import ListaSistemas from '$lib/components/ListaSistemas.svelte';
+	import StatTile from '$lib/components/StatTile.svelte';
+	import { calcularVolumenSistemas } from '$lib/volumenSistemas';
 	import { api, type GrupoSoporte, type ReporteSemanal } from '$lib/api/client';
 
 	function semanaISOActual() {
@@ -76,9 +80,13 @@
 	const medioItems = $derived(
 		reporte ? Object.entries(reporte.por_medio).map(([label, value]) => ({ label, value })) : []
 	);
+
+	const volumenPorSistema = $derived(calcularVolumenSistemas(reporte?.por_sistema ?? {}));
+
+	const soporteTop = $derived(grupos && grupos.length > 0 ? grupos[0].tema : '—');
 </script>
 
-<h1 class="font-display">Reporte semanal</h1>
+<Header titulo="Reporte semanal" subtitulo={semanaEtiqueta} />
 
 <div class="selector-semana">
 	<button onclick={() => (semanaInput = sumarSemanas(semanaInput, -1))} aria-label="Semana anterior">
@@ -98,55 +106,55 @@
 		<p>No hubo registros en {semanaEtiqueta}. Elige otra semana o captura el primer registro.</p>
 	</div>
 {:else}
-	<section class="tarjeta" in:fade={{ duration: 200 }}>
-		<h2 class="font-display">Resumen ejecutivo</h2>
-		<p>
-			Durante <strong>{semanaEtiqueta}</strong> se atendieron <strong>{reporte.total}</strong> solicitudes de soporte,
-			distribuidas entre {Object.keys(reporte.por_sistema).length} sistemas y
-			{Object.keys(reporte.por_empresa).length} empresas.
-		</p>
-		<div class="chips-sistema">
-			{#each Object.entries(reporte.por_sistema) as [nombre, total]}
-				<div class="chip-total">
-					<ChipSistema {nombre} />
-					<span>{total}</span>
-				</div>
-			{/each}
-		</div>
-	</section>
+	<div class="pantalla" in:fade={{ duration: 200 }}>
+	<div class="fila-tiles">
+		<StatTile label="Solicitudes atendidas" value={reporte.total} icono="clipboard-list" nota={semanaEtiqueta} destacada />
+		<StatTile label="Sistemas" value={Object.keys(reporte.por_sistema).length} icono="target" nota="Con actividad" />
+		<StatTile label="Empresas" value={Object.keys(reporte.por_empresa).length} icono="grid-3x3" nota="Atendidas" />
+		<StatTile label="Soporte más repetido" value={soporteTop} icono="lightbulb" nota="Tema recurrente" />
+	</div>
 
-	<div class="graficas" in:fade={{ duration: 200, delay: 40 }}>
+	<div class="fila-ancha">
 		<section class="tarjeta">
 			<h2 class="font-display">Por empresa</h2>
 			<BarChartHorizontal items={empresaItems} />
 		</section>
-		<section class="tarjeta">
-			<h2 class="font-display">Por medio</h2>
-			<BarChartHorizontal items={medioItems} />
-		</section>
+
+		<div class="columna-lateral">
+			<section class="tarjeta">
+				<h2 class="font-display">Por medio</h2>
+				<BarChartHorizontal items={medioItems} />
+			</section>
+
+			<section class="tarjeta">
+				<h2 class="font-display">Por sistema</h2>
+				<ListaSistemas filas={volumenPorSistema} />
+			</section>
+		</div>
 	</div>
 
-	<section class="tarjeta" in:fade={{ duration: 200, delay: 80 }}>
-		<h2 class="font-display">Soportes más frecuentes</h2>
-		{#if gruposCargando}
-			<p class="cargando">Analizando similitud de descripciones…</p>
-		{:else if gruposError}
-			<p class="grupos-error">{gruposError}</p>
-		{:else if !grupos || grupos.length === 0}
-			<p class="cargando">No se detectaron soportes que se repitan esta semana.</p>
-		{:else}
-			<ul class="lista-grupos">
-				{#each grupos as g, i}
-					<li class="grupo" in:fade={{ duration: 200, delay: i * 30 }}>
-						<span class="grupo-cantidad">{g.cantidad}×</span>
-						<span class="grupo-descripcion">{g.tema}</span>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-	</section>
+	<div class="fila-ancha invertida">
+		<section class="tarjeta">
+			<h2 class="font-display">Soportes más frecuentes</h2>
+			{#if gruposCargando}
+				<p class="cargando">Analizando similitud de descripciones…</p>
+			{:else if gruposError}
+				<p class="grupos-error">{gruposError}</p>
+			{:else if !grupos || grupos.length === 0}
+				<p class="cargando">No se detectaron soportes que se repitan esta semana.</p>
+			{:else}
+				<ul class="lista-grupos">
+					{#each grupos as g, i}
+						<li class="grupo" in:fade={{ duration: 200, delay: i * 30 }}>
+							<span class="grupo-cantidad">{g.cantidad}×</span>
+							<span class="grupo-descripcion">{g.tema}</span>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</section>
 
-	<section class="tarjeta" in:fade={{ duration: 200, delay: 120 }}>
+	<section class="tarjeta">
 		<h2 class="font-display">Detalle completo — {semanaEtiqueta}</h2>
 		<div class="tabla-wrap">
 			<table>
@@ -171,6 +179,8 @@
 			</table>
 		</div>
 	</section>
+	</div>
+	</div>
 {/if}
 
 <style>
@@ -241,26 +251,6 @@
 
 	.tarjeta.vacio {
 		color: var(--text-muted);
-	}
-
-	.chips-sistema {
-		display: flex;
-		gap: 16px;
-		margin-top: 14px;
-		flex-wrap: wrap;
-	}
-
-	.chip-total {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 13px;
-	}
-
-	.graficas {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 16px;
 	}
 
 	.tabla-wrap {

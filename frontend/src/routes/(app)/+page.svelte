@@ -160,7 +160,7 @@
 	</div>
 {/if}
 
-<div class="panel">
+<div class="pantalla">
 	<div class="fila-tiles">
 		<StatTile
 			label="Registros esta semana"
@@ -291,43 +291,10 @@
 		flex-shrink: 0;
 	}
 
-	.panel {
-		display: flex;
-		flex-direction: column;
-		gap: 18px;
-	}
-
-	.fila-tiles {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 18px;
-	}
-
 	/* la primera tarjeta es la destacada: la sparkline va sobre el gradiente,
 	   donde el acento no se distingue */
 	.fila-tiles :global(.tile.destacada) {
 		--color-sparkline: oklch(1 0 0 / 0.55);
-	}
-
-	/* el panel se lee como un cuerpo ancho más una columna lateral constante,
-	   en vez de bandas apiladas de ancho completo */
-	.fila-ancha {
-		display: grid;
-		grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-		align-items: start;
-		gap: 18px;
-	}
-
-	.columna-lateral {
-		display: flex;
-		flex-direction: column;
-		gap: 18px;
-	}
-
-	.par-tiles {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 18px;
 	}
 
 	.tarjeta {
@@ -446,22 +413,7 @@
 		display: block;
 		height: 12px;
 		width: 80%;
-		border-radius: 3px;
+		border-radius: var(--radius-sm);
 	}
 
-	@media (max-width: 1100px) {
-		.fila-tiles {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
-		.fila-ancha {
-			grid-template-columns: 1fr;
-		}
-	}
-
-	@media (max-width: 640px) {
-		.fila-tiles {
-			grid-template-columns: 1fr;
-		}
-	}
 </style>

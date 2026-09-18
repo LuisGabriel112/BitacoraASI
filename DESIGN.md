@@ -152,6 +152,17 @@ El panel principal no se apila en bandas de ancho completo: tiene un cuerpo anch
 
 Puntos de quiebre: a 1100px las cifras pasan a 2 columnas y el lateral cae bajo el cuerpo; a 720px la topbar oculta reloj y texto de usuario; a 640px todo va a una columna.
 
+Esa estructura no es exclusiva del panel. Las primitivas viven en `tokens.css` como clases globales — `.pantalla`, `.fila-tiles`, `.fila-ancha` (con su modificador `.invertida`), `.columna-lateral` y `.par-tiles` — porque panel, reporte, mesas, listado y personaje deben leerse igual. Toda pantalla nueva las usa en vez de declarar su propio grid.
+
+Cada pantalla abre con su fila de cuatro cifras, la primera destacada:
+
+- **Panel**: registros de la semana, promedio diario, módulo más frecuente, sistema más atendido.
+- **Reporte**: solicitudes atendidas, sistemas, empresas, soporte más repetido.
+- **Mesas**: mesas de la semana, ventana más cargada, solución más común, prioritarias abiertas.
+- **Personaje**: nivel, XP total, XP del nivel, XP restante.
+
+`Listado` es la excepción deliberada: no lleva cifras porque su trabajo es filtrar, no resumir. Ahí la estructura son dos tarjetas — el control (búsqueda, contador, exportar y filtros) y el resultado (tabla con su paginación al pie).
+
 ## Elevation & Depth
 
 La profundidad se lee por elevación real: superficie más clara + sombra difusa. Nada usa sombra offset sólida.

@@ -2,6 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import Header from '$lib/components/Header.svelte';
 	import Personaje3D from '$lib/components/Personaje3D.svelte';
+	import StatTile from '$lib/components/StatTile.svelte';
 	import { ACCESORIOS } from '$lib/apariencia';
 	import { api, type Accesorio, type Catalogo, type EventoXp, type Personaje, type RankingItem } from '$lib/api/client';
 	import { actualizarPersonaje } from '$lib/personaje.svelte';
@@ -95,6 +96,10 @@
 		personaje ? Math.min(100, (personaje.xp_en_nivel_actual / personaje.xp_para_siguiente_nivel) * 100) : 0
 	);
 
+	const xpFaltante = $derived(
+		personaje ? Math.max(0, personaje.xp_para_siguiente_nivel - personaje.xp_en_nivel_actual) : 0
+	);
+
 	const agenteVinculado = $derived(agentes.find((a) => a.usuario_id === personaje?.id) ?? null);
 	const resolutorVinculado = $derived(resolutores.find((r) => r.usuario_id === personaje?.id) ?? null);
 
@@ -132,7 +137,15 @@
 {#if cargando}
 	<p class="cargando">Cargando personaje…</p>
 {:else if personaje}
-	<div class="columnas" in:fade={{ duration: 250 }}>
+	<div class="pantalla" in:fade={{ duration: 250 }}>
+	<div class="fila-tiles">
+		<StatTile label="Nivel" value={personaje.nivel} icono="shield" nota={personaje.titulo} destacada />
+		<StatTile label="XP total" value={personaje.xp.toLocaleString('es-MX')} icono="star" nota="Acumulada" />
+		<StatTile label="XP del nivel" value={personaje.xp_en_nivel_actual.toLocaleString('es-MX')} icono="zap" nota="En este nivel" />
+		<StatTile label="Falta para subir" value={xpFaltante.toLocaleString('es-MX')} icono="target" nota="XP restante" />
+	</div>
+
+	<div class="columnas">
 		<section class="tarjeta ficha">
 			<Personaje3D colorPiel={colorPielEdit} colorCuerpo={colorCuerpoEdit} accesorio={accesorioEdit} tamano={200} />
 			<h2 class="font-display">{personaje.nombre}</h2>
@@ -272,6 +285,7 @@
 				<p class="error-vinculo">{errorVinculo}</p>
 			{/if}
 		</section>
+	</div>
 	</div>
 {/if}
 
