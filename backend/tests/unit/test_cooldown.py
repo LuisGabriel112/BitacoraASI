@@ -47,3 +47,7 @@ def test_cooldown_efectivo_reduce_segun_el_porcentaje():
 
 def test_cooldown_efectivo_sin_reduccion_es_igual_al_base():
     assert cooldown_efectivo(COOLDOWN, 0) == COOLDOWN
+
+
+def test_cooldown_efectivo_nunca_baja_del_tope_minimo():
+    assert cooldown_efectivo(timedelta(minutes=10), 150) == timedelta(minutes=1)

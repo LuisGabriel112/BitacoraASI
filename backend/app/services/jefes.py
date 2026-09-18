@@ -13,8 +13,8 @@ from app.services.xp import otorgar_xp
 # Constantes propias, a propósito desacopladas de XP_POR_ACCION/XP_POR_LOGRO en
 # app.services.rpg: recalibrar el nivel de personaje no debe acelerar/frenar sin
 # querer qué tan rápido muere el jefe semanal.
-DANIO_POR_ACCION = 5
-DANIO_POR_LOGRO = 25
+DANIO_POR_ACCION = 10
+DANIO_POR_LOGRO = 50
 VIDA_MAX_SEMANAL = 1000
 FACTOR_DIFICULTAD = 1.2
 VIDA_MAX_TOPE = 5000

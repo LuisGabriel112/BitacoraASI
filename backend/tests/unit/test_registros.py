@@ -110,6 +110,6 @@ async def test_crear_registro_da_creditos_de_tienda(monkeypatch):
     args = creditos_otorgados.await_args.args
     kwargs = creditos_otorgados.await_args.kwargs
     assert args[1] == "Ana"
-    assert args[2] == registros.CREDITOS_POR_ACCION
+    assert args[2] == registros.creditos_de(args[3])
     assert args[3] == "registro_creado"
     assert kwargs["usuario_id_directo"] == 42

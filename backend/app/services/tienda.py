@@ -4,44 +4,11 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import CreditoEvento, InventarioItem
+from app.services.catalogo_objetos import OBJETOS, Objeto
 from app.services.auth import resolver_usuario_id
 
-CREDITOS_POR_ACCION = 8
 MAX_SLOTS_INVENTARIO = 6
 
-
-@dataclass(frozen=True)
-class Objeto:
-    id: str
-    nombre: str
-    descripcion: str
-    costo: int
-    danio_pct: int = 0
-    critico_pct: int = 0
-    cooldown_pct: int = 0
-    xp_pct: int = 0
-    requiere: tuple[str, str] | None = None
-
-
-OBJETOS: tuple[Objeto, ...] = (
-    Objeto("daga_oxidada", "Daga Oxidada", "+5% de daño al jefe.", 40, danio_pct=5),
-    Objeto(
-        "nucleo_inestable", "Núcleo Inestable",
-        "+8% de probabilidad de golpe crítico (x2 daño).", 40, critico_pct=8,
-    ),
-    Objeto("chip_overclock", "Chip Overclock", "-15% de cooldown en los minijuegos.", 35, cooldown_pct=15),
-    Objeto("manual_pirata", "Manual Pirata", "+10% de XP ganado.", 30, xp_pct=10),
-    Objeto(
-        "filo_sangriento", "Filo Sangriento",
-        "Combina Daga Oxidada + Núcleo Inestable. +12% de daño, +15% de crítico.",
-        60, danio_pct=12, critico_pct=15, requiere=("daga_oxidada", "nucleo_inestable"),
-    ),
-    Objeto(
-        "terminal_hackeada", "Terminal Hackeada",
-        "Combina Chip Overclock + Manual Pirata. -25% de cooldown, +15% de XP.",
-        50, cooldown_pct=25, xp_pct=15, requiere=("chip_overclock", "manual_pirata"),
-    ),
-)
 
 _OBJETOS_POR_ID = {o.id: o for o in OBJETOS}
 

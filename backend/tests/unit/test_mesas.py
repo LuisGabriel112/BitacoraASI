@@ -291,7 +291,7 @@ async def test_otorgar_xp_cierre_da_creditos_de_tienda(monkeypatch):
     args = creditos_otorgados.await_args.args
     kwargs = creditos_otorgados.await_args.kwargs
     assert args[1] == "Ana"
-    assert args[2] == mesas.CREDITOS_POR_ACCION
+    assert args[2] == mesas.creditos_de(args[3])
     assert args[3] == "mesa_cerrada"
     assert kwargs["usuario_id_directo"] == 42
 
@@ -326,5 +326,5 @@ async def test_crear_mesa_da_creditos_de_tienda(monkeypatch):
     creditos_otorgados.assert_awaited_once()
     args = creditos_otorgados.await_args.args
     assert args[1] == "Ana"
-    assert args[2] == mesas.CREDITOS_POR_ACCION
+    assert args[2] == mesas.creditos_de(args[3])
     assert args[3] == "mesa_creada"

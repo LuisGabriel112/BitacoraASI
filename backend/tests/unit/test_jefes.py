@@ -37,8 +37,8 @@ def test_nombre_del_jefe_siempre_es_uno_de_la_lista():
 
 
 def test_danio_por_accion_y_logro_son_constantes_propias():
-    assert DANIO_POR_ACCION == 5
-    assert DANIO_POR_LOGRO == 25
+    assert DANIO_POR_ACCION == 10
+    assert DANIO_POR_LOGRO == 50
     assert DANIO_POR_LOGRO > DANIO_POR_ACCION
 
 

@@ -9,7 +9,7 @@ from app.services import tienda
 from app.services.jefes import danar_jefe
 from app.services.semanas import semana_de
 
-DANIO_BRAWL = 3
+DANIO_BRAWL = 6
 # Más corto que los otros minijuegos (5 min) a propósito: la ronda dura ~30s de
 # juego activo, así que una espera de 5 min la volvía injugable en la práctica.
 COOLDOWN_BRAWL = timedelta(minutes=2)
