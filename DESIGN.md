@@ -13,6 +13,7 @@ colors:
   accent: "oklch(0.62 0.21 293)"
   accent-strong: "oklch(0.7 0.2 296)"
   accent-gradient: "linear-gradient(140deg, oklch(0.72 0.19 300), oklch(0.55 0.22 288))"
+  accent-gradient-light: "linear-gradient(140deg, oklch(0.6 0.21 300), oklch(0.46 0.23 288))"
   accent-2: "oklch(0.83 0.17 95)"
   success: "#34d399"
   warning: "#fbbf24"
@@ -213,7 +214,9 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 
 ### Seasonal exception (mes patrio)
 
-En septiembre, `app.html` fija `data-temporada="patrio"` en `<html>` (detectado por fecha del navegador, sin preferencia de usuario). Ese atributo sustituye `--accent`, `--accent-strong`, `--accent-gradient` y `--accent-2` por verde (`#006341`) y rojo (`#ce1126`) bandera, y activa `.franja-patria` en `Nav.svelte` (franja tricolor de 10px) y el componente `PapelPicado.svelte` — banderines reales con ondeo animado (`@keyframes ondear`, rotación ±5° escalonada por `generarBanderines()`), presente en `Nav.svelte`, `Header.svelte` (toda página autenticada) y la tarjeta de `/login`. Es la única excepción a la regla del acento único — vencida el resto del año, vuelve sola al violeta.
+En septiembre, `app.html` fija `data-temporada="patrio"` en `<html>` (detectado por fecha del navegador, sin preferencia de usuario). Ese atributo activa `.franja-patria` en `Nav.svelte` (franja tricolor de 10px) y el componente `PapelPicado.svelte` — banderines reales con ondeo animado (`@keyframes ondear`, rotación ±5° escalonada por `generarBanderines()`), presente en `Nav.svelte`, `Header.svelte` (toda página autenticada) y la tarjeta de `/login`.
+
+La temporada vive solo en esa decoración: no toca `--accent`, `--accent-gradient` ni ningún otro token. Antes sí los sustituía por verde y rojo bandera, y el resultado era que durante un mes entero la app no se parecía a sí misma. El violeta es la identidad los doce meses.
 
 ### Don't:
 - **Don't** reintroducir bordes de 2px ni sombras offset sin desenfoque — es exactamente el sistema que este rediseño reemplazó.

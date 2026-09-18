@@ -144,14 +144,9 @@
 }
 
 /* mes patrio (septiembre) — activado por app.html vía data-temporada, no por
-   preferencia del usuario. Sustituye el acento único por verde/rojo bandera;
-   el resto del sistema (superficies, elevación, radios) no cambia. */
-:root[data-temporada='patrio'] {
-	--accent: #006341;
-	--accent-strong: #00834f;
-	--accent-gradient: linear-gradient(140deg, #00834f, #004f34);
-	--accent-2: #ce1126;
-}
+   preferencia del usuario. La temporada vive solo en la decoración (franja
+   tricolor y papel picado): el acento violeta y el resto del sistema no se
+   tocan, para que la identidad del panel sea la misma los doce meses. */
 
 .franja-patria {
 	display: none;
