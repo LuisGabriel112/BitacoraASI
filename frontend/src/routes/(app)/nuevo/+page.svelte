@@ -266,6 +266,11 @@
 
 	<div class="columna-derecha">
 		<form class="tarjeta formulario" onsubmit={(e) => (e.preventDefault(), guardar())}>
+			<div class="formulario-cabecera">
+				<h2 class="font-display">Datos del registro</h2>
+				<span class="atajo">Ctrl+Enter para guardar</span>
+			</div>
+
 			<div class="grid-campos">
 				<div class="campo">
 					<label for="fecha">Fecha</label>
@@ -339,14 +344,14 @@
 	.columnas {
 		display: grid;
 		grid-template-columns: minmax(280px, 360px) 1fr;
-		gap: 24px;
+		gap: var(--gap-bloques);
 		align-items: start;
 	}
 
 	.columna-izquierda {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: var(--gap-bloques);
 		min-width: 0;
 	}
 
@@ -469,6 +474,28 @@
 		gap: 18px;
 	}
 
+	/* cabecera y pie enmarcan el formulario como una tarea con principio y fin,
+	   en vez de dejar los campos flotando dentro de una caja */
+	.formulario-cabecera {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+		padding-bottom: 14px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.formulario-cabecera h2 {
+		margin: 0;
+		font-size: 16px;
+	}
+
+	.atajo {
+		font-size: 11px;
+		color: var(--text-faint);
+		font-family: var(--font-mono);
+	}
+
 	.grid-campos {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -490,7 +517,7 @@
 	input,
 	textarea {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);
@@ -508,6 +535,8 @@
 		gap: 12px;
 		align-items: center;
 		justify-content: flex-end;
+		padding-top: 16px;
+		border-top: 1px solid var(--border);
 	}
 
 	.guardar {
@@ -532,7 +561,7 @@
 
 	.secundario {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 10px 16px;
 		color: var(--text);

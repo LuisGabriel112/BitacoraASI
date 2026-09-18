@@ -1,21 +1,21 @@
 ---
 name: Bitácora ASIPONA
-description: Bitácora interna de soporte operativo portuario — plana, de borde duro y acento violeta.
+description: Bitácora interna de soporte operativo portuario — panel oscuro de superficies elevadas, borde mínimo y acento guinda plano.
 colors:
-  bg: "oklch(0.14 0.012 250)"
-  surface: "oklch(0.19 0.014 250)"
-  surface-raised: "oklch(0.24 0.016 250)"
-  border: "oklch(0.32 0.016 250)"
-  border-strong: "oklch(0.93 0.01 250)"
-  text: "oklch(0.97 0.004 250)"
-  text-muted: "oklch(0.74 0.012 250)"
-  text-faint: "oklch(0.56 0.012 250)"
-  accent: "oklch(0.64 0.24 296)"
-  accent-strong: "oklch(0.72 0.25 296)"
+  bg: "oklch(0.19 0.004 286)"
+  surface: "oklch(0.24 0.005 286)"
+  surface-raised: "oklch(0.29 0.006 286)"
+  border: "oklch(0.33 0.007 286)"
+  border-strong: "oklch(0.4 0.008 286)"
+  text: "oklch(0.98 0.002 286)"
+  text-muted: "oklch(0.72 0.008 286)"
+  text-faint: "oklch(0.56 0.008 286)"
+  accent: "oklch(0.55 0.18 12)"
+  accent-strong: "oklch(0.66 0.16 14)"
   accent-2: "oklch(0.83 0.17 95)"
-  success: "#3b9b6f"
-  warning: "#d97706"
-  danger: "#c1443c"
+  success: "#34d399"
+  warning: "#fbbf24"
+  danger: "#f87171"
   sistema-mediport: "#3987e5"
   sistema-pis: "#199e70"
   sistema-proactivanet: "#d95926"
@@ -24,7 +24,7 @@ typography:
   display:
     fontFamily: "system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
     fontWeight: 700
-    letterSpacing: "-0.01em"
+    letterSpacing: "-0.015em"
   body:
     fontFamily: "system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
     fontSize: "14px"
@@ -44,21 +44,21 @@ typography:
   mono:
     fontFamily: "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace"
 rounded:
-  xs: "4px"
   sm: "8px"
-  lg: "14px"
+  md: "10px"
+  lg: "16px"
   pill: "999px"
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
     textColor: "#ffffff"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.md}"
   button-primary-hover:
     backgroundColor: "{colors.accent-strong}"
   button-secondary:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.text}"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.md}"
   card:
     backgroundColor: "{colors.surface}"
     rounded: "{rounded.lg}"
@@ -69,45 +69,53 @@ components:
 
 ## Overview
 
-**Creative North Star: "El expediente plano"**
+**Creative North Star: "El panel encendido"**
 
-Bitácora dejó el glassmorphism translúcido (blur, blobs animados, superficies semi-transparentes) por una identidad plana de alto contraste: superficies opacas, bordes duros de 2px y sombras offset sin desenfoque. Es una herramienta de trabajo diario para soporte operativo y jefatura de un puerto — no un producto de venta — así que la energía visual vive en un solo acento violeta contundente y en el trazo duro de cada tarjeta, nunca en compitir con las cifras de una tabla.
+Bitácora dejó la identidad plana de trazo duro ("el expediente plano": bordes de 2px y sombra offset sin desenfoque) por un panel de control oscuro de superficies elevadas. La página es casi negra; cada tarjeta se separa del lienzo porque está un escalón más clara y lleva una sombra suave, no porque esté delineada. El borde baja a 1px y pasa a ser un divisor discreto, no la firma del sistema.
 
-Los tres colores de sistema (Mediport azul, PIS verde, ProactivaNet naranja) se preservan intactos: están validados por contraste y distinguibilidad CVD (deuteranopía/protanopía) y no forman parte de esta exploración estética.
+Sigue siendo una herramienta de trabajo diario para soporte operativo y jefatura de un puerto — no un producto de venta. Por eso la energía visual se concentra en un solo lugar: el guinda pleno, reservado a la cifra principal de cada pantalla y al ítem de navegación activo. Todo lo demás es neutro, y las cifras mandan.
+
+Los tres colores de sistema (Mediport azul, PIS verde, ProactivaNet naranja) se preservan intactos: están validados por contraste y distinguibilidad CVD (deuteranopía/protanopía) y quedan fuera de esta exploración estética.
 
 **Key Characteristics:**
-- Plano y opaco: cero `backdrop-filter`, cero translucidez, cero gradiente decorativo de fondo.
-- Un solo acento (violeta) para acción primaria y estado activo — el resto de la paleta es neutro o semántico (éxito/alerta/peligro/sistema).
-- Borde duro de 2px como firma estructural, reutilizado en tarjetas, tiles, modales, inputs y nav.
-- Sombra offset sin blur (`4px 4px 0 0`) en vez de elevación difusa.
+- Jerarquía por elevación: `--bg` < `--surface` < `--surface-raised`, más sombra suave. El borde no define la tarjeta.
+- Un solo acento guinda, siempre plano: `--accent` rellena la tarjeta destacada y el ítem de nav activo, y también marca foco, enlaces y estado. Cero degradados.
+- Borde de 1px en `--border` como divisor de baja jerarquía, uniforme en tarjetas, inputs, tabla y nav.
+- Radios más generosos (16px en tarjetas, 10px en controles) y filas de tabla más altas: menos densidad, más aire.
+- Badges y chips como pastillas tintadas: el color semántico vive en el texto, el relleno es el mismo color al 16–18%.
 
 ## Colors
 
-Paleta restringida: fondo/superficie neutros y opacos, un acento violeta que carga toda la acción primaria, más los semánticos y de sistema ya validados.
+Paleta restringida de neutros fríos casi acromáticos, un acento guinda que carga toda la acción primaria, más los semánticos y de sistema.
 
 ### Primary
-- **Violeta contundente** (`oklch(0.64 0.24 296)` oscuro / `oklch(0.5 0.22 296)` claro): botón primario, ítem de nav activo, foco, enlaces de acción. Reservado — no decora superficies grandes.
+- **Guinda** (`--accent`, `oklch(0.55 0.18 12)` oscuro / `oklch(0.44 0.17 12)` claro): botón primario, foco, enlaces de acción, estado.
+- **Relleno guinda** (`--accent` a superficie completa): la única superficie con saturación fuerte. Exclusivo de la tarjeta destacada (`StatTile destacada`), del ítem de nav activo, del icono de marca y del avatar.
 
 ### Neutral
-- **Lienzo** — `--bg` (`oklch(0.14 0.012 250)` oscuro / `oklch(0.97 0.004 250)` claro): fondo de página, plano, sin gradiente.
-- **Superficie** — `--surface` (`oklch(0.19 0.014 250)` oscuro / `oklch(1 0 0)` claro): tarjetas, nav, tabla, inputs.
-- **Superficie elevada** — `--surface-raised`: hover, dropdowns, popovers.
-- **Borde suave** — `--border`: divisores internos de baja jerarquía.
-- **Borde duro** — `--border-strong` (`oklch(0.93 0.01 250)` oscuro / `oklch(0.16 0.02 250)` claro): el trazo estructural de 2px que define cada tarjeta, input y elemento flotante; también el color de la sombra offset.
+- **Lienzo** — `--bg` (`oklch(0.19 0.004 286)` oscuro / `oklch(0.97 0.003 286)` claro): fondo de página y del sidebar. Sin gradiente decorativo.
+- **Superficie** — `--surface` (`oklch(0.24 0.005 286)` oscuro / blanco puro en claro): tarjetas, tiles, tabla, inputs, chips de la topbar.
+- **Superficie elevada** — `--surface-raised`: hover de fila, dropdowns, popovers, toasts.
+- **Borde** — `--border`: el divisor de 1px que usa todo el sistema.
+- **Borde marcado** — `--border-strong`: separación de mayor contraste cuando 1px en `--border` no alcanza (rara). Ya no es un trazo estructural ni el color de ninguna sombra.
 - **Texto** — `--text` / `--text-muted` / `--text-faint`: jerarquía de lectura sobre superficie.
 
+### Semánticos y tintes
+- `--success` `#34d399`, `--warning` `#fbbf24`, `--danger` `#f87171` en oscuro; `#0f7a52`, `#a85c02`, `#b3261e` en claro.
+- `--accent-soft` (18%), `--success-soft`, `--warning-soft`, `--danger-soft` (16%): rellenos translúcidos de badge y de chip de icono. Nunca se usan como color de texto.
+
 ### Velo (scrim)
-- **Velo de fondo** (`oklch(0 0 0 / 0.5)`): oscurece lo que queda detrás de un modal (`GestionCatalogos`) o de un aviso flotante sobre la arena 3D. Es el único negro translúcido del sistema — antes convivían un 0.5 y un 0.55 sin razón, y se unificaron al 0.5.
+- **Velo de fondo** (`oklch(0 0 0 / 0.5)`): oscurece lo que queda detrás de un modal (`GestionCatalogos`) o de un aviso flotante sobre la arena 3D. Es el único negro translúcido del sistema.
 
 ### Sistema (fijo, no explorar)
 - **Mediport** `#3987e5`, **PIS** `#199e70`, **ProactivaNet** `#d95926` (oscuro); `#1f5db3` / `#0f7a52` / `#b8451a` (claro). Trío validado CVD — cualquier cambio exige re-correr `validate_palette.js`.
 
 ### Named Rules
-**La regla del acento único.** El violeta es la única superficie con permiso de saturación fuerte. No se introduce un segundo color "de marca"; `--accent-2` (dorado) es un realce puntual (rachas, logros), nunca un segundo protagonista.
+**La regla del relleno único.** El guinda pleno marca una sola cosa por pantalla: dónde está la cifra que importa. Si dos superficies lo llevan al mismo tiempo, ninguna destaca y la regla está rota. El ítem de nav activo es la excepción permanente, porque nunca compite por la misma mirada.
 
 ## Typography
 
-**Display Font:** system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif (peso 700, `letter-spacing: -0.01em`)
+**Display Font:** system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif (peso 700, `letter-spacing: -0.015em`)
 **Body Font:** la misma pila system-ui (peso 400)
 **Mono Font:** ui-monospace / SFMono-Regular / Menlo / Consolas — reservado a cifras, fechas y folios (`font-variant-numeric: tabular-nums` en `body`).
 
@@ -115,94 +123,117 @@ Paleta restringida: fondo/superficie neutros y opacos, un acento violeta que car
 
 ### Hierarchy
 
-La escala real medida sobre el código, de menor a mayor. No es una escala
-modular teórica: son los pasos que el proyecto ya usa, ordenados por frecuencia
-de uso real (13px es el más común con 89 apariciones, luego 12px con 69 y 11px
-con 37).
-
-- **Micro** (11px): metadatos de baja jerarquía — hora de un evento, autor de un daño, nivel del personaje.
-- **Label** (12px): etiquetas de formulario, textos de ayuda, chips, pies de tarjeta.
-- **Secondary** (13px): el peso de trabajo de la app — filas de tabla, subtítulos, descripciones, botones.
+- **Micro** (11px): metadatos de baja jerarquía — hora de un evento, nivel del personaje, pie de tile.
+- **Label** (12px): etiquetas de formulario, chips, etiqueta y nota de `StatTile`.
+- **Secondary** (13px): el peso de trabajo de la app — filas de tabla, subtítulos, ítems de nav, botones.
 - **Body** (400, 14px, line-height 1.5): base declarada en `body`; texto corrido y formularios.
-- **Emphasis** (600, 15px): marca del nav y etiqueta de semana en la barra lateral.
-- **Title** (600, 16px): encabezado de tarjeta (`h2` de minijuegos y paneles).
-- **Display** (700, tamaño nativo del navegador por nivel h1/h2/h3, `-0.01em`): títulos de página y de sección.
-- **Cifras destacadas** (18–44px): números grandes de KPI en `StatTile` y marcadores; se escogen por tile, no forman escala.
-- **Mono**: cifras, fechas, folios y badges de semana, en cualquiera de los pasos de arriba.
+- **Emphasis** (600, 15px): marca del sidebar.
+- **Title** (600, 16px): encabezado de tarjeta.
+- **Page title** (700, 22px): `h1` de la topbar.
+- **Cifras destacadas** (28px en `StatTile`, hasta 44px en marcadores): números grandes de KPI; se escogen por tile, no forman escala.
+- **Mono**: cifras, fechas, folios y badge de semana, en cualquiera de los pasos de arriba.
 
 ### Named Rules
-**La regla de los pasos reales.** Cualquier `font-size` nuevo debe caer en
-11/12/13/14/15/16px, salvo cifras destacadas. Un paso fuera de esa lista es
-deriva, no diseño: si de verdad hace falta, se agrega aquí primero.
+**La regla de los pasos reales.** Cualquier `font-size` nuevo debe caer en 11/12/13/14/15/16/22px, salvo cifras destacadas. Un paso fuera de esa lista es deriva, no diseño: si de verdad hace falta, se agrega aquí primero.
 
 ## Layout
 
-Sin grid formal ni escala de espaciado tokenizada; el espaciado es ad hoc por componente, comúnmente en pasos de 8/12/16/18/24/28px. Shell de dos columnas: nav lateral fija (`--nav-width: 240px`, `position: sticky`) + `<main>` con `padding: 24px 28px`. Sin comportamiento responsive dedicado (producto de escritorio/oficina únicamente, confirmado en PRODUCT.md).
+Shell de dos columnas: sidebar fijo (`--nav-width: 240px`, `position: sticky`) sobre el mismo `--bg` que la página, sin borde divisorio, y `<main>` con `padding: 24px 28px`.
+
+La separación entre bloques es un token, `--gap-bloques` (8px), y lo usan todos los contenedores de tarjetas. No baja a 0 porque con radio de 16px las esquinas dejarían huecos triangulares en cada unión. Las filas de tarjetas llevan `align-items: start`: una tarjeta mide lo que mide su contenido y nunca se estira para igualar a su vecina más alta.
+
+Dentro de `main`, cada pantalla abre con la topbar (`Header.svelte`): título y subtítulo a la izquierda; reloj, semana ISO, toggle de tema e identidad del usuario a la derecha, separados por un divisor de 1px.
+
+El panel principal no se apila en bandas de ancho completo: tiene un cuerpo ancho y una columna lateral constante (`.fila-ancha`, grid `minmax(0, 2fr) minmax(280px, 1fr)`), de modo que la mirada baja por la izquierda y el contexto vive a la derecha.
+
+1. **Fila de cifras** — cuatro `StatTile` en grid de 4 columnas; la primera va rellena de guinda.
+2. **Banda de análisis** — volumen diario en el cuerpo; en el lateral, distribución por módulo más dos tiles chicos (días hábiles, última actualización).
+3. **Banda de detalle** — tabla de registros recientes en el cuerpo; volumen por sistema (`ListaSistemas`) en el lateral.
+
+Puntos de quiebre: a 1100px las cifras pasan a 2 columnas y el lateral cae bajo el cuerpo; a 720px la topbar oculta reloj y texto de usuario; a 640px todo va a una columna.
+
+Esa estructura no es exclusiva del panel. Las primitivas viven en `tokens.css` como clases globales — `.pantalla`, `.fila-tiles`, `.fila-ancha` (con su modificador `.invertida`), `.columna-lateral` y `.par-tiles` — porque panel, reporte, mesas, listado y personaje deben leerse igual. Toda pantalla nueva las usa en vez de declarar su propio grid.
+
+Cada pantalla abre con su fila de cuatro cifras, la primera destacada:
+
+- **Panel**: registros de la semana, promedio diario, módulo más frecuente, sistema más atendido.
+- **Reporte**: solicitudes atendidas, sistemas, empresas, soporte más repetido.
+- **Mesas**: mesas de la semana, ventana más cargada, solución más común, prioritarias abiertas.
+- **Personaje**: nivel, XP total, XP del nivel, XP restante.
+
+`Listado` es la excepción deliberada: no lleva cifras porque su trabajo es filtrar, no resumir. Ahí la estructura son dos tarjetas — el control (búsqueda, contador, exportar y filtros) y el resultado (tabla con su paginación al pie).
 
 ## Elevation & Depth
 
-Sistema plano con sombra offset como firma, no elevación difusa. Nada usa blur en la sombra; la profundidad se lee por el trazo duro + el desplazamiento sólido, no por difuminado.
+La profundidad se lee por elevación real: superficie más clara + sombra difusa. Nada usa sombra offset sólida.
 
 ### Shadow Vocabulary
-- **`--shadow-flat`** (`box-shadow: 4px 4px 0 0 var(--border-strong)`): tarjetas, tiles, toasts, dropdowns y modales pequeños.
-- **`--shadow-flat-sm`** (`2px 2px 0 0 var(--border-strong)`): disponible para elementos compactos; aún sin consumidor dedicado.
-- **Sombra de modal grande** (`6px 6px 0 0 var(--border-strong)`, inline en login y `GestionCatalogos`): momentos de mayor peso (tarjeta de login, modal de catálogos).
+- **`--shadow-sm`** (`0 1px 2px 0` negro al 35% en oscuro / 6% en claro): tarjetas, tiles, tabla. Es el default de toda superficie.
+- **`--shadow-md`** (`0 8px 24px -6px`): elementos que flotan sobre el contenido — dropdowns, toasts, avisos, modales.
+- **`--shadow-accent`** (`0 10px 28px -8px` guinda): halo de la tarjeta destacada y del ítem de nav activo. Es la única sombra teñida.
 
 ### Named Rules
-**La regla sin blur.** Ninguna sombra de UI lleva desenfoque. Si algo necesita separarse del fondo, se separa con trazo duro + offset sólido, nunca con blur.
+**La regla de la capa.** Si un elemento flota sobre el contenido, sube a `--shadow-md`; si vive en el flujo, se queda en `--shadow-sm`. No existe un tercer nivel neutro.
 
 ## Shapes
 
-Radios moderados: `--radius` (8px) para inputs, botones y dropdowns; `--radius-lg` (14px) para tarjetas y modales. Todo elemento con superficie propia (tarjeta, tile, toast, modal, dropdown) lleva borde de 2px sólido en `--border-strong` — ese trazo, no el radio, es la firma de forma del sistema.
-
-La escala completa, medida sobre el código:
-
-- **xs** (4px): detalles chicos — barras de progreso, segmentos, realces internos.
-- **sm** (8px, `--radius`): inputs, botones, dropdowns, toasts.
-- **lg** (14px, `--radius-lg`): tarjetas, modales, contenedores.
-- **pill** (999px): chips de sistema, badges, barras de vida y avisos flotantes. 19 usos en 12 archivos — es un paso deliberado, no una excepción.
+- **sm** (8px, `--radius-sm`): detalles chicos — skeletons, segmentos, realces internos.
+- **md** (10px, `--radius`): inputs, botones, dropdowns, ítems de nav, chips de icono.
+- **lg** (16px, `--radius-lg`): tarjetas, tiles, modales, contenedores.
+- **pill** (999px, `--radius-pill`): chips de sistema, badges, barras de progreso, bloque de usuario.
 
 ### Named Rules
-**La regla de los cuatro radios.** Solo existen 4px, 8px, 14px y 999px. Quedan
-en el código unos pocos 2px, 3px y 6px sueltos: son deriva heredada, no pasos
-sancionados, y deben converger a `xs` cuando se toque ese componente. El
-detector los marca a propósito.
+**La regla de los cuatro radios.** Solo existen 8px, 10px, 16px y 999px, siempre por token. Quedan en el código unos pocos 2px, 3px y 6px sueltos: son deriva heredada y deben converger a `sm` cuando se toque ese componente.
 
 ## Components
 
 ### Buttons
-- **Shape:** `--radius` (8px).
-- **Primary:** fondo `--accent`, texto blanco; usado en CTAs (Entrar, avatar de header, ítem de nav activo).
+- **Shape:** `--radius` (10px).
+- **Primary:** fondo `--accent`, texto blanco.
 - **Hover:** fondo `--accent-strong`.
-- **Secondary (`.boton-secundario`):** fondo `--surface`, borde `--border-strong`.
+- **Secondary (`.boton-secundario`):** fondo `--surface`, borde 1px `--border`.
 
 ### Cards / Containers (`.tarjeta`, `.tile`, `.toast`)
-- **Corner Style:** `--radius-lg` (14px) en tarjetas; `--radius` (8px) en toasts/tiles pequeños.
+- **Corner Style:** `--radius-lg` (16px).
 - **Background:** `--surface`, opaco.
-- **Shadow Strategy:** `--shadow-flat` (ver Elevation & Depth).
-- **Border:** 2px sólido `--border-strong`.
+- **Shadow Strategy:** `--shadow-sm`; `--shadow-md` si flota.
+- **Border:** 1px sólido `--border`.
+
+### StatTile
+- Chip de icono de 32px (`--radius`, fondo `--accent-soft`) sobre la etiqueta.
+- Etiqueta 12px muted, cifra 28px peso 700, nota 12px faint debajo.
+- Variante `destacada`: fondo `--accent` plano, texto blanco, `--shadow-accent`, sin borde.
+- No admite contenido extra: el tile muestra una cifra y nada más. La sparkline que llevaba la tarjeta destacada se quitó, junto con el componente `Sparkline`; el volumen de la semana ya se lee en su propia tarjeta de barras.
 
 ### Inputs / Fields
-- **Style:** fondo `--surface`, borde 2px `--border-strong`, radio `--radius`.
-- **Focus:** contorno `2px solid var(--accent)` con `outline-offset: 2px` (sin glow ni blur).
+- **Style:** fondo `--surface`, borde 1px `--border`, radio `--radius` (10px).
+- **Focus:** contorno `2px solid var(--accent)` con `outline-offset: 2px`.
+
+### Tables
+- Cabecera 11px mayúsculas muted con divisor de 1px; filas de 13px con `padding: 13px 12px`.
+- Hover de fila en `--surface-raised`; la última fila no lleva divisor.
+
+### ListaSistemas
+- Fila por sistema: `ChipSistema` a la izquierda, total en 15px peso 700 a la derecha, y debajo una barra de 6px (`--radius-pill`) sobre `--surface-raised`.
+- El relleno se pinta con el color del sistema y se escala con `transform: scaleX()`; la fracción se mide contra el sistema más alto, no contra la suma.
 
 ### Navigation
-- **Style:** `.nav` lateral opaca (`--surface`) con borde derecho duro. Ítems inactivos en `--text-muted`; ítem activo con fondo sólido `--accent` y texto/ícono blanco (pastilla plana, sin mezcla de color ni inset shadow).
+- **Sidebar colapsable:** el botón de la marca alterna entre 240px y 64px, y la preferencia se guarda en `localStorage` (`bitacora-nav-colapsado`). Colapsada deja solo los iconos, con el nombre de cada destino en `title`; no desaparece del todo porque entonces haría falta un control flotante para recuperarla.
+- **Sidebar:** sobre `--bg`, sin borde derecho. Ítems inactivos en `--text-muted` con icono `--text-faint`; ítem activo con `--accent` plano, texto e icono blancos y `--shadow-accent`. Títulos de sección en 11px mayúsculas `--text-faint`, colapsables y persistidos en `localStorage`.
+- **Topbar:** identidad del usuario como pastilla (`--radius-pill`) con avatar en guinda plano, nombre y nivel.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** usar `--border-strong` a 2px sólido como firma estructural de cualquier superficie nueva (tarjeta, modal, input, dropdown).
-- **Do** reservar el violeta (`--accent`) a acción primaria y estado activo; todo lo demás vive en superficie neutra.
+- **Do** separar superficies con elevación (`--surface` + `--shadow-sm`), no con trazo.
+- **Do** reservar el relleno `--accent` a una sola superficie por pantalla más el ítem de nav activo.
+- **Do** usar los tokens `*-soft` para el relleno de cualquier badge o chip de estado.
 - **Do** preservar los tres colores de sistema (Mediport/PIS/ProactivaNet) exactamente como están — están validados por contraste y CVD.
-- **Do** usar `--shadow-flat` (sin blur) para separar elementos flotantes del fondo.
-
-### Seasonal exception (mes patrio)
-
-En septiembre, `app.html` fija `data-temporada="patrio"` en `<html>` (detectado por fecha del navegador, sin preferencia de usuario). Ese atributo sustituye `--accent`/`--accent-strong`/`--accent-2` por verde (`#006341`) y rojo (`#ce1126`) bandera, y activa: `.franja-patria` en `Nav.svelte` (franja tricolor de 10px), un fondo tintado en `.marca`, y el componente `PapelPicado.svelte` — banderines reales (no SVG estático) con ondeo animado (`@keyframes ondear`, rotación ±5° escalonada por `generarBanderines()`), presente en `Nav.svelte`, `Header.svelte` (toda página autenticada) y la tarjeta de `/login`. Es la única excepción a la regla del acento único y a "sin decoración adicional" — vencida el resto del año, vuelve sola al violeta.
 
 ### Don't:
-- **Don't** reintroducir `backdrop-filter`, superficies translúcidas o blobs animados de fondo — es exactamente el mundo visual que este redesign reemplazó.
-- **Don't** usar gradiente decorativo en fondo de página o de tarjeta (el `conic-gradient` del donut y el shimmer del skeleton son funcionales, no decorativos, y quedan exceptuados).
-- **Don't** introducir un segundo color de marca saturado compitiendo con el violeta; `--accent-2` es solo realce puntual.
-- **Don't** aplicar este sistema a los avatares/creaturas 3D (Enemigo3D, Gatito3D, Personaje3D) ni a los minijuegos — son arte de la capa RPG, fuera del alcance de este redesign operativo.
+- **Don't** reintroducir bordes de 2px ni sombras offset sin desenfoque — es exactamente el sistema que este rediseño reemplazó.
+- **Don't** usar `backdrop-filter`, superficies translúcidas ni blobs animados de fondo.
+- **Don't** usar degradados en ninguna superficie de UI: fondos, tarjetas, botones, avatares o ítems de nav van en color plano. El `conic-gradient` del donut y el shimmer del skeleton son funcionales y quedan exceptuados.
+- **Don't** introducir un segundo color de marca saturado compitiendo con el guinda; `--accent-2` es solo realce puntual.
+- **Don't** usar el acento para señalar error: el guinda y `--danger` comparten familia de color, así que el peligro se distingue por el tinte `--danger-soft` y por el texto, nunca por un relleno guinda.
+- **Don't** aplicar este sistema a los avatares/creaturas 3D (Enemigo3D, Gatito3D, Personaje3D) ni a los minijuegos — son arte de la capa RPG, fuera del alcance de este rediseño operativo.

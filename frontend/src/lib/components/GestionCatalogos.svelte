@@ -155,9 +155,9 @@
 
 	.modal {
 		background: var(--surface-raised);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
-		box-shadow: 6px 6px 0 0 var(--border-strong);
+		box-shadow: var(--shadow-md);
 		width: 100%;
 		max-width: 480px;
 		max-height: 80vh;
@@ -200,7 +200,7 @@
 
 	.pestanas button {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		padding: 6px 12px;
 		font-size: 12px;
@@ -297,7 +297,7 @@
 
 	.btn-cancelar {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 3px 8px;
 		color: var(--text);

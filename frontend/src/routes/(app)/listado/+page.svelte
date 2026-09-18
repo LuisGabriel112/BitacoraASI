@@ -108,14 +108,22 @@
 
 <Header titulo="Listado completo" />
 
-<div class="barra-superior">
-	<input
-		type="search"
-		placeholder="Buscar en todos los campos…"
-		value={buscar}
-		oninput={alBuscar}
-		class="buscador"
-	/>
+<div class="pantalla">
+<section class="tarjeta barra-superior">
+	<div class="linea-busqueda">
+		<input
+			type="search"
+			placeholder="Buscar en todos los campos…"
+			value={buscar}
+			oninput={alBuscar}
+			class="buscador"
+		/>
+		<span class="contador">{total} registros</span>
+		<div class="exportar">
+			<a href={api.exportUrl('csv', paramsFiltros())} class="boton-secundario">Exportar CSV</a>
+			<a href={api.exportUrl('xlsx', paramsFiltros())} class="boton-primario">Exportar Excel</a>
+		</div>
+	</div>
 	<div class="filtros">
 		<ComboboxCreatable id="l-empresa" catalogo="empresas" label="Empresa" bind:selectedId={empresaId} permiteCrear={false} />
 		<SelectCatalogo id="l-sistema" catalogo="sistemas" label="Sistema" bind:selectedId={sistemaId} />
@@ -123,12 +131,9 @@
 		<ComboboxCreatable id="l-modulo" catalogo="modulos" label="Módulo" bind:selectedId={moduloId} permiteCrear={false} />
 		<SelectCatalogo id="l-atendio" catalogo="agentes" label="Atendió" bind:selectedId={atendioId} />
 	</div>
-	<div class="exportar">
-		<a href={api.exportUrl('csv', paramsFiltros())} class="boton-secundario">Exportar CSV</a>
-		<a href={api.exportUrl('xlsx', paramsFiltros())} class="boton-primario">Exportar Excel</a>
-	</div>
-</div>
+</section>
 
+<section class="tarjeta">
 <div class="tabla-wrap">
 	<table>
 		<thead>
@@ -220,28 +225,46 @@
 {/if}
 
 <div class="paginacion">
-	<span>{total} registros</span>
+	<span>Mostrando página {page} de {totalPaginas}</span>
 	<div class="botones">
 		<button disabled={page <= 1} onclick={() => (page -= 1)}><Icon nombre="chevron-left" tamano={14} /> Anterior</button>
-		<span>Página {page} de {totalPaginas}</span>
 		<button disabled={page >= totalPaginas} onclick={() => (page += 1)}>Siguiente <Icon nombre="chevron-right" tamano={14} /></button>
 	</div>
 </div>
+</section>
+</div>
 
 <style>
+	/* la barra de búsqueda y los filtros comparten tarjeta: son un solo control
+	   de "qué estoy viendo", separado de la tarjeta que muestra el resultado */
 	.barra-superior {
 		display: flex;
-		flex-wrap: wrap;
+		flex-direction: column;
 		gap: 14px;
-		align-items: flex-end;
-		margin-bottom: 18px;
+		padding: 18px;
+	}
+
+	.linea-busqueda {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.contador {
+		font-size: 12px;
+		color: var(--text-muted);
+		padding: 5px 12px;
+		border-radius: var(--radius-pill);
+		background: var(--surface-raised);
 	}
 
 	.buscador {
-		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		flex: 1;
+		background: var(--surface-raised);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
-		padding: 9px 12px;
+		padding: 10px 14px;
 		min-width: 220px;
 		color: var(--text);
 	}
@@ -319,7 +342,7 @@
 	}
 
 	.boton-secundario {
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		color: var(--text);
 	}
 
@@ -351,11 +374,12 @@
 		text-decoration: underline;
 	}
 
+	/* la tabla ya vive dentro de una tarjeta: un segundo borde la encajonaría */
 	.tabla-wrap {
 		overflow: auto;
-		max-height: 560px;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
+		max-height: 620px;
+		border: none;
+		background: none;
 	}
 
 	table {
@@ -372,14 +396,14 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		padding: 10px;
-		border-bottom: 2px solid var(--border-strong);
+		border-bottom: 1px solid var(--border);
 		position: sticky;
 		top: 0;
 		background: var(--bg);
 	}
 
 	td {
-		padding: 9px 10px;
+		padding: 13px 12px;
 		border-bottom: 1px solid var(--border);
 	}
 
@@ -423,7 +447,7 @@
 		display: inline-flex;
 		align-items: center;
 		min-height: 40px;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 4px 10px;
 		color: var(--text);
@@ -483,7 +507,7 @@
 
 	.btn-cancelar {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 4px 10px;
 		color: var(--text);
@@ -512,6 +536,8 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-top: 14px;
+		padding-top: 14px;
+		border-top: 1px solid var(--border);
 		font-size: 13px;
 		color: var(--text-muted);
 	}
@@ -527,7 +553,7 @@
 		align-items: center;
 		gap: 6px;
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		min-height: 40px;
 		padding: 7px 16px;

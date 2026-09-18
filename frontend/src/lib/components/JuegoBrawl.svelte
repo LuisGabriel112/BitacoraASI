@@ -414,7 +414,7 @@
 	.tarjeta {
 		grid-column: 1 / -1;
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 		padding: 24px;
 	}
@@ -460,7 +460,7 @@
 	.btn-secundario {
 		background: var(--surface-raised);
 		color: var(--text);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 5px 12px;
 		font-size: 12px;

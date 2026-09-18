@@ -114,10 +114,10 @@
 		transform: translateX(-50%);
 		z-index: 201;
 		background: var(--surface-raised);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 		padding: 14px 40px 14px 18px;
-		box-shadow: var(--shadow-flat);
+		box-shadow: var(--shadow-md);
 		animation: entrar 0.35s ease;
 		max-width: 380px;
 	}

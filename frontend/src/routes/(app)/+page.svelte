@@ -2,10 +2,11 @@
 	import { fade } from 'svelte/transition';
 	import Header from '$lib/components/Header.svelte';
 	import StatTile from '$lib/components/StatTile.svelte';
-	import Sparkline from '$lib/components/Sparkline.svelte';
 	import Donut from '$lib/components/Donut.svelte';
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
+	import ListaSistemas from '$lib/components/ListaSistemas.svelte';
+	import { calcularVolumenSistemas } from '$lib/volumenSistemas';
 	import SelectCatalogo from '$lib/components/SelectCatalogo.svelte';
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import { api, type PanelKPIs, type Registro } from '$lib/api/client';
@@ -116,6 +117,10 @@
 
 	const moduloTop = $derived(kpis?.distribucion_modulo[0]?.modulo ?? '—');
 
+	const volumenPorSistema = $derived(calcularVolumenSistemas(kpis?.por_sistema ?? {}));
+
+	const sistemaTop = $derived(volumenPorSistema[0]?.nombre ?? '—');
+
 	const COLORES_DONUT = ['var(--accent)', 'var(--accent-2)', 'var(--sistema-mediport)', 'var(--border-strong)'];
 
 	const donutItems = $derived.by(() => {
@@ -154,48 +159,47 @@
 	</div>
 {/if}
 
-<div class="bento">
-	<section class="tarjeta tile-hero">
-		<span class="label">Registros esta semana</span>
-		{#if cargandoKpis}
-			<span class="skeleton skeleton-hero" aria-hidden="true"></span>
-		{:else}
-			<span class="valor-hero font-display" in:fade={{ duration: 200 }}>{kpis?.total_semana ?? 0}</span>
-			<div in:fade={{ duration: 200 }}><Sparkline datos={volumenSemanaCompleta} /></div>
-		{/if}
-	</section>
+<div class="pantalla">
+	<div class="fila-tiles">
+		<StatTile
+			label="Registros esta semana"
+			value={kpis?.total_semana ?? 0}
+			loading={cargandoKpis}
+			icono="clipboard-list"
+			nota="Actualizado {ultimaActualizacion}"
+			destacada
+		/>
 
-	<div class="tile-1x1">
-		<StatTile label="Promedio diario" value={promedioDiario} loading={cargandoKpis} />
+		<StatTile label="Promedio diario" value={promedioDiario} loading={cargandoKpis} icono="bar-chart-2" nota="Registros por día" />
+		<StatTile label="Módulo más frecuente" value={moduloTop} loading={cargandoKpis} icono="grid-3x3" nota="Semana en curso" />
+		<StatTile label="Sistema más atendido" value={sistemaTop} loading={cargandoKpis} icono="target" nota="Semana en curso" />
 	</div>
 
-	<div class="tile-1x1">
-		<StatTile label="Módulo más frecuente" value={moduloTop} loading={cargandoKpis} />
+	<div class="fila-ancha">
+		<section class="tarjeta">
+			<h2 class="font-display">Volumen diario</h2>
+			<BarChartColumnas datos={volumenSemanaCompleta} loading={cargandoKpis} etiquetas="diaSemana" />
+		</section>
+
+		<div class="columna-lateral">
+			<section class="tarjeta">
+				<h2 class="font-display">Distribución por módulo</h2>
+				{#if cargandoKpis}
+					<p class="cargando">Cargando…</p>
+				{:else}
+					<div in:fade={{ duration: 200 }}><Donut items={donutItems} /></div>
+				{/if}
+			</section>
+
+			<div class="par-tiles">
+				<StatTile label="Días hábiles" value={diasHabilesRestantes()} nota="Restantes" />
+				<StatTile label="Actualizado" value={ultimaActualizacion} nota="Hora local" />
+			</div>
+		</div>
 	</div>
 
-	<section class="tarjeta tile-donut">
-		<h2 class="font-display">Distribución por módulo</h2>
-		{#if cargandoKpis}
-			<p class="cargando">Cargando…</p>
-		{:else}
-			<div in:fade={{ duration: 200 }}><Donut items={donutItems} /></div>
-		{/if}
-	</section>
-
-	<section class="tarjeta tile-barras">
-		<h2 class="font-display">Volumen diario</h2>
-		<BarChartColumnas datos={volumenSemanaCompleta} loading={cargandoKpis} etiquetas="diaSemana" />
-	</section>
-
-	<div class="tile-1x1">
-		<StatTile label="Días hábiles restantes" value={diasHabilesRestantes()} />
-	</div>
-
-	<div class="tile-1x1">
-		<StatTile label="Última actualización" value={ultimaActualizacion} />
-	</div>
-
-	<section class="tarjeta tile-tabla">
+	<div class="fila-ancha">
+		<section class="tarjeta">
 		<div class="tarjeta-cabecera">
 			<div class="titulo-con-link">
 				<h2 class="font-display">Registros recientes</h2>
@@ -248,6 +252,12 @@
 			</table>
 		</div>
 	</section>
+
+		<section class="tarjeta">
+			<h2 class="font-display">Volumen por sistema</h2>
+			<ListaSistemas filas={volumenPorSistema} loading={cargandoKpis} />
+		</section>
+	</div>
 </div>
 
 <style>
@@ -276,81 +286,19 @@
 		flex-shrink: 0;
 	}
 
-	.bento {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		grid-auto-rows: minmax(96px, auto);
-		grid-auto-flow: dense;
-		gap: 18px;
-	}
 
 	.tarjeta {
-		border: 2px solid var(--border-strong);
+		background: var(--surface);
+		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 		padding: 18px;
-		box-shadow: var(--shadow-flat);
+		box-shadow: var(--shadow-sm);
 	}
 
 	.tarjeta h2 {
 		font-size: 14px;
 		margin: 0 0 14px;
 		color: var(--text-muted);
-	}
-
-	.tile-hero {
-		grid-column: span 2;
-		grid-row: span 2;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-	}
-
-	.tile-hero .label {
-		font-size: 13px;
-		color: var(--text-muted);
-	}
-
-	.valor-hero {
-		font-size: 44px;
-		font-weight: 700;
-		line-height: 1.1;
-		margin-top: 6px;
-	}
-
-	.skeleton-hero {
-		display: block;
-		height: 44px;
-		width: 100px;
-		border-radius: 6px;
-		margin-top: 6px;
-	}
-
-	.tile-1x1 {
-		grid-column: span 1;
-		grid-row: span 1;
-	}
-
-	.tile-1x1 :global(.tile) {
-		height: 100%;
-		justify-content: center;
-	}
-
-	.tile-donut {
-		grid-column: span 2;
-		grid-row: span 2;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.tile-barras {
-		grid-column: span 2;
-		grid-row: span 2;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.tile-tabla {
-		grid-column: span 4;
 	}
 
 	.cargando {
@@ -416,13 +364,17 @@
 		font-size: 11px;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-		padding: 8px 10px;
-		border-bottom: 2px solid var(--border-strong);
+		padding: 10px 12px;
+		border-bottom: 1px solid var(--border);
 	}
 
 	td {
-		padding: 9px 10px;
+		padding: 13px 12px;
 		border-bottom: 1px solid var(--border);
+	}
+
+	tbody tr:last-child td {
+		border-bottom: none;
 	}
 
 	tbody tr:hover {
@@ -451,33 +403,7 @@
 		display: block;
 		height: 12px;
 		width: 80%;
-		border-radius: 3px;
+		border-radius: var(--radius-sm);
 	}
 
-	@media (max-width: 960px) {
-		.bento {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
-		.tile-hero,
-		.tile-donut,
-		.tile-barras,
-		.tile-tabla {
-			grid-column: span 2;
-		}
-	}
-
-	@media (max-width: 640px) {
-		.bento {
-			grid-template-columns: 1fr;
-		}
-
-		.tile-hero,
-		.tile-1x1,
-		.tile-donut,
-		.tile-barras,
-		.tile-tabla {
-			grid-column: span 1;
-		}
-	}
 </style>

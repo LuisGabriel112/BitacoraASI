@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import Sparkline from '$lib/components/Sparkline.svelte';
 	import BarChartVertical from '$lib/components/BarChartVertical.svelte';
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import BotonGenerarReporte from '$lib/components/BotonGenerarReporte.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import StatTile from '$lib/components/StatTile.svelte';
 	import { api, type Mesa, type PanelMesasKPIs } from '$lib/api/client';
 
 	let kpis = $state<PanelMesasKPIs | null>(null);
@@ -91,6 +91,12 @@
 		kpis ? kpis.distribucion_categoria_solucion.map((d) => ({ label: d.categoria_solucion, value: d.total })) : []
 	);
 
+	const ventanaTop = $derived(ventanaChartItems[0]?.label ?? '—');
+
+	const categoriaTop = $derived(categoriaSolucionChartItems[0]?.label ?? '—');
+
+	const prioritariasAbiertas = $derived(prioritarias.filter((m) => !m.fecha_cierre_real).length);
+
 	let expandidaId = $state<number | null>(null);
 
 	function alternarSolucion(m: { id: number; solucion: string | null }) {
@@ -128,28 +134,43 @@
 	<BotonGenerarReporte semana={kpis?.semana ?? ''} />
 </div>
 
-<div class="bento">
-	<section class="tarjeta tile-hero">
-		<span class="label">Mesas esta semana</span>
-		{#if cargandoKpis}
-			<span class="skeleton skeleton-hero" aria-hidden="true"></span>
-		{:else}
-			<span class="valor-hero font-display" in:fade={{ duration: 200 }}>{kpis?.total_semana ?? 0}</span>
-			<div in:fade={{ duration: 200 }}><Sparkline datos={volumenSemanaCompleta} /></div>
-		{/if}
-	</section>
+<div class="pantalla">
+	<div class="fila-tiles">
+		<StatTile
+			label="Mesas esta semana"
+			value={kpis?.total_semana ?? 0}
+			loading={cargandoKpis}
+			icono="clipboard-list"
+			nota="Semana en curso"
+			destacada
+		/>
 
-	<section class="tarjeta tile-resolutor">
-		<h2 class="font-display">Por ventana</h2>
-		<BarChartVertical items={ventanaChartItems} loading={cargandoKpis} />
-	</section>
+		<StatTile label="Ventana más cargada" value={ventanaTop} loading={cargandoKpis} icono="grid-3x3" nota="Por número de mesas" />
+		<StatTile label="Solución más común" value={categoriaTop} loading={cargandoKpis} icono="lightbulb" nota="Mesas cerradas" />
+		<StatTile label="Prioritarias abiertas" value={prioritariasAbiertas} loading={cargandoPrioritarias} icono="flag" nota="Sin fecha de cierre" />
+	</div>
 
-	<section class="tarjeta tile-mitad tile-categoria">
-		<h2 class="font-display">Por categoría de solución</h2>
-		<BarChartVertical items={categoriaSolucionChartItems} loading={cargandoKpis} vacio="Aún no hay mesas cerradas con categoría de solución esta semana." />
-	</section>
+	<div class="fila-ancha">
+		<section class="tarjeta">
+			<h2 class="font-display">Volumen diario</h2>
+			<BarChartColumnas datos={volumenSinDomingo} loading={cargandoKpis} etiquetas="diaSemana" />
+		</section>
 
-	<section class="tarjeta tile-mitad tile-prioritarias">
+		<div class="columna-lateral">
+			<section class="tarjeta">
+				<h2 class="font-display">Por ventana</h2>
+				<BarChartVertical items={ventanaChartItems} loading={cargandoKpis} />
+			</section>
+
+			<section class="tarjeta">
+				<h2 class="font-display">Por categoría de solución</h2>
+				<BarChartVertical items={categoriaSolucionChartItems} loading={cargandoKpis} vacio="Aún no hay mesas cerradas con categoría de solución esta semana." />
+			</section>
+		</div>
+	</div>
+
+	<div class="fila-ancha invertida">
+		<section class="tarjeta">
 		<h2 class="font-display">Prioritarias</h2>
 		{#if cargandoPrioritarias}
 			<p class="cargando-mini">Cargando…</p>
@@ -183,12 +204,7 @@
 		{/if}
 	</section>
 
-	<section class="tarjeta tile-barras">
-		<h2 class="font-display">Volumen diario</h2>
-		<BarChartColumnas datos={volumenSinDomingo} loading={cargandoKpis} etiquetas="diaSemana" />
-	</section>
-
-	<section class="tarjeta tile-tabla">
+	<section class="tarjeta">
 		<h2 class="font-display">Mesas recientes</h2>
 		<div class="tabla-wrap">
 			<table>
@@ -259,6 +275,7 @@
 			</table>
 		</div>
 	</section>
+	</div>
 </div>
 
 <style>
@@ -282,7 +299,7 @@
 
 	.btn-semana {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		color: var(--text);
 		cursor: pointer;
@@ -308,84 +325,18 @@
 		cursor: default;
 	}
 
-	.bento {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		grid-auto-rows: minmax(96px, auto);
-		grid-auto-flow: dense;
-		gap: 18px;
-	}
 
 	.tarjeta {
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 		padding: 18px;
-		box-shadow: var(--shadow-flat);
+		box-shadow: var(--shadow-sm);
 	}
 
 	.tarjeta h2 {
 		font-size: 14px;
 		margin: 0 0 14px;
 		color: var(--text-muted);
-	}
-
-	.tile-hero {
-		grid-column: span 2;
-		grid-row: span 2;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-	}
-
-	.tile-hero .label {
-		font-size: 13px;
-		color: var(--text-muted);
-	}
-
-	.valor-hero {
-		font-size: 44px;
-		font-weight: 700;
-		line-height: 1.1;
-		margin-top: 6px;
-	}
-
-	.skeleton-hero {
-		display: block;
-		height: 44px;
-		width: 100px;
-		border-radius: 6px;
-		margin-top: 6px;
-	}
-
-	.tile-resolutor {
-		grid-column: span 2;
-		grid-row: span 2;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.tile-barras,
-	.tile-tabla {
-		grid-column: span 4;
-	}
-
-	.tile-barras {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.tile-mitad {
-		grid-column: span 2;
-	}
-
-	.tile-categoria {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.tile-prioritarias {
-		display: flex;
-		flex-direction: column;
 	}
 
 	.cargando-mini,
@@ -486,34 +437,6 @@
 		overflow-x: auto;
 	}
 
-	@media (max-width: 960px) {
-		.bento {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
-		.tile-hero,
-		.tile-resolutor,
-		.tile-barras,
-		.tile-tabla,
-		.tile-mitad {
-			grid-column: span 2;
-		}
-	}
-
-	@media (max-width: 640px) {
-		.bento {
-			grid-template-columns: 1fr;
-		}
-
-		.tile-hero,
-		.tile-resolutor,
-		.tile-barras,
-		.tile-tabla,
-		.tile-mitad {
-			grid-column: span 1;
-		}
-	}
-
 	table {
 		width: 100%;
 		border-collapse: collapse;
@@ -528,11 +451,11 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		padding: 8px 10px;
-		border-bottom: 2px solid var(--border-strong);
+		border-bottom: 1px solid var(--border);
 	}
 
 	td {
-		padding: 9px 10px;
+		padding: 13px 12px;
 		border-bottom: 1px solid var(--border);
 	}
 
@@ -576,7 +499,7 @@
 		font-size: 11px;
 		color: var(--text-muted);
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		padding: 3px 10px;
 	}

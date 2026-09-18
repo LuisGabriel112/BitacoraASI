@@ -386,6 +386,11 @@
 
 	<div class="columna-derecha">
 		<form class="tarjeta formulario" onsubmit={(e) => (e.preventDefault(), guardar())}>
+			<div class="formulario-cabecera">
+				<h2 class="font-display">Datos de la mesa</h2>
+				<span class="atajo">Ctrl+Enter para guardar</span>
+			</div>
+
 			<LeyendaGrupos />
 
 			<div class="grid-campos">
@@ -519,14 +524,14 @@
 	.columnas {
 		display: grid;
 		grid-template-columns: minmax(280px, 360px) 1fr;
-		gap: 24px;
+		gap: var(--gap-bloques);
 		align-items: start;
 	}
 
 	.columna-izquierda {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: var(--gap-bloques);
 		min-width: 0;
 	}
 
@@ -547,6 +552,28 @@
 		gap: 18px;
 	}
 
+	/* cabecera y pie enmarcan el formulario como una tarea con principio y fin,
+	   igual que en la captura de la bitácora operativa */
+	.formulario-cabecera {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+		padding-bottom: 14px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.formulario-cabecera h2 {
+		margin: 0;
+		font-size: 16px;
+	}
+
+	.atajo {
+		font-size: 11px;
+		color: var(--text-faint);
+		font-family: var(--font-mono);
+	}
+
 	.recientes h2 {
 		font-size: 14px;
 		margin: 0 0 14px;
@@ -556,7 +583,7 @@
 	.buscador-recientes {
 		width: 100%;
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 8px 10px;
 		color: var(--text);
@@ -723,7 +750,7 @@
 	input,
 	textarea {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);
@@ -744,7 +771,7 @@
 
 	.pill-sugerencia {
 		background: color-mix(in srgb, var(--accent) 12%, transparent);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		padding: 5px 12px;
 		font-size: 12px;
@@ -765,7 +792,7 @@
 
 	.btn-vaciar-cierre {
 		background: none;
-		border: 2px solid var(--danger);
+		border: 1px solid var(--danger);
 		border-radius: var(--radius);
 		padding: 12px 16px;
 		font-size: 13px;
@@ -827,7 +854,7 @@
 
 	select {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);
@@ -843,6 +870,8 @@
 		gap: 12px;
 		align-items: center;
 		justify-content: flex-end;
+		padding-top: 16px;
+		border-top: 1px solid var(--border);
 	}
 
 	.guardar {

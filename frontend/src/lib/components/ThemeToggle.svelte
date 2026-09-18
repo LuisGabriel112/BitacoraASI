@@ -32,7 +32,7 @@
 <style>
 	.toggle-tema {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		width: 40px;
 		height: 40px;

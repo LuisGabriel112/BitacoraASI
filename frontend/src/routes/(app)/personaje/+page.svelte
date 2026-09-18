@@ -2,6 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import Header from '$lib/components/Header.svelte';
 	import Personaje3D from '$lib/components/Personaje3D.svelte';
+	import StatTile from '$lib/components/StatTile.svelte';
 	import { ACCESORIOS } from '$lib/apariencia';
 	import { api, type Accesorio, type Catalogo, type EventoXp, type Personaje, type RankingItem } from '$lib/api/client';
 	import { actualizarPersonaje } from '$lib/personaje.svelte';
@@ -95,6 +96,10 @@
 		personaje ? Math.min(100, (personaje.xp_en_nivel_actual / personaje.xp_para_siguiente_nivel) * 100) : 0
 	);
 
+	const xpFaltante = $derived(
+		personaje ? Math.max(0, personaje.xp_para_siguiente_nivel - personaje.xp_en_nivel_actual) : 0
+	);
+
 	const agenteVinculado = $derived(agentes.find((a) => a.usuario_id === personaje?.id) ?? null);
 	const resolutorVinculado = $derived(resolutores.find((r) => r.usuario_id === personaje?.id) ?? null);
 
@@ -132,13 +137,21 @@
 {#if cargando}
 	<p class="cargando">Cargando personaje…</p>
 {:else if personaje}
-	<div class="columnas" in:fade={{ duration: 250 }}>
+	<div class="pantalla" in:fade={{ duration: 250 }}>
+	<div class="fila-tiles">
+		<StatTile label="Nivel" value={personaje.nivel} icono="shield" nota={personaje.titulo} destacada />
+		<StatTile label="XP total" value={personaje.xp.toLocaleString('es-MX')} icono="star" nota="Acumulada" />
+		<StatTile label="XP del nivel" value={personaje.xp_en_nivel_actual.toLocaleString('es-MX')} icono="zap" nota="En este nivel" />
+		<StatTile label="Falta para subir" value={xpFaltante.toLocaleString('es-MX')} icono="target" nota="XP restante" />
+	</div>
+
+	<div class="columnas">
 		<section class="tarjeta ficha">
 			<Personaje3D colorPiel={colorPielEdit} colorCuerpo={colorCuerpoEdit} accesorio={accesorioEdit} tamano={200} />
 			<h2 class="font-display">{personaje.nombre}</h2>
 			<span class="titulo-nivel">Nivel {personaje.nivel} · {personaje.titulo}</span>
 			<div class="barra-xp" title="{personaje.xp_en_nivel_actual} / {personaje.xp_para_siguiente_nivel} XP">
-				<div class="barra-xp-relleno" style="width: {porcentajeXp}%"></div>
+				<div class="barra-xp-relleno" style="transform: scaleX({porcentajeXp / 100})"></div>
 			</div>
 			<span class="xp-detalle">
 				{personaje.xp_en_nivel_actual} / {personaje.xp_para_siguiente_nivel} XP para el siguiente nivel ·
@@ -273,6 +286,7 @@
 			{/if}
 		</section>
 	</div>
+	</div>
 {/if}
 
 <style>
@@ -285,7 +299,7 @@
 		display: grid;
 		grid-template-columns: minmax(240px, 320px) 1fr;
 		grid-template-rows: auto auto;
-		gap: 18px;
+		gap: var(--gap-bloques);
 	}
 
 	.tarjeta {
@@ -331,9 +345,11 @@
 	}
 
 	.barra-xp-relleno {
+		width: 100%;
 		height: 100%;
 		background: var(--accent);
-		transition: width 0.3s ease;
+		transform-origin: left;
+		transition: transform 0.3s ease;
 	}
 
 	.xp-detalle {
@@ -462,7 +478,7 @@
 	.personalizar input[type='color'] {
 		width: 44px;
 		height: 32px;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		background: var(--surface);
 		padding: 2px;
@@ -471,7 +487,7 @@
 
 	.personalizar select {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 7px 10px;
 		color: var(--text);
@@ -558,7 +574,7 @@
 
 	.campo-vincular select {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 7px 10px;
 		color: var(--text);
@@ -572,7 +588,7 @@
 
 	.campo-vincular button {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 7px 12px;
 		color: var(--text);

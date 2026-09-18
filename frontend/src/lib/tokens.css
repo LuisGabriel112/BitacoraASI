@@ -1,25 +1,33 @@
 :root {
-	/* fondo de página — plano, opaco, sin gradiente ni blobs */
-	--bg: oklch(0.14 0.012 250);
+	/* fondo de página — casi negro neutro frío, sin gradiente decorativo */
+	--bg: oklch(0.19 0.004 286);
 
-	/* superficies — planas y opacas, sin translucidez ni blur */
-	--surface: oklch(0.19 0.014 250);
-	--surface-raised: oklch(0.24 0.016 250);
-	--border: oklch(0.32 0.016 250);
-	--border-strong: oklch(0.93 0.01 250);
+	/* superficies — la jerarquía la da la elevación, no el borde */
+	--surface: oklch(0.24 0.005 286);
+	--surface-raised: oklch(0.29 0.006 286);
+	--border: oklch(0.33 0.007 286);
+	--border-strong: oklch(0.4 0.008 286);
 
 	/* texto */
-	--text: oklch(0.97 0.004 250);
-	--text-muted: oklch(0.74 0.012 250);
-	--text-faint: oklch(0.56 0.012 250);
+	--text: oklch(0.98 0.002 286);
+	--text-muted: oklch(0.72 0.008 286);
+	--text-faint: oklch(0.56 0.008 286);
 
-	/* acento — violeta contundente, único protagonista de acción/estado activo */
-	--accent: oklch(0.64 0.24 296);
-	--accent-strong: oklch(0.72 0.25 296);
+	/* acento — guinda plano; marca la tarjeta destacada y el item de
+	   navegación activo. Ninguna superficie lleva degradado. */
+	--accent: oklch(0.55 0.18 12);
+	--accent-strong: oklch(0.66 0.16 14);
 	--accent-2: oklch(0.83 0.17 95);
-	--success: #3b9b6f;
-	--warning: #d97706;
-	--danger: #c1443c;
+	--success: #34d399;
+	--warning: #fbbf24;
+	--danger: #f87171;
+
+	/* fondos translúcidos de badge: el color semántico vive en el texto, el
+	   relleno es el mismo color al 16-18% para no competir con las cifras */
+	--accent-soft: color-mix(in oklab, var(--accent) 18%, transparent);
+	--success-soft: color-mix(in oklab, var(--success) 16%, transparent);
+	--warning-soft: color-mix(in oklab, var(--warning) 16%, transparent);
+	--danger-soft: color-mix(in oklab, var(--danger) 16%, transparent);
 
 	/* chips por sistema — fijos, consistentes en toda la app.
 	   Trío validado (dataviz skill: CVD deutan/protan >= 8, normal-vision >= 15,
@@ -37,13 +45,21 @@
 	   flotante. Igual en ambos temas: oscurece el fondo, no lo tiñe. */
 	--scrim: oklch(0 0 0 / 0.5);
 
-	/* espaciado / radios / sombra plana (sin blur, offset duro) */
-	--radius: 8px;
-	--radius-lg: 14px;
+	/* espaciado / radios */
+	--radius-sm: 8px;
+	--radius: 10px;
+	--radius-lg: 16px;
+	--radius-pill: 999px;
 	--nav-width: 240px;
-	--shadow-flat: 4px 4px 0 0 var(--border-strong);
-	--shadow-flat-sm: 2px 2px 0 0 var(--border-strong);
-	--shadow-flat-accent: 4px 4px 0 0 var(--accent);
+
+	/* separación entre bloques de una pantalla. No baja a 0: con radio de 16px
+	   las esquinas dejarían huecos triangulares en cada unión. */
+	--gap-bloques: 8px;
+
+	/* sombras suaves: la elevación sustituye al borde duro como señal de capa */
+	--shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.35);
+	--shadow-md: 0 8px 24px -6px oklch(0 0 0 / 0.5);
+	--shadow-accent: 0 10px 28px -8px oklch(0.5 0.18 12 / 0.55);
 
 	/* icono chevron-down (Lucide) para indicadores CSS ::after — se pinta con
 	   mask-image + background-color para heredar el color del tema */
@@ -53,102 +69,78 @@
 /* modo claro — sigue la preferencia del sistema por default */
 @media (prefers-color-scheme: light) {
 	:root {
-		--bg: oklch(0.97 0.004 250);
+		--bg: oklch(0.97 0.003 286);
 		--surface: oklch(1 0 0);
-		--surface-raised: oklch(0.94 0.006 250);
-		--border: oklch(0.85 0.008 250);
-		--border-strong: oklch(0.16 0.02 250);
+		--surface-raised: oklch(0.96 0.004 286);
+		--border: oklch(0.9 0.005 286);
+		--border-strong: oklch(0.82 0.007 286);
 
-		--text: oklch(0.18 0.02 250);
-		--text-muted: oklch(0.4 0.015 250);
-		--text-faint: oklch(0.55 0.012 250);
+		--text: oklch(0.21 0.012 286);
+		--text-muted: oklch(0.48 0.01 286);
+		--text-faint: oklch(0.62 0.008 286);
 
-		--accent: oklch(0.5 0.22 296);
-		--accent-strong: oklch(0.42 0.22 296);
+		--accent: oklch(0.44 0.17 12);
+		--accent-strong: oklch(0.37 0.16 12);
 		--accent-2: oklch(0.68 0.16 95);
-		--success: #1f7a52;
+		--success: #0f7a52;
 		--warning: #a85c02;
-		--danger: #a13429;
+		--danger: #b3261e;
 
 		--sistema-mediport: #1f5db3;
 		--sistema-pis: #0f7a52;
 		--sistema-proactivanet: #b8451a;
+
+		--shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.06);
+		--shadow-md: 0 8px 24px -6px oklch(0 0 0 / 0.12);
+		--shadow-accent: 0 10px 28px -8px oklch(0.44 0.17 12 / 0.35);
 	}
 }
 
 /* el toggle manual (data-theme) gana sobre la preferencia del sistema en ambas direcciones */
 :root[data-theme='dark'] {
-	--bg: oklch(0.14 0.012 250);
-	--surface: oklch(0.19 0.014 250);
-	--surface-raised: oklch(0.24 0.016 250);
-	--border: oklch(0.32 0.016 250);
-	--border-strong: oklch(0.93 0.01 250);
-	--text: oklch(0.97 0.004 250);
-	--text-muted: oklch(0.74 0.012 250);
-	--text-faint: oklch(0.56 0.012 250);
-	--accent: oklch(0.64 0.24 296);
-	--accent-strong: oklch(0.72 0.25 296);
+	--bg: oklch(0.19 0.004 286);
+	--surface: oklch(0.24 0.005 286);
+	--surface-raised: oklch(0.29 0.006 286);
+	--border: oklch(0.33 0.007 286);
+	--border-strong: oklch(0.4 0.008 286);
+	--text: oklch(0.98 0.002 286);
+	--text-muted: oklch(0.72 0.008 286);
+	--text-faint: oklch(0.56 0.008 286);
+	--accent: oklch(0.55 0.18 12);
+	--accent-strong: oklch(0.66 0.16 14);
 	--accent-2: oklch(0.83 0.17 95);
-	--success: #3b9b6f;
-	--warning: #d97706;
-	--danger: #c1443c;
+	--success: #34d399;
+	--warning: #fbbf24;
+	--danger: #f87171;
 	--sistema-mediport: #3987e5;
 	--sistema-pis: #199e70;
 	--sistema-proactivanet: #d95926;
+	--shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.35);
+	--shadow-md: 0 8px 24px -6px oklch(0 0 0 / 0.5);
+	--shadow-accent: 0 10px 28px -8px oklch(0.5 0.18 12 / 0.55);
 }
 
 :root[data-theme='light'] {
-	--bg: oklch(0.97 0.004 250);
+	--bg: oklch(0.97 0.003 286);
 	--surface: oklch(1 0 0);
-	--surface-raised: oklch(0.94 0.006 250);
-	--border: oklch(0.85 0.008 250);
-	--border-strong: oklch(0.16 0.02 250);
-	--text: oklch(0.18 0.02 250);
-	--text-muted: oklch(0.4 0.015 250);
-	--text-faint: oklch(0.55 0.012 250);
-	--accent: oklch(0.5 0.22 296);
-	--accent-strong: oklch(0.42 0.22 296);
+	--surface-raised: oklch(0.96 0.004 286);
+	--border: oklch(0.9 0.005 286);
+	--border-strong: oklch(0.82 0.007 286);
+	--text: oklch(0.21 0.012 286);
+	--text-muted: oklch(0.48 0.01 286);
+	--text-faint: oklch(0.62 0.008 286);
+	--accent: oklch(0.44 0.17 12);
+	--accent-strong: oklch(0.37 0.16 12);
 	--accent-2: oklch(0.68 0.16 95);
-	--success: #1f7a52;
+	--success: #0f7a52;
 	--warning: #a85c02;
-	--danger: #a13429;
+	--danger: #b3261e;
 	--sistema-mediport: #1f5db3;
 	--sistema-pis: #0f7a52;
 	--sistema-proactivanet: #b8451a;
-}
-
-/* mes patrio (septiembre) — activado por app.html vía data-temporada, no por
-   preferencia del usuario. Sustituye el acento único por verde/rojo bandera;
-   el resto del sistema (superficies, bordes duros, sombra plana) no cambia. */
-:root[data-temporada='patrio'] {
-	--accent: #006341;
-	--accent-strong: #00834f;
-	--accent-2: #ce1126;
-}
-
-.franja-patria {
-	display: none;
-}
-
-:root[data-temporada='patrio'] .franja-patria {
-	display: flex;
-	height: 10px;
-}
-
-:root[data-temporada='patrio'] .franja-patria span {
-	flex: 1;
-}
-
-:root[data-temporada='patrio'] .franja-patria span:nth-child(1) {
-	background: #006341;
-}
-
-:root[data-temporada='patrio'] .franja-patria span:nth-child(2) {
-	background: white;
-}
-
-:root[data-temporada='patrio'] .franja-patria span:nth-child(3) {
-	background: #ce1126;
+	--shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.06);
+	--shadow-md: 0 8px 24px -6px oklch(0 0 0 / 0.12);
+	--shadow-accent: 0 10px 28px -8px oklch(0.44 0.17 12 / 0.35);
 }
 
 * {
@@ -168,6 +160,7 @@ body {
 	font-size: 14px;
 	line-height: 1.5;
 	font-variant-numeric: tabular-nums;
+	-webkit-font-smoothing: antialiased;
 }
 
 h1,
@@ -176,7 +169,7 @@ h3,
 .font-display {
 	font-family: var(--font-display);
 	font-weight: 700;
-	letter-spacing: -0.01em;
+	letter-spacing: -0.015em;
 }
 
 a {
@@ -202,18 +195,78 @@ textarea {
 	outline-offset: 2px;
 }
 
-/* superficies planas reutilizadas en toda la app: tarjetas, sidebar, tiles de
-   estadística, tabla, inputs y botones secundarios. Bordes duros + sombra
-   offset sin blur (ver --shadow-flat) en vez del glassmorphism translúcido
-   anterior. No está scoped a un componente porque el mismo patrón se repite
-   en cada página (bitácora técnica y administrativa) con nombres de clase
-   iguales. */
+/* superficies reutilizadas en toda la app: tarjetas, sidebar, tiles de
+   estadística, tabla, inputs y botones secundarios. Borde de 1px apenas
+   perceptible + sombra suave: la capa se lee por elevación, no por trazo.
+   No está scoped a un componente porque el mismo patrón se repite en cada
+   página (bitácora técnica y administrativa) con nombres de clase iguales. */
 .tarjeta,
 .tile,
 .toast {
 	background: var(--surface);
-	border: 2px solid var(--border-strong);
-	box-shadow: var(--shadow-flat);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-sm);
+}
+
+/* primitivas de distribución compartidas por todas las pantallas. Viven aquí y
+   no en cada página porque el rediseño exige que panel, listado, reporte, mesas
+   y personaje se lean con la misma estructura: un cuerpo ancho y una columna
+   lateral constante, nunca bandas apiladas de ancho completo. */
+.pantalla {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gap-bloques);
+}
+
+/* align-items: start evita que las tarjetas chicas se estiren a la altura de
+   la destacada: cada una mide lo que mide su contenido, sin aire sobrante */
+.fila-tiles {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	align-items: start;
+	gap: var(--gap-bloques);
+}
+
+.fila-ancha {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+	align-items: start;
+	gap: var(--gap-bloques);
+}
+
+.fila-ancha.invertida {
+	grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
+}
+
+.columna-lateral {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gap-bloques);
+}
+
+.par-tiles {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	align-items: start;
+	gap: var(--gap-bloques);
+}
+
+@media (max-width: 1100px) {
+	.fila-tiles {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.fila-ancha,
+	.fila-ancha.invertida {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 640px) {
+	.fila-tiles {
+		grid-template-columns: 1fr;
+	}
 }
 
 .nav,
@@ -226,7 +279,13 @@ textarea,
 .botones button,
 .badge-semana {
 	background: var(--surface);
-	border-color: var(--border-strong);
+	border-color: var(--border);
+}
+
+input,
+select,
+textarea {
+	border-radius: var(--radius);
 }
 
 .skeleton {
