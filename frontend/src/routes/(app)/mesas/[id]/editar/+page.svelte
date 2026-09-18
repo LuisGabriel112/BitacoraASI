@@ -335,7 +335,7 @@
 	textarea,
 	select {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);

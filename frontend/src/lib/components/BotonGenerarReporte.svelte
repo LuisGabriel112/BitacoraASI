@@ -60,9 +60,9 @@
 		right: 0;
 		min-width: 150px;
 		background: var(--surface-raised);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
-		box-shadow: var(--shadow-flat);
+		box-shadow: var(--shadow-sm);
 		list-style: none;
 		margin: 0;
 		padding: 4px;

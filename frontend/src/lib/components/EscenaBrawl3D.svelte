@@ -322,7 +322,7 @@
 	.lienzo {
 		display: block;
 		line-height: 0;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		overflow: hidden;
 	}

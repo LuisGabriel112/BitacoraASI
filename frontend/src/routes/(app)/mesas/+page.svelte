@@ -282,7 +282,7 @@
 
 	.btn-semana {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		color: var(--text);
 		cursor: pointer;
@@ -317,10 +317,10 @@
 	}
 
 	.tarjeta {
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
 		padding: 18px;
-		box-shadow: var(--shadow-flat);
+		box-shadow: var(--shadow-sm);
 	}
 
 	.tarjeta h2 {
@@ -528,11 +528,11 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		padding: 8px 10px;
-		border-bottom: 2px solid var(--border-strong);
+		border-bottom: 1px solid var(--border);
 	}
 
 	td {
-		padding: 9px 10px;
+		padding: 13px 12px;
 		border-bottom: 1px solid var(--border);
 	}
 
@@ -576,7 +576,7 @@
 		font-size: 11px;
 		color: var(--text-muted);
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		padding: 3px 10px;
 	}

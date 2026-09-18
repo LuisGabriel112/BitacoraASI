@@ -176,7 +176,7 @@
 	input {
 		width: 100%;
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 9px 32px 9px 10px;
 		color: var(--text);
@@ -208,9 +208,9 @@
 		left: 0;
 		right: 0;
 		background: var(--surface-raised);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
-		box-shadow: var(--shadow-flat);
+		box-shadow: var(--shadow-md);
 		max-height: 220px;
 		overflow-y: auto;
 		list-style: none;

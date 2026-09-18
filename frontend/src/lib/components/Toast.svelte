@@ -27,10 +27,11 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		padding: 10px 14px;
+		padding: 12px 14px;
 		border-radius: var(--radius);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		background: var(--surface-raised);
+		box-shadow: var(--shadow-md);
 		font-size: 13px;
 	}
 
@@ -65,7 +66,7 @@
 
 	.accion {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 4px 10px;
 		color: var(--text);

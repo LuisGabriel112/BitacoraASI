@@ -50,7 +50,7 @@
 		gap: 10px;
 		padding: 14px 40px 14px 18px;
 		border-radius: var(--radius-lg);
-		box-shadow: var(--shadow-flat);
+		box-shadow: var(--shadow-md);
 		max-width: 380px;
 		font-size: 14px;
 		font-weight: 600;

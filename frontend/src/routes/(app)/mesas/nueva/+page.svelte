@@ -533,7 +533,7 @@
 	.buscador-recientes {
 		width: 100%;
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 8px 10px;
 		color: var(--text);
@@ -696,7 +696,7 @@
 	input,
 	textarea {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);
@@ -717,7 +717,7 @@
 
 	.pill-sugerencia {
 		background: color-mix(in srgb, var(--accent) 12%, transparent);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		padding: 5px 12px;
 		font-size: 12px;
@@ -738,7 +738,7 @@
 
 	.btn-vaciar-cierre {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 12px 16px;
 		font-size: 13px;
@@ -801,7 +801,7 @@
 
 	select {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);

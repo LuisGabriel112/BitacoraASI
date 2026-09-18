@@ -21,7 +21,7 @@
 		align-items: center;
 		gap: 6px;
 		padding: 2px 8px 2px 6px;
-		border-radius: 999px;
+		border-radius: var(--radius-pill);
 		border: 1px solid color-mix(in srgb, var(--chip-color) 45%, transparent);
 		background: color-mix(in srgb, var(--chip-color) 14%, transparent);
 		color: var(--chip-color);

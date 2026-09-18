@@ -21,7 +21,9 @@
 
 	.barra {
 		flex: 1;
-		background: var(--accent);
+		/* sobre la tarjeta destacada el acento desaparece contra el gradiente,
+		   así que el contenedor puede sobrescribir el color de las barras */
+		background: var(--color-sparkline, var(--accent));
 		border-radius: 2px;
 		min-height: 2px;
 	}

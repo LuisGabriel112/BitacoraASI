@@ -468,7 +468,7 @@
 
 	.buscador {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 9px 12px;
 		min-width: 220px;
@@ -556,7 +556,7 @@
 
 	.boton-secundario {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		color: var(--text);
 		cursor: pointer;
 		font: inherit;
@@ -594,7 +594,7 @@
 	input,
 	textarea {
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 9px 10px;
 		color: var(--text);
@@ -629,14 +629,14 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		padding: 10px;
-		border-bottom: 2px solid var(--border-strong);
+		border-bottom: 1px solid var(--border);
 		position: sticky;
 		top: 0;
 		background: var(--bg);
 	}
 
 	td {
-		padding: 9px 10px;
+		padding: 13px 12px;
 		border-bottom: 1px solid var(--border);
 	}
 
@@ -732,7 +732,7 @@
 		font-size: 11px;
 		color: var(--text-muted);
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		padding: 3px 10px;
 	}
@@ -758,7 +758,7 @@
 		min-width: 40px;
 		min-height: 40px;
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		color: var(--text-faint);
 		cursor: pointer;
@@ -815,7 +815,7 @@
 		align-items: center;
 		min-height: 40px;
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 4px 10px;
 		color: var(--text);
@@ -832,7 +832,7 @@
 		display: inline-flex;
 		align-items: center;
 		min-height: 40px;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 4px 10px;
 		color: var(--text);
@@ -903,7 +903,7 @@
 
 	.btn-cancelar {
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		padding: 4px 10px;
 		color: var(--text);
@@ -999,7 +999,7 @@
 		align-items: center;
 		gap: 6px;
 		background: var(--surface);
-		border: 2px solid var(--border-strong);
+		border: 1px solid var(--border);
 		border-radius: 999px;
 		min-height: 40px;
 		padding: 6px 14px;

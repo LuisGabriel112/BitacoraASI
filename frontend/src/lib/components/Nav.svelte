@@ -1,16 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { semanaActual } from '$lib/semana';
 	import { api } from '$lib/api/client';
-	import { estadoPersonaje, limpiarPersonaje } from '$lib/personaje.svelte';
-	import Reloj from '$lib/components/Reloj.svelte';
+	import { limpiarPersonaje } from '$lib/personaje.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import PapelPicado from '$lib/components/PapelPicado.svelte';
 	import type { NombreIcono } from '$lib/icons';
-
-	const semana = semanaActual();
-	const personaje = $derived(estadoPersonaje.actual);
 
 	async function cerrarSesion() {
 		await api.cerrarSesion();
@@ -74,86 +69,72 @@
 	</div>
 	<PapelPicado cantidad={9} />
 
-	<div class="reloj-envoltura">
-		<Reloj />
-	</div>
-
-	<div class="semana-actual" title="Semana ISO en curso">
-		<span class="semana-label">{semana.etiqueta}</span>
-		<div class="semana-barra">
-			<div class="semana-progreso" style="width: {semana.progreso * 100}%"></div>
-		</div>
-	</div>
-
-	{#if personaje}
-		<div class="personaje-badge">
-			<span class="personaje-avatar" aria-hidden="true">{personaje.avatar}</span>
-			<div class="personaje-info">
-				<span class="personaje-nombre">{personaje.nombre}</span>
-				<span class="personaje-nivel">Nv. {personaje.nivel} · {personaje.titulo}</span>
+	<div class="secciones">
+		{#each grupos as grupo}
+			<div class="seccion">
+				<button
+					type="button"
+					class="seccion-titulo"
+					onclick={() => alternarSeccion(grupo.clave)}
+					aria-expanded={!colapsadas[grupo.clave]}
+				>
+					<span>{grupo.titulo}</span>
+					<span class="chevron" class:girado={colapsadas[grupo.clave]} aria-hidden="true">
+						<Icon nombre="chevron-down" tamano={12} />
+					</span>
+				</button>
+				{#if !colapsadas[grupo.clave]}
+					<nav>
+						{#each grupo.items as item}
+							<a href={item.href} class:activo={$page.url.pathname === item.href}>
+								<span class="icono"><Icon nombre={item.icon} tamano={16} /></span>
+								{item.label}
+							</a>
+						{/each}
+					</nav>
+				{/if}
 			</div>
-			<button type="button" class="cerrar-sesion" onclick={cerrarSesion} title="Cerrar sesión" aria-label="Cerrar sesión">
-				<Icon nombre="power" tamano={16} />
-			</button>
-		</div>
-	{/if}
+		{/each}
+	</div>
 
-	{#each grupos as grupo, i}
-		<div class="seccion" class:primero={i === 0}>
-			<button
-				type="button"
-				class="seccion-titulo"
-				onclick={() => alternarSeccion(grupo.clave)}
-				aria-expanded={!colapsadas[grupo.clave]}
-			>
-				<span>{grupo.titulo}</span>
-				<span class="chevron" class:girado={colapsadas[grupo.clave]} aria-hidden="true">
-					<Icon nombre="chevron-down" tamano={12} />
-				</span>
-			</button>
-			{#if !colapsadas[grupo.clave]}
-				<nav>
-					{#each grupo.items as item}
-						<a href={item.href} class:activo={$page.url.pathname === item.href}>
-							<span class="icono"><Icon nombre={item.icon} tamano={16} /></span>
-							{item.label}
-						</a>
-					{/each}
-				</nav>
-			{/if}
-		</div>
-	{/each}
+	<button type="button" class="cerrar-sesion" onclick={cerrarSesion}>
+		<span class="icono"><Icon nombre="power" tamano={16} /></span>
+		Cerrar sesión
+	</button>
 </aside>
 
 <style>
 	.nav {
 		width: var(--nav-width);
 		flex-shrink: 0;
-		background: var(--surface);
-		border-right: 1px solid var(--border);
+		background: var(--bg);
 		display: flex;
 		flex-direction: column;
 		height: 100vh;
 		position: sticky;
 		top: 0;
 		overflow-y: auto;
+		padding: 0 12px 16px;
 	}
 
 	.marca {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		padding: 18px 16px;
+		gap: 10px;
+		padding: 20px 8px 18px;
 		font-size: 15px;
-		border-bottom: 1px solid var(--border);
-	}
-
-	:root[data-temporada='patrio'] .marca {
-		background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 	}
 
 	.marca-icono {
-		color: var(--accent-strong);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		border-radius: var(--radius);
+		background: var(--accent-gradient);
+		color: white;
+		flex-shrink: 0;
 	}
 
 	.marca-texto {
@@ -161,100 +142,11 @@
 		min-width: 0;
 	}
 
-	.reloj-envoltura {
-		padding: 14px 16px;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.semana-actual {
-		padding: 14px 16px;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.semana-label {
-		display: block;
-		font-family: var(--font-mono);
-		font-weight: 600;
-		font-size: 15px;
-		letter-spacing: 0.02em;
-		margin-bottom: 8px;
-	}
-
-	.semana-barra {
-		height: 4px;
-		background: var(--border);
-		border-radius: 2px;
-		overflow: hidden;
-	}
-
-	.semana-progreso {
-		height: 100%;
-		background: var(--success);
-		transition: width 0.3s ease;
-	}
-
-	.personaje-badge {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 12px 16px;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.personaje-avatar {
-		font-size: 20px;
-		flex-shrink: 0;
-	}
-
-	.personaje-info {
-		display: flex;
-		flex-direction: column;
-		min-width: 0;
+	.secciones {
 		flex: 1;
-	}
-
-	.personaje-nombre {
-		font-size: 13px;
-		font-weight: 600;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.personaje-nivel {
-		font-size: 11px;
-		color: var(--text-muted);
-	}
-
-	.cerrar-sesion {
-		background: none;
-		border: none;
-		color: var(--text-faint);
-		cursor: pointer;
-		font-size: 14px;
-		padding: 4px;
-		flex-shrink: 0;
-	}
-
-	.cerrar-sesion:hover {
-		color: var(--danger);
-	}
-
-	nav {
 		display: flex;
 		flex-direction: column;
-		padding: 4px 8px 12px;
-		gap: 2px;
-	}
-
-	.seccion {
-		opacity: 0.72;
-		transition: opacity 0.15s ease;
-	}
-
-	.seccion:hover,
-	.seccion:focus-within {
-		opacity: 1;
+		gap: 4px;
 	}
 
 	.seccion-titulo {
@@ -262,21 +154,14 @@
 		align-items: center;
 		justify-content: space-between;
 		width: 100%;
-		padding: 10px 18px 4px;
+		padding: 12px 10px 6px;
 		background: none;
 		border: none;
-		border-top: 1px solid var(--border);
-		margin-top: 4px;
 		font-size: 11px;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
+		letter-spacing: 0.06em;
 		color: var(--text-faint);
 		cursor: pointer;
-	}
-
-	.seccion.primero .seccion-titulo {
-		border-top: none;
-		margin-top: 0;
 	}
 
 	.seccion-titulo:hover {
@@ -292,6 +177,12 @@
 		transform: rotate(-90deg);
 	}
 
+	nav {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
 	nav a {
 		display: flex;
 		align-items: center;
@@ -301,10 +192,13 @@
 		text-decoration: none;
 		color: var(--text-muted);
 		font-size: 13px;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
 	}
 
 	nav a:hover {
-		background: var(--surface-raised);
+		background: var(--surface);
 		color: var(--text);
 	}
 
@@ -314,8 +208,9 @@
 	}
 
 	nav a.activo {
-		background: var(--accent);
+		background: var(--accent-gradient);
 		color: white;
+		box-shadow: var(--shadow-accent);
 	}
 
 	.icono {
@@ -328,5 +223,29 @@
 
 	nav a.activo .icono {
 		color: white;
+	}
+
+	.cerrar-sesion {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		width: 100%;
+		margin-top: 12px;
+		padding: 9px 10px;
+		border: none;
+		border-radius: var(--radius);
+		background: none;
+		color: var(--text-faint);
+		font-size: 13px;
+		cursor: pointer;
+	}
+
+	.cerrar-sesion:hover {
+		background: var(--surface);
+		color: var(--danger);
+	}
+
+	.cerrar-sesion:hover .icono {
+		color: var(--danger);
 	}
 </style>
