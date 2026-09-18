@@ -214,15 +214,19 @@
 
 <Header titulo="Listado de mesas" />
 
-<div class="barra-superior">
-	<input
-		type="search"
-		placeholder="Búsqueda"
-		aria-label="Búsqueda por código, título, solicitante, descripción o solución"
-		value={buscar}
-		oninput={alBuscar}
-		class="buscador"
-	/>
+<div class="pantalla">
+<section class="tarjeta barra-superior">
+	<div class="linea-busqueda">
+		<input
+			type="search"
+			placeholder="Búsqueda"
+			aria-label="Búsqueda por código, título, solicitante, descripción o solución"
+			value={buscar}
+			oninput={alBuscar}
+			class="buscador"
+		/>
+		<span class="contador">{total} mesas</span>
+	</div>
 	<div class="filtros">
 		<ComboboxCreatable id="m-categoria" catalogo="categorias-mesa" label="Categoría" bind:selectedId={categoriaId} permiteCrear={false} />
 		<ComboboxCreatable id="m-solicitante" catalogo="solicitantes-mesa" label="Solicitante" bind:selectedId={solicitanteId} permiteCrear={false} />
@@ -253,8 +257,9 @@
 		<a href={api.exportMesasUrl('xlsx', paramsFiltros())} class="boton-primario">Exportar Excel</a>
 		<BotonGenerarReporte semana={semanaEtiqueta} />
 	</div>
-</div>
+</section>
 
+<section class="tarjeta">
 <div class="tabla-wrap">
 	<table>
 		<thead>
@@ -449,28 +454,46 @@
 {/if}
 
 <div class="paginacion">
-	<span>{total} mesas</span>
+	<span>Mostrando página {page} de {totalPaginas}</span>
 	<div class="botones">
 		<button disabled={page <= 1} onclick={() => (page -= 1)}><Icon nombre="chevron-left" tamano={14} /> Anterior</button>
-		<span>Página {page} de {totalPaginas}</span>
 		<button disabled={page >= totalPaginas} onclick={() => (page += 1)}>Siguiente <Icon nombre="chevron-right" tamano={14} /></button>
 	</div>
 </div>
+</section>
+</div>
 
 <style>
+	/* búsqueda y filtros comparten tarjeta: son el control de "qué estoy
+	   viendo", separado de la tarjeta que muestra el resultado */
 	.barra-superior {
 		display: flex;
-		flex-wrap: wrap;
+		flex-direction: column;
 		gap: 14px;
-		align-items: flex-end;
-		margin-bottom: 18px;
+		padding: 18px;
+	}
+
+	.linea-busqueda {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.contador {
+		font-size: 12px;
+		color: var(--text-muted);
+		padding: 5px 12px;
+		border-radius: var(--radius-pill);
+		background: var(--surface-raised);
 	}
 
 	.buscador {
-		background: var(--surface);
+		flex: 1;
+		background: var(--surface-raised);
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
-		padding: 9px 12px;
+		padding: 10px 14px;
 		min-width: 220px;
 		color: var(--text);
 	}
@@ -608,11 +631,12 @@
 		color: var(--text);
 	}
 
+	/* la tabla ya vive dentro de una tarjeta: un segundo borde la encajonaría */
 	.tabla-wrap {
 		overflow: auto;
-		max-height: 560px;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
+		max-height: 620px;
+		border: none;
+		background: none;
 	}
 
 	table {
@@ -984,6 +1008,8 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-top: 14px;
+		padding-top: 14px;
+		border-top: 1px solid var(--border);
 		font-size: 13px;
 		color: var(--text-muted);
 	}

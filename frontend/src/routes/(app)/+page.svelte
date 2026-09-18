@@ -2,7 +2,6 @@
 	import { fade } from 'svelte/transition';
 	import Header from '$lib/components/Header.svelte';
 	import StatTile from '$lib/components/StatTile.svelte';
-	import Sparkline from '$lib/components/Sparkline.svelte';
 	import Donut from '$lib/components/Donut.svelte';
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
@@ -169,11 +168,7 @@
 			icono="clipboard-list"
 			nota="Actualizado {ultimaActualizacion}"
 			destacada
-		>
-			{#if !cargandoKpis}
-				<div in:fade={{ duration: 200 }}><Sparkline datos={volumenSemanaCompleta} /></div>
-			{/if}
-		</StatTile>
+		/>
 
 		<StatTile label="Promedio diario" value={promedioDiario} loading={cargandoKpis} icono="bar-chart-2" nota="Registros por día" />
 		<StatTile label="Módulo más frecuente" value={moduloTop} loading={cargandoKpis} icono="grid-3x3" nota="Semana en curso" />
@@ -291,11 +286,6 @@
 		flex-shrink: 0;
 	}
 
-	/* la primera tarjeta es la destacada: la sparkline va sobre el gradiente,
-	   donde el acento no se distingue */
-	.fila-tiles :global(.tile.destacada) {
-		--color-sparkline: oklch(1 0 0 / 0.55);
-	}
 
 	.tarjeta {
 		background: var(--surface);

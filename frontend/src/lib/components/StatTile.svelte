@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { NombreIcono } from '$lib/icons';
 
@@ -9,8 +8,7 @@
 		loading = false,
 		icono = undefined,
 		nota = '',
-		destacada = false,
-		children = undefined
+		destacada = false
 	}: {
 		label: string;
 		value: number | string;
@@ -18,7 +16,6 @@
 		icono?: NombreIcono;
 		nota?: string;
 		destacada?: boolean;
-		children?: Snippet;
 	} = $props();
 </script>
 
@@ -33,7 +30,6 @@
 		<span class="valor font-display">{value}</span>
 	{/if}
 	{#if nota}<span class="nota">{nota}</span>{/if}
-	{#if children}{@render children()}{/if}
 </div>
 
 <style>

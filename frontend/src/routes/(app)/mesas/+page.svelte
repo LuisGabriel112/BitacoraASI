@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import Sparkline from '$lib/components/Sparkline.svelte';
 	import BarChartVertical from '$lib/components/BarChartVertical.svelte';
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import Header from '$lib/components/Header.svelte';
@@ -144,11 +143,7 @@
 			icono="clipboard-list"
 			nota="Semana en curso"
 			destacada
-		>
-			{#if !cargandoKpis}
-				<div in:fade={{ duration: 200 }}><Sparkline datos={volumenSemanaCompleta} /></div>
-			{/if}
-		</StatTile>
+		/>
 
 		<StatTile label="Ventana más cargada" value={ventanaTop} loading={cargandoKpis} icono="grid-3x3" nota="Por número de mesas" />
 		<StatTile label="Solución más común" value={categoriaTop} loading={cargandoKpis} icono="lightbulb" nota="Mesas cerradas" />

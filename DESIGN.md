@@ -204,7 +204,8 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 ### StatTile
 - Chip de icono de 32px (`--radius`, fondo `--accent-soft`) sobre la etiqueta.
 - Etiqueta 12px muted, cifra 28px peso 700, nota 12px faint debajo.
-- Variante `destacada`: fondo `--accent-gradient`, texto blanco, `--shadow-accent`, sin borde. Acepta un snippet hijo (la sparkline) que hereda `--color-sparkline`.
+- Variante `destacada`: fondo `--accent-gradient`, texto blanco, `--shadow-accent`, sin borde.
+- No admite contenido extra: el tile muestra una cifra y nada más. La sparkline que llevaba la tarjeta destacada se quitó, junto con el componente `Sparkline`; el volumen de la semana ya se lee en su propia tarjeta de barras.
 
 ### Inputs / Fields
 - **Style:** fondo `--surface`, borde 1px `--border`, radio `--radius` (10px).
