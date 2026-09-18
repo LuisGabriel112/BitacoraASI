@@ -143,36 +143,6 @@
 	--shadow-accent: 0 10px 28px -8px oklch(0.52 0.22 293 / 0.35);
 }
 
-/* mes patrio (septiembre) — activado por app.html vía data-temporada, no por
-   preferencia del usuario. La temporada vive solo en la decoración (franja
-   tricolor y papel picado): el acento violeta y el resto del sistema no se
-   tocan, para que la identidad del panel sea la misma los doce meses. */
-
-.franja-patria {
-	display: none;
-}
-
-:root[data-temporada='patrio'] .franja-patria {
-	display: flex;
-	height: 10px;
-}
-
-:root[data-temporada='patrio'] .franja-patria span {
-	flex: 1;
-}
-
-:root[data-temporada='patrio'] .franja-patria span:nth-child(1) {
-	background: #006341;
-}
-
-:root[data-temporada='patrio'] .franja-patria span:nth-child(2) {
-	background: white;
-}
-
-:root[data-temporada='patrio'] .franja-patria span:nth-child(3) {
-	background: #ce1126;
-}
-
 * {
 	box-sizing: border-box;
 }

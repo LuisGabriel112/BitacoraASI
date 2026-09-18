@@ -4,7 +4,6 @@
 	import { api } from '$lib/api/client';
 	import { limpiarPersonaje } from '$lib/personaje.svelte';
 	import Icon from '$lib/components/Icon.svelte';
-	import PapelPicado from '$lib/components/PapelPicado.svelte';
 	import type { NombreIcono } from '$lib/icons';
 
 	async function cerrarSesion() {
@@ -62,12 +61,10 @@
 </script>
 
 <aside class="nav">
-	<div class="franja-patria" aria-hidden="true"><span></span><span></span><span></span></div>
 	<div class="marca">
 		<span class="marca-icono"><Icon nombre="anchor" tamano={18} /></span>
 		<span class="font-display marca-texto">Bitácora ASIPONA</span>
 	</div>
-	<PapelPicado cantidad={9} />
 
 	<div class="secciones">
 		{#each grupos as grupo}

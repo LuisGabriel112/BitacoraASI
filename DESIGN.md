@@ -144,12 +144,13 @@ Shell de dos columnas: sidebar fijo (`--nav-width: 240px`, `position: sticky`) s
 
 Dentro de `main`, cada pantalla abre con la topbar (`Header.svelte`): título y subtítulo a la izquierda; reloj, semana ISO, toggle de tema e identidad del usuario a la derecha, separados por un divisor de 1px.
 
-El panel principal se lee en tres bandas, de arriba abajo:
-1. **Fila de cifras** — cuatro `StatTile` en grid de 4 columnas; la primera es la destacada con gradiente y sparkline.
-2. **Fila de gráficas** — grid `1.6fr 1fr`: volumen diario ancho + distribución por módulo angosto.
-3. **Tabla** — ancho completo, con sus filtros en la cabecera de la tarjeta.
+El panel principal no se apila en bandas de ancho completo: tiene un cuerpo ancho y una columna lateral constante (`.fila-ancha`, grid `minmax(0, 2fr) minmax(280px, 1fr)`), de modo que la mirada baja por la izquierda y el contexto vive a la derecha.
 
-Puntos de quiebre: a 1100px las cifras pasan a 2 columnas y las gráficas se apilan; a 720px la topbar oculta reloj y texto de usuario; a 640px todo va a una columna.
+1. **Fila de cifras** — cuatro `StatTile` en grid de 4 columnas; la primera es la destacada con gradiente y sparkline.
+2. **Banda de análisis** — volumen diario en el cuerpo; en el lateral, distribución por módulo más dos tiles chicos (días hábiles, última actualización).
+3. **Banda de detalle** — tabla de registros recientes en el cuerpo; volumen por sistema (`ListaSistemas`) en el lateral.
+
+Puntos de quiebre: a 1100px las cifras pasan a 2 columnas y el lateral cae bajo el cuerpo; a 720px la topbar oculta reloj y texto de usuario; a 640px todo va a una columna.
 
 ## Elevation & Depth
 
@@ -200,6 +201,10 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 - Cabecera 11px mayúsculas muted con divisor de 1px; filas de 13px con `padding: 13px 12px`.
 - Hover de fila en `--surface-raised`; la última fila no lleva divisor.
 
+### ListaSistemas
+- Fila por sistema: `ChipSistema` a la izquierda, total en 15px peso 700 a la derecha, y debajo una barra de 6px (`--radius-pill`) sobre `--surface-raised`.
+- El relleno se pinta con el color del sistema y se escala con `transform: scaleX()`; la fracción se mide contra el sistema más alto, no contra la suma.
+
 ### Navigation
 - **Sidebar:** sobre `--bg`, sin borde derecho. Ítems inactivos en `--text-muted` con icono `--text-faint`; ítem activo con `--accent-gradient`, texto e icono blancos y `--shadow-accent`. Títulos de sección en 11px mayúsculas `--text-faint`, colapsables y persistidos en `localStorage`.
 - **Topbar:** identidad del usuario como pastilla (`--radius-pill`) con avatar en gradiente, nombre y nivel.
@@ -211,12 +216,6 @@ La profundidad se lee por elevación real: superficie más clara + sombra difusa
 - **Do** reservar `--accent-gradient` a una sola superficie por pantalla más el ítem de nav activo.
 - **Do** usar los tokens `*-soft` para el relleno de cualquier badge o chip de estado.
 - **Do** preservar los tres colores de sistema (Mediport/PIS/ProactivaNet) exactamente como están — están validados por contraste y CVD.
-
-### Seasonal exception (mes patrio)
-
-En septiembre, `app.html` fija `data-temporada="patrio"` en `<html>` (detectado por fecha del navegador, sin preferencia de usuario). Ese atributo activa `.franja-patria` en `Nav.svelte` (franja tricolor de 10px) y el componente `PapelPicado.svelte` — banderines reales con ondeo animado (`@keyframes ondear`, rotación ±5° escalonada por `generarBanderines()`), presente en `Nav.svelte`, `Header.svelte` (toda página autenticada) y la tarjeta de `/login`.
-
-La temporada vive solo en esa decoración: no toca `--accent`, `--accent-gradient` ni ningún otro token. Antes sí los sustituía por verde y rojo bandera, y el resultado era que durante un mes entero la app no se parecía a sí misma. El violeta es la identidad los doce meses.
 
 ### Don't:
 - **Don't** reintroducir bordes de 2px ni sombras offset sin desenfoque — es exactamente el sistema que este rediseño reemplazó.

@@ -6,6 +6,8 @@
 	import Donut from '$lib/components/Donut.svelte';
 	import BarChartColumnas from '$lib/components/BarChartColumnas.svelte';
 	import ChipSistema from '$lib/components/ChipSistema.svelte';
+	import ListaSistemas from '$lib/components/ListaSistemas.svelte';
+	import { calcularVolumenSistemas } from '$lib/volumenSistemas';
 	import SelectCatalogo from '$lib/components/SelectCatalogo.svelte';
 	import ComboboxCreatable from '$lib/components/ComboboxCreatable.svelte';
 	import { api, type PanelKPIs, type Registro } from '$lib/api/client';
@@ -116,6 +118,10 @@
 
 	const moduloTop = $derived(kpis?.distribucion_modulo[0]?.modulo ?? '—');
 
+	const volumenPorSistema = $derived(calcularVolumenSistemas(kpis?.por_sistema ?? {}));
+
+	const sistemaTop = $derived(volumenPorSistema[0]?.nombre ?? '—');
+
 	const COLORES_DONUT = ['var(--accent)', 'var(--accent-2)', 'var(--sistema-mediport)', 'var(--border-strong)'];
 
 	const donutItems = $derived.by(() => {
@@ -171,26 +177,34 @@
 
 		<StatTile label="Promedio diario" value={promedioDiario} loading={cargandoKpis} icono="bar-chart-2" nota="Registros por día" />
 		<StatTile label="Módulo más frecuente" value={moduloTop} loading={cargandoKpis} icono="grid-3x3" nota="Semana en curso" />
-		<StatTile label="Días hábiles restantes" value={diasHabilesRestantes()} icono="flag" nota="Hasta el viernes" />
+		<StatTile label="Sistema más atendido" value={sistemaTop} loading={cargandoKpis} icono="target" nota="Semana en curso" />
 	</div>
 
-	<div class="fila-graficas">
+	<div class="fila-ancha">
 		<section class="tarjeta">
 			<h2 class="font-display">Volumen diario</h2>
 			<BarChartColumnas datos={volumenSemanaCompleta} loading={cargandoKpis} etiquetas="diaSemana" />
 		</section>
 
-		<section class="tarjeta">
-			<h2 class="font-display">Distribución por módulo</h2>
-			{#if cargandoKpis}
-				<p class="cargando">Cargando…</p>
-			{:else}
-				<div in:fade={{ duration: 200 }}><Donut items={donutItems} /></div>
-			{/if}
-		</section>
+		<div class="columna-lateral">
+			<section class="tarjeta">
+				<h2 class="font-display">Distribución por módulo</h2>
+				{#if cargandoKpis}
+					<p class="cargando">Cargando…</p>
+				{:else}
+					<div in:fade={{ duration: 200 }}><Donut items={donutItems} /></div>
+				{/if}
+			</section>
+
+			<div class="par-tiles">
+				<StatTile label="Días hábiles" value={diasHabilesRestantes()} nota="Restantes" />
+				<StatTile label="Actualizado" value={ultimaActualizacion} nota="Hora local" />
+			</div>
+		</div>
 	</div>
 
-	<section class="tarjeta">
+	<div class="fila-ancha">
+		<section class="tarjeta">
 		<div class="tarjeta-cabecera">
 			<div class="titulo-con-link">
 				<h2 class="font-display">Registros recientes</h2>
@@ -243,6 +257,12 @@
 			</table>
 		</div>
 	</section>
+
+		<section class="tarjeta">
+			<h2 class="font-display">Volumen por sistema</h2>
+			<ListaSistemas filas={volumenPorSistema} loading={cargandoKpis} />
+		</section>
+	</div>
 </div>
 
 <style>
@@ -289,9 +309,24 @@
 		--color-sparkline: oklch(1 0 0 / 0.55);
 	}
 
-	.fila-graficas {
+	/* el panel se lee como un cuerpo ancho más una columna lateral constante,
+	   en vez de bandas apiladas de ancho completo */
+	.fila-ancha {
 		display: grid;
-		grid-template-columns: 1.6fr 1fr;
+		grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+		align-items: start;
+		gap: 18px;
+	}
+
+	.columna-lateral {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+	}
+
+	.par-tiles {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
 		gap: 18px;
 	}
 
@@ -419,7 +454,7 @@
 			grid-template-columns: repeat(2, 1fr);
 		}
 
-		.fila-graficas {
+		.fila-ancha {
 			grid-template-columns: 1fr;
 		}
 	}
