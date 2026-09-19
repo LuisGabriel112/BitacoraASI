@@ -1,3 +1,5 @@
+import { contextoAudio } from './audioContexto';
+
 export interface NotaFanfarria {
 	frecuenciaHz: number;
 	inicioMs: number;
@@ -24,7 +26,7 @@ export function notasFanfarriaMexicana(): NotaFanfarria[] {
 // Reproducción real vía Web Audio: dos osciladores de diente de sierra
 // (uno ligeramente desafinado) filtrados en paso-bajo, para una textura más
 // "de metal" que un tono puro — sin depender de ningún archivo de audio.
-export function reproducirFanfarriaMexicana(contexto: AudioContext = new AudioContext()): void {
+export function reproducirFanfarriaMexicana(contexto: AudioContext = contextoAudio()): void {
 	const ahora = contexto.currentTime;
 
 	for (const nota of notasFanfarriaMexicana()) {

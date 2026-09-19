@@ -1,10 +1,12 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
 	import Icon from '$lib/components/Icon.svelte';
-	import { api, type CategoriaSonido, type EventoSonido, type Sonido } from '$lib/api/client';
+	import { api, type AccionSonido, type EventoSonido, type Sonido } from '$lib/api/client';
 	import {
-		ETIQUETA_CATEGORIA,
+		ACCIONES_SONIDO,
+		ETIQUETA_ACCION,
 		EVENTOS_SONIDO,
+		accionDeEvento,
 		esSintetizado,
 		nombreSugerido,
 		preferenciaDe,
@@ -19,8 +21,6 @@
 		reproducirFuente
 	} from '$lib/sonidos.svelte';
 
-	const CATEGORIAS: CategoriaSonido[] = ['exito', 'error'];
-
 	let cargando = $state(true);
 	let errorCarga = $state<string | null>(null);
 
@@ -33,14 +33,15 @@
 	});
 
 	const sonidos = $derived(estadoSonidos.sonidos);
-
-	function sonidosDe(categoria: CategoriaSonido): Sonido[] {
-		return sonidos.filter((s) => s.categoria === categoria);
-	}
+	const enUso = $derived(sonidos.filter((s) => s.acciones.length > 0).length);
 
 	function origenDe(s: Sonido): string {
 		if (esSintetizado(s.url)) return 'Sintetizado';
 		return s.url.startsWith('/sonidos/') ? 'De fábrica' : 'Cargado por el equipo';
+	}
+
+	function etiquetas(acciones: readonly AccionSonido[]): string {
+		return acciones.map((a) => ETIQUETA_ACCION[a]).join(', ');
 	}
 
 	// --- vista previa (una sola a la vez) ---------------------------------
@@ -75,7 +76,7 @@
 			// sintetizado: no hay elemento de audio, se apaga el indicador solo
 			timerSintetizado = setTimeout(() => {
 				if (reproduciendoClave === clave) reproduciendoClave = null;
-			}, 900);
+			}, 1200);
 		}
 	}
 
@@ -90,11 +91,12 @@
 		return 'aleatorio';
 	}
 
-	/** Activos de la categoría, más el elegido aunque lo hayan deshabilitado
+	/** Los marcados para la acción, más el elegido aunque lo hayan desmarcado
 	 *  (para que el select no "pierda" la elección y se vea por qué no suena). */
-	function opcionesPara(evento: EventoSonido, categoria: CategoriaSonido): Sonido[] {
+	function opcionesPara(evento: EventoSonido): Sonido[] {
+		const accion = accionDeEvento(evento);
 		const elegidoId = preferenciaDe(evento, estadoSonidos.preferencias)?.sonido_id ?? null;
-		return sonidosDe(categoria).filter((s) => s.activo || s.id === elegidoId);
+		return sonidos.filter((s) => s.acciones.includes(accion) || s.id === elegidoId);
 	}
 
 	async function cambiarPreferencia(evento: EventoSonido, valor: string) {
@@ -117,20 +119,26 @@
 		}
 	}
 
-	// --- habilitar / deshabilitar en general ------------------------------
-	let cambiandoId = $state<number | null>(null);
+	// --- marcar / desmarcar acciones en el catálogo -----------------------
+	let cambiando = $state<{ id: number; accion: AccionSonido } | null>(null);
 	let errorCatalogo = $state<string | null>(null);
 
-	async function alternarActivo(s: Sonido) {
+	function estaCambiando(s: Sonido, accion: AccionSonido): boolean {
+		return cambiando?.id === s.id && cambiando.accion === accion;
+	}
+
+	async function alternarAccion(s: Sonido, accion: AccionSonido) {
 		errorCatalogo = null;
-		cambiandoId = s.id;
+		cambiando = { id: s.id, accion };
 		try {
-			const actualizado = s.activo ? await api.desactivarSonido(s.id) : await api.activarSonido(s.id);
+			const actualizado = s.acciones.includes(accion)
+				? await api.desmarcarAccionSonido(s.id, accion)
+				: await api.marcarAccionSonido(s.id, accion);
 			actualizarSonidoEnCache(actualizado);
 		} catch (e) {
 			errorCatalogo = e instanceof Error ? e.message : 'No se pudo cambiar el sonido';
 		} finally {
-			cambiandoId = null;
+			cambiando = null;
 		}
 	}
 
@@ -138,11 +146,17 @@
 	let archivo = $state<File | null>(null);
 	let inputArchivo = $state<HTMLInputElement | undefined>(undefined);
 	let nombreNuevo = $state('');
-	let categoriaNueva = $state<CategoriaSonido>('exito');
+	let accionesNuevas = $state<AccionSonido[]>([]);
 	let subiendo = $state(false);
 	let errorSubida = $state<string | null>(null);
 	let okSubida = $state<string | null>(null);
 	let urlLocal: string | null = null;
+
+	function alternarAccionNueva(accion: AccionSonido) {
+		accionesNuevas = accionesNuevas.includes(accion)
+			? accionesNuevas.filter((a) => a !== accion)
+			: [...accionesNuevas, accion];
+	}
 
 	function alElegirArchivo(e: Event) {
 		const elegido = (e.target as HTMLInputElement).files?.[0] ?? null;
@@ -161,6 +175,7 @@
 	function limpiarFormulario() {
 		archivo = null;
 		nombreNuevo = '';
+		accionesNuevas = [];
 		if (inputArchivo) inputArchivo.value = '';
 		if (urlLocal) URL.revokeObjectURL(urlLocal);
 		urlLocal = null;
@@ -171,6 +186,7 @@
 		okSubida = null;
 		if (!archivo) return (errorSubida = 'Elige primero un archivo de audio');
 		if (!nombreNuevo.trim()) return (errorSubida = 'Ponle un nombre al sonido');
+		if (accionesNuevas.length === 0) return (errorSubida = 'Marca al menos una acción en la que suene');
 		const problema = validarArchivoSonido(archivo);
 		if (problema) return (errorSubida = problema);
 
@@ -182,9 +198,9 @@
 			const paraSubir = archivo.type ? archivo : new File([archivo], archivo.name, { type: tipo });
 			const { url_subida, url_publica } = await api.crearUrlSubidaSonido(archivo.name, tipo);
 			await api.subirArchivoDirecto(url_subida, paraSubir);
-			const creado = await api.crearSonido({ categoria: categoriaNueva, nombre: nombreNuevo.trim(), url: url_publica });
+			const creado = await api.crearSonido({ nombre: nombreNuevo.trim(), url: url_publica, acciones: accionesNuevas });
 			actualizarSonidoEnCache(creado);
-			okSubida = `"${creado.nombre}" quedó en el catálogo de ${ETIQUETA_CATEGORIA[creado.categoria].toLowerCase()}.`;
+			okSubida = `"${creado.nombre}" quedó en el catálogo para ${etiquetas(creado.acciones)}.`;
 			limpiarFormulario();
 		} catch (e) {
 			errorSubida = e instanceof Error ? e.message : 'No se pudo subir el sonido';
@@ -210,8 +226,8 @@
 		<section class="tarjeta mis-sonidos">
 			<h2 class="font-display">Mis sonidos</h2>
 			<p class="ayuda">
-				Lo que escuchas tú en cada acción. <strong>Aleatorio</strong> toma uno al azar de los habilitados;
-				<strong>Sin sonido</strong> deja la acción muda.
+				Lo que escuchas tú en cada acción. <strong>Aleatorio</strong> toma uno al azar de los marcados para esa
+				acción en el catálogo; <strong>Sin sonido</strong> deja la acción muda.
 			</p>
 			<div class="lista-eventos">
 				{#each EVENTOS_SONIDO as e (e.evento)}
@@ -227,9 +243,9 @@
 								disabled={guardandoEvento === e.evento}
 								onchange={(ev) => cambiarPreferencia(e.evento, ev.currentTarget.value)}
 							>
-								<option value="aleatorio">Aleatorio ({ETIQUETA_CATEGORIA[e.categoria].toLowerCase()})</option>
-								{#each opcionesPara(e.evento, e.categoria) as s (s.id)}
-									<option value={String(s.id)}>{s.nombre}{s.activo ? '' : ' (deshabilitado)'}</option>
+								<option value="aleatorio">Aleatorio ({ETIQUETA_ACCION[e.accion]})</option>
+								{#each opcionesPara(e.evento) as s (s.id)}
+									<option value={String(s.id)}>{s.nombre}{s.acciones.includes(e.accion) ? '' : ' (desmarcado)'}</option>
 								{/each}
 								<option value="silencio">Sin sonido</option>
 							</select>
@@ -278,19 +294,28 @@
 						</button>
 					{/if}
 				</div>
-				<div class="campos-subir">
-					<label class="campo">
-						Nombre
-						<input type="text" bind:value={nombreNuevo} placeholder="p. ej. tada" maxlength="80" />
-					</label>
-					<label class="campo">
-						Categoría
-						<select bind:value={categoriaNueva}>
-							<option value="exito">Éxito (guardar / cerrar mesa)</option>
-							<option value="error">Error</option>
-						</select>
-					</label>
-				</div>
+				<label class="campo">
+					Nombre
+					<input type="text" bind:value={nombreNuevo} placeholder="p. ej. tada" maxlength="80" />
+				</label>
+				<fieldset class="campo campo-acciones">
+					<legend>Suena en</legend>
+					<div class="acciones">
+						{#each ACCIONES_SONIDO as a (a.accion)}
+							<button
+								type="button"
+								class="btn-accion"
+								class:marcada={accionesNuevas.includes(a.accion)}
+								aria-pressed={accionesNuevas.includes(a.accion)}
+								title={a.descripcion}
+								onclick={() => alternarAccionNueva(a.accion)}
+							>
+								<span class="punto" aria-hidden="true"></span>
+								{a.etiqueta}
+							</button>
+						{/each}
+					</div>
+				</fieldset>
 				<div class="acciones-subir">
 					<button type="submit" class="btn-primario" disabled={subiendo || !archivo}>
 						{subiendo ? 'Subiendo…' : 'Subir al catálogo'}
@@ -302,58 +327,59 @@
 		</section>
 	</div>
 
-	<section class="catalogo">
-		<h2 class="font-display">Catálogo</h2>
+	<section class="tarjeta catalogo">
+		<h2 class="font-display">
+			Catálogo
+			<span class="conteo">{enUso} de {sonidos.length} en uso</span>
+		</h2>
 		<p class="ayuda">
-			Deshabilitar un sonido aquí lo apaga para todo el equipo: nadie lo escucha ni puede elegirlo hasta volverlo a habilitar.
+			Marca en qué acciones puede sonar cada sonido; aplica a todo el equipo. Un sonido sin ninguna acción marcada no
+			suena para nadie ni se puede elegir.
 		</p>
 		{#if errorCatalogo}<p class="error">{errorCatalogo}</p>{/if}
-		<div class="grupos">
-			{#each CATEGORIAS as categoria (categoria)}
-				{@const lista = sonidosDe(categoria)}
-				<div class="tarjeta grupo">
-					<h3>
-						{ETIQUETA_CATEGORIA[categoria]}
-						<span class="conteo">{lista.filter((s) => s.activo).length} de {lista.length} habilitados</span>
-					</h3>
-					{#if lista.length === 0}
-						<p class="sin-datos">Todavía no hay sonidos de {ETIQUETA_CATEGORIA[categoria].toLowerCase()}.</p>
-					{:else}
-						<ul class="lista-sonidos">
-							{#each lista as s (s.id)}
-								<li class:deshabilitado={!s.activo}>
-									<button
-										type="button"
-										class="btn-icono"
-										class:sonando={reproduciendoClave === `s${s.id}`}
-										title={reproduciendoClave === `s${s.id}` ? 'Detener' : 'Reproducir'}
-										aria-label="{reproduciendoClave === `s${s.id}` ? 'Detener' : 'Reproducir'} {s.nombre}"
-										onclick={() => previsualizar(`s${s.id}`, s.url)}
-									>
-										<Icon nombre="play" tamano={15} />
-									</button>
-									<div class="sonido-texto">
-										<span class="sonido-nombre">{s.nombre}</span>
-										<span class="sonido-origen">{origenDe(s)}</span>
-									</div>
-									<button
-										type="button"
-										class="btn-toggle"
-										class:activo={s.activo}
-										aria-pressed={s.activo}
-										disabled={cambiandoId === s.id}
-										onclick={() => alternarActivo(s)}
-									>
-										<span class="punto" aria-hidden="true"></span>
-										{s.activo ? 'Habilitado' : 'Deshabilitado'}
-									</button>
-								</li>
+		{#if sonidos.length === 0}
+			<p class="sin-datos">Todavía no hay sonidos en el catálogo.</p>
+		{:else}
+			<ul class="lista-sonidos">
+				{#each sonidos as s (s.id)}
+					<li class:sin-acciones={s.acciones.length === 0}>
+						<button
+							type="button"
+							class="btn-icono"
+							class:sonando={reproduciendoClave === `s${s.id}`}
+							title={reproduciendoClave === `s${s.id}` ? 'Detener' : 'Reproducir'}
+							aria-label="{reproduciendoClave === `s${s.id}` ? 'Detener' : 'Reproducir'} {s.nombre}"
+							onclick={() => previsualizar(`s${s.id}`, s.url)}
+						>
+							<Icon nombre="play" tamano={15} />
+						</button>
+						<div class="sonido-texto">
+							<span class="sonido-nombre">{s.nombre}</span>
+							<span class="sonido-origen">
+								{origenDe(s)}{s.acciones.length === 0 ? ' · sin acciones, no suena' : ''}
+							</span>
+						</div>
+						<div class="acciones" role="group" aria-label="Acciones de {s.nombre}">
+							{#each ACCIONES_SONIDO as a (a.accion)}
+								{@const marcada = s.acciones.includes(a.accion)}
+								<button
+									type="button"
+									class="btn-accion"
+									class:marcada
+									aria-pressed={marcada}
+									disabled={estaCambiando(s, a.accion)}
+									title="{a.etiqueta} · {a.descripcion}"
+									onclick={() => alternarAccion(s, a.accion)}
+								>
+									<span class="punto" aria-hidden="true"></span>
+									{a.etiqueta}
+								</button>
 							{/each}
-						</ul>
-					{/if}
-				</div>
-			{/each}
-		</div>
+						</div>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</section>
 {/if}
 
@@ -523,12 +549,6 @@
 		white-space: nowrap;
 	}
 
-	.campos-subir {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 10px;
-	}
-
 	.campo {
 		display: flex;
 		flex-direction: column;
@@ -536,6 +556,17 @@
 		font-size: 12px;
 		color: var(--text-muted);
 		min-width: 0;
+	}
+
+	.campo-acciones {
+		margin: 0;
+		padding: 0;
+		border: none;
+	}
+
+	.campo-acciones legend {
+		padding: 0;
+		margin-bottom: 5px;
 	}
 
 	.acciones-subir {
@@ -567,23 +598,10 @@
 
 	/* --- catálogo --- */
 	.catalogo h2 {
-		margin: 0 0 6px;
-		font-size: 16px;
-	}
-
-	.grupos {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-		gap: 18px;
-	}
-
-	.grupo h3 {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 10px;
-		margin: 0 0 8px;
-		font-size: 14px;
 	}
 
 	.conteo {
@@ -607,7 +625,7 @@
 		border-top: 1px solid var(--border);
 	}
 
-	.lista-sonidos li.deshabilitado .sonido-texto {
+	.lista-sonidos li.sin-acciones .sonido-texto {
 		opacity: 0.55;
 	}
 
@@ -615,7 +633,7 @@
 		display: flex;
 		flex-direction: column;
 		flex: 1;
-		min-width: 0;
+		min-width: 160px;
 	}
 
 	.sonido-nombre {
@@ -631,42 +649,51 @@
 		color: var(--text-faint);
 	}
 
-	.btn-toggle {
+	/* --- botones de acción (catálogo y formulario) --- */
+	.acciones {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		flex-shrink: 0;
+	}
+
+	.btn-accion {
 		display: inline-flex;
 		align-items: center;
-		gap: 7px;
-		min-height: 32px;
-		padding: 4px 12px;
+		gap: 6px;
+		min-height: 30px;
+		padding: 3px 11px;
 		background: none;
-		border: 2px solid var(--border-strong);
+		border: 2px solid var(--border);
 		border-radius: 999px;
 		color: var(--text-muted);
 		font-size: 12px;
 		cursor: pointer;
-		flex-shrink: 0;
 	}
 
-	.btn-toggle .punto {
+	.btn-accion .punto {
 		width: 8px;
 		height: 8px;
 		border-radius: 50%;
 		background: var(--text-faint);
 	}
 
-	.btn-toggle.activo {
+	.btn-accion.marcada {
 		color: var(--text);
-		border-color: color-mix(in srgb, var(--success) 60%, var(--border-strong));
-	}
-
-	.btn-toggle.activo .punto {
-		background: var(--success);
-	}
-
-	.btn-toggle:hover:not(:disabled) {
 		border-color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 14%, transparent);
 	}
 
-	.btn-toggle:disabled {
+	.btn-accion.marcada .punto {
+		background: var(--accent-strong);
+	}
+
+	.btn-accion:hover:not(:disabled) {
+		border-color: var(--accent);
+		color: var(--text);
+	}
+
+	.btn-accion:disabled {
 		opacity: 0.6;
 		cursor: default;
 	}
@@ -674,6 +701,15 @@
 	@media (max-width: 900px) {
 		.columnas {
 			grid-template-columns: 1fr;
+		}
+
+		.lista-sonidos li {
+			flex-wrap: wrap;
+		}
+
+		.lista-sonidos .acciones {
+			width: 100%;
+			padding-left: 48px;
 		}
 	}
 </style>

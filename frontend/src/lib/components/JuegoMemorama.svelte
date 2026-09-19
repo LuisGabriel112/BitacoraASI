@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { api } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
+	import { reproducirResultado } from '$lib/sonidos.svelte';
 	import { generarMazo } from '$lib/memorama';
 
 	const CLAVE_ULTIMO = 'bitacora-memorama-ultimo-intento';
@@ -58,6 +59,7 @@
 		try {
 			const r = await api.completarMemorama(intentoId);
 			resultado = { acierto: r.acierto };
+			reproducirResultado(r.acierto);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo completar el intento';
 		} finally {

@@ -3,7 +3,7 @@
 	import { tick as tickSvelte } from 'svelte';
 	import { ErrorApi, api } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
-	import { reproducirFanfarriaMexicana } from '$lib/sonidoMexicano';
+	import { reproducirResultado } from '$lib/sonidos.svelte';
 	import {
 		miJugador,
 		otrosJugadores,
@@ -316,7 +316,7 @@
 		try {
 			const r = await api.reportarBrawl(intentoId, total);
 			resultado = { acierto: r.acierto, eliminados: total };
-			if (r.acierto) reproducirFanfarriaMexicana();
+			reproducirResultado(r.acierto);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo resolver la ronda';
 		} finally {

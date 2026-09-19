@@ -320,10 +320,11 @@ class BonusRegla(Base):
 class Sonido(Base):
     __tablename__ = "sonidos"
     id: Mapped[int] = mapped_column(primary_key=True)
-    categoria: Mapped[str] = mapped_column(Text)
-    nombre: Mapped[str] = mapped_column(Text)
+    nombre: Mapped[str] = mapped_column(Text, unique=True)
     url: Mapped[str] = mapped_column(Text)
-    activo: Mapped[bool] = mapped_column(default=True)
+    # Acciones en las que puede sonar (error, exito, compra, victoria, derrota);
+    # vacío = no suena para nadie. Reemplaza a categoria + activo (migración 0036).
+    acciones: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

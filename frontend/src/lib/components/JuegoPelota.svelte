@@ -2,6 +2,8 @@
 	import { browser } from '$app/environment';
 	import { api } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
+	import { reproducirResultado } from '$lib/sonidos.svelte';
+	import { reproducirVasosMesa } from '$lib/sonidosSintetizados';
 
 	const CLAVE_ULTIMO = 'bitacora-pelota-ultimo-intento';
 	const CASILLAS = 3;
@@ -40,6 +42,8 @@
 			const intento = await api.iniciarPelota();
 			intentoId = intento.id;
 			jugando = true;
+			// los vasos se barajan sobre la mesa antes de que elijas
+			reproducirVasosMesa();
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Todavía en cooldown';
 			marcarIntentoAhora();
@@ -51,6 +55,7 @@
 		try {
 			const r = await api.elegirPelota(intentoId, posicion);
 			resultado = { acierto: r.acierto, posicionCorrecta: r.posicion_correcta };
+			reproducirResultado(r.acierto);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo resolver el intento';
 		} finally {
@@ -68,7 +73,7 @@
 </script>
 
 <div class="tarjeta juego-pelota">
-	<h2 class="font-display">🎾 Encuentra la pelota</h2>
+	<h2 class="font-display">🥎 Encuentra la pelota</h2>
 	<p class="ayuda-juego">Acierta y le bajas vida al jefe.</p>
 
 	{#if jugando}
@@ -81,7 +86,7 @@
 		<div class="vasos-pelota">
 			{#each Array(CASILLAS) as _, i}
 				<span class="vaso-pelota" class:correcto={i === resultado.posicionCorrecta}>
-					{i === resultado.posicionCorrecta ? '🎾' : '🥤'}
+					{i === resultado.posicionCorrecta ? '🥎' : '🥤'}
 				</span>
 			{/each}
 		</div>

@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 from sqlalchemy.dialects import postgresql
 
 from app.models import SonidoPreferencia
@@ -16,8 +17,10 @@ def _sql(stmt) -> str:
     return str(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
 
 
-def _sonido(id: int = 1, categoria: str = "exito", activo: bool = True) -> SimpleNamespace:
-    return SimpleNamespace(id=id, categoria=categoria, nombre=f"sonido-{id}", url=f"/sonidos/{id}.ogg", activo=activo)
+def _sonido(id: int = 1, acciones: list[str] | None = None) -> SimpleNamespace:
+    return SimpleNamespace(
+        id=id, nombre=f"sonido-{id}", url=f"/sonidos/{id}.ogg", acciones=["exito"] if acciones is None else acciones
+    )
 
 
 def _session_con_preferencia(existente: SonidoPreferencia | None) -> AsyncMock:
@@ -29,23 +32,33 @@ def _session_con_preferencia(existente: SonidoPreferencia | None) -> AsyncMock:
     return session
 
 
-# --- categoría por acción -------------------------------------------------
+# --- acción por evento ----------------------------------------------------
 
 
 def test_guardar_y_cerrar_mesa_suenan_a_exito_y_error_a_error():
-    assert servicio.categoria_de_evento("guardar_mesa") == "exito"
-    assert servicio.categoria_de_evento("cerrar_mesa") == "exito"
-    assert servicio.categoria_de_evento("error") == "error"
+    assert servicio.accion_de_evento("guardar_mesa") == "exito"
+    assert servicio.accion_de_evento("cerrar_mesa") == "exito"
+    assert servicio.accion_de_evento("error") == "error"
+
+
+def test_compra_victoria_y_derrota_suenan_con_su_propia_accion():
+    assert servicio.accion_de_evento("compra") == "compra"
+    assert servicio.accion_de_evento("victoria") == "victoria"
+    assert servicio.accion_de_evento("derrota") == "derrota"
+
+
+def test_todo_evento_apunta_a_una_accion_del_catalogo():
+    assert set(servicio.ACCION_POR_EVENTO.values()) == set(servicio.ACCIONES)
 
 
 def test_evento_desconocido_se_rechaza():
     with pytest.raises(servicio.SonidoError):
-        servicio.categoria_de_evento("bailar")
+        servicio.accion_de_evento("bailar")
 
 
-def test_sonido_de_categoria_equivocada_se_rechaza_indicando_la_esperada():
+def test_sonido_sin_la_accion_marcada_se_rechaza_indicando_la_esperada():
     with pytest.raises(servicio.SonidoError) as info:
-        servicio.validar_sonido_para_evento(_sonido(categoria="error"), "guardar_mesa")
+        servicio.validar_sonido_para_evento(_sonido(acciones=["error"]), "guardar_mesa")
 
     assert "'exito'" in str(info.value)
 
@@ -57,8 +70,39 @@ def test_sonido_inexistente_se_rechaza():
     assert "no existe" in str(info.value)
 
 
-def test_sonido_de_la_categoria_correcta_pasa():
-    servicio.validar_sonido_para_evento(_sonido(categoria="error"), "error")
+def test_sonido_con_la_accion_marcada_pasa_aunque_tenga_otras():
+    servicio.validar_sonido_para_evento(_sonido(acciones=["exito", "victoria"]), "victoria")
+
+
+# --- interruptores por acción --------------------------------------------
+
+
+def test_marcar_una_accion_la_agrega_en_orden_canonico():
+    assert servicio.con_accion(["victoria"], "error", True) == ["error", "victoria"]
+
+
+def test_marcar_una_accion_ya_marcada_no_la_duplica():
+    assert servicio.con_accion(["exito"], "exito", True) == ["exito"]
+
+
+def test_desmarcar_quita_la_accion_y_puede_dejar_la_lista_vacia():
+    assert servicio.con_accion(["exito", "compra"], "compra", False) == ["exito"]
+    assert servicio.con_accion(["exito"], "exito", False) == []
+
+
+def test_desmarcar_una_accion_que_no_estaba_no_cambia_nada():
+    assert servicio.con_accion(["exito"], "derrota", False) == ["exito"]
+
+
+def test_accion_desconocida_se_rechaza_al_marcar_y_al_normalizar():
+    with pytest.raises(servicio.SonidoError):
+        servicio.con_accion([], "bailar", True)
+    with pytest.raises(servicio.SonidoError):
+        servicio.normalizar_acciones(["exito", "bailar"])
+
+
+def test_normalizar_ordena_y_quita_repetidos():
+    assert servicio.normalizar_acciones(["derrota", "error", "derrota", "compra"]) == ["error", "compra", "derrota"]
 
 
 # --- upsert de preferencia ------------------------------------------------
@@ -67,7 +111,7 @@ def test_sonido_de_la_categoria_correcta_pasa():
 @pytest.mark.asyncio
 async def test_preferencia_nueva_se_agrega_a_la_sesion():
     session = _session_con_preferencia(None)
-    session.get.return_value = _sonido(id=3, categoria="exito")
+    session.get.return_value = _sonido(id=3, acciones=["exito"])
 
     preferencia = await servicio.guardar_preferencia(
         session, usuario_id=7, evento="cerrar_mesa", sonido_id=3, silenciado=False
@@ -85,7 +129,7 @@ async def test_preferencia_nueva_se_agrega_a_la_sesion():
 async def test_preferencia_existente_se_actualiza_sin_crear_otra_fila():
     existente = SonidoPreferencia(usuario_id=7, evento="error", sonido_id=5, silenciado=False)
     session = _session_con_preferencia(existente)
-    session.get.return_value = _sonido(id=6, categoria="error")
+    session.get.return_value = _sonido(id=6, acciones=["error"])
 
     preferencia = await servicio.guardar_preferencia(session, usuario_id=7, evento="error", sonido_id=6, silenciado=False)
 
@@ -130,9 +174,9 @@ async def test_la_busqueda_de_preferencia_filtra_por_usuario_y_evento():
 
 
 @pytest.mark.asyncio
-async def test_sonido_de_otra_categoria_no_se_guarda():
+async def test_sonido_no_marcado_para_la_accion_no_se_guarda():
     session = _session_con_preferencia(None)
-    session.get.return_value = _sonido(id=9, categoria="error")
+    session.get.return_value = _sonido(id=9, acciones=["error"])
 
     with pytest.raises(servicio.SonidoError):
         await servicio.guardar_preferencia(session, usuario_id=7, evento="guardar_mesa", sonido_id=9, silenciado=False)
@@ -140,21 +184,52 @@ async def test_sonido_de_otra_categoria_no_se_guarda():
     session.commit.assert_not_awaited()
 
 
+@pytest.mark.asyncio
+async def test_preferencia_de_victoria_acepta_un_sonido_marcado_para_victoria():
+    session = _session_con_preferencia(None)
+    session.get.return_value = _sonido(id=12, acciones=["victoria"])
+
+    preferencia = await servicio.guardar_preferencia(
+        session, usuario_id=7, evento="victoria", sonido_id=12, silenciado=False
+    )
+
+    assert preferencia.evento == "victoria"
+    assert preferencia.sonido_id == 12
+
+
+# --- schemas --------------------------------------------------------------
+
+
+def test_crear_sonido_exige_al_menos_una_accion():
+    with pytest.raises(ValidationError):
+        SonidoCreate(nombre="tada", url="/x.ogg", acciones=[])
+
+
+def test_crear_sonido_rechaza_acciones_fuera_del_catalogo():
+    with pytest.raises(ValidationError):
+        SonidoCreate(nombre="tada", url="/x.ogg", acciones=["bailar"])
+
+
+def test_preferencia_acepta_los_eventos_nuevos():
+    for evento in ("compra", "victoria", "derrota"):
+        assert PreferenciaSonidoUpdate(evento=evento).evento == evento
+
+
 # --- router ---------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_listar_trae_activos_e_inactivos_ordenados_por_categoria():
+async def test_listar_trae_todos_ordenados_por_id_sin_filtrar():
     session = AsyncMock()
     resultado = MagicMock()
-    resultado.scalars.return_value.all.return_value = [_sonido(1), _sonido(2, activo=False)]
+    resultado.scalars.return_value.all.return_value = [_sonido(1), _sonido(2, acciones=[])]
     session.execute.return_value = resultado
 
     lista = await router_sonidos.listar(session)
 
     assert [s.id for s in lista] == [1, 2]
     sql = _sql(session.execute.call_args[0][0])
-    assert "ORDER BY sonidos.categoria, sonidos.id" in sql
+    assert "ORDER BY sonidos.id" in sql
     assert "WHERE" not in sql
 
 
@@ -166,12 +241,12 @@ async def test_crear_rechaza_nombre_duplicado_sin_distinguir_mayusculas():
     session.execute.return_value = resultado
 
     with pytest.raises(HTTPException) as info:
-        await router_sonidos.crear(SonidoCreate(categoria="exito", nombre="Pop-Succes", url="/x.ogg"), session)
+        await router_sonidos.crear(SonidoCreate(nombre="Pop-Succes", url="/x.ogg", acciones=["exito"]), session)
 
     assert info.value.status_code == 409
     sql = _sql(session.execute.call_args[0][0])
     assert "lower(sonidos.nombre) = 'pop-succes'" in sql
-    assert "sonidos.categoria = 'exito'" in sql
+    assert "categoria" not in sql
 
 
 @pytest.mark.asyncio
@@ -179,14 +254,14 @@ async def test_crear_rechaza_nombre_en_blanco():
     session = AsyncMock()
 
     with pytest.raises(HTTPException) as info:
-        await router_sonidos.crear(SonidoCreate(categoria="exito", nombre="   ", url="/x.ogg"), session)
+        await router_sonidos.crear(SonidoCreate(nombre="   ", url="/x.ogg", acciones=["exito"]), session)
 
     assert info.value.status_code == 400
     session.execute.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_crear_guarda_nombre_normalizado_y_url_sin_espacios():
+async def test_crear_guarda_nombre_normalizado_url_sin_espacios_y_acciones_en_orden():
     session = AsyncMock()
     resultado = MagicMock()
     resultado.scalar_one_or_none.return_value = None
@@ -194,35 +269,39 @@ async def test_crear_guarda_nombre_normalizado_y_url_sin_espacios():
     session.add = MagicMock()
 
     creado = await router_sonidos.crear(
-        SonidoCreate(categoria="error", nombre="  buzzer   nuevo ", url=" https://x/sonidos/a.ogg "), session
+        SonidoCreate(
+            nombre="  buzzer   nuevo ", url=" https://x/sonidos/a.ogg ", acciones=["derrota", "error", "derrota"]
+        ),
+        session,
     )
 
     assert creado.nombre == "buzzer nuevo"
     assert creado.url == "https://x/sonidos/a.ogg"
-    assert creado.categoria == "error"
+    assert creado.acciones == ["error", "derrota"]
     session.add.assert_called_once_with(creado)
 
 
 @pytest.mark.asyncio
-async def test_activar_y_desactivar_cambian_el_flag():
+async def test_marcar_y_desmarcar_una_accion_cambian_la_lista_del_sonido():
     session = AsyncMock()
-    sonido = _sonido(4, activo=True)
+    sonido = _sonido(4, acciones=["exito"])
     session.get.return_value = sonido
 
-    await router_sonidos.desactivar(4, session)
-    assert sonido.activo is False
+    await router_sonidos.marcar_accion(4, "victoria", session)
+    assert sonido.acciones == ["exito", "victoria"]
 
-    await router_sonidos.activar(4, session)
-    assert sonido.activo is True
+    await router_sonidos.desmarcar_accion(4, "exito", session)
+    assert sonido.acciones == ["victoria"]
+    assert session.commit.await_count == 2
 
 
 @pytest.mark.asyncio
-async def test_activar_sonido_inexistente_da_404():
+async def test_marcar_accion_de_sonido_inexistente_da_404():
     session = AsyncMock()
     session.get.return_value = None
 
     with pytest.raises(HTTPException) as info:
-        await router_sonidos.activar(99, session)
+        await router_sonidos.marcar_accion(99, "exito", session)
 
     assert info.value.status_code == 404
 

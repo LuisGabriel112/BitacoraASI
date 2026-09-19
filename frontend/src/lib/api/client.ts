@@ -69,14 +69,15 @@ export type DanioJefeEvento = {
 	created_at: string;
 };
 
-export type CategoriaSonido = 'exito' | 'error';
-export type EventoSonido = 'guardar_mesa' | 'cerrar_mesa' | 'error';
+/** Interruptores de un sonido en el catálogo (en qué puede sonar). */
+export type AccionSonido = 'error' | 'exito' | 'compra' | 'victoria' | 'derrota';
+/** Acciones concretas del usuario con preferencia propia de sonido. */
+export type EventoSonido = 'guardar_mesa' | 'cerrar_mesa' | 'error' | 'compra' | 'victoria' | 'derrota';
 export type Sonido = {
 	id: number;
-	categoria: CategoriaSonido;
 	nombre: string;
 	url: string;
-	activo: boolean;
+	acciones: AccionSonido[];
 	created_at: string;
 };
 export type PreferenciaSonido = { evento: EventoSonido; sonido_id: number | null; silenciado: boolean };
@@ -392,12 +393,14 @@ export const api = {
 			body: JSON.stringify({ nombre_archivo: nombreArchivo, content_type: contentType })
 		}),
 
-	crearSonido: (payload: { categoria: CategoriaSonido; nombre: string; url: string }) =>
+	crearSonido: (payload: { nombre: string; url: string; acciones: AccionSonido[] }) =>
 		json<Sonido>('/sonidos', { method: 'POST', body: JSON.stringify(payload) }),
 
-	activarSonido: (id: number) => json<Sonido>(`/sonidos/${id}/activar`, { method: 'POST' }),
+	marcarAccionSonido: (id: number, accion: AccionSonido) =>
+		json<Sonido>(`/sonidos/${id}/acciones/${accion}`, { method: 'PUT' }),
 
-	desactivarSonido: (id: number) => json<Sonido>(`/sonidos/${id}/desactivar`, { method: 'POST' }),
+	desmarcarAccionSonido: (id: number, accion: AccionSonido) =>
+		json<Sonido>(`/sonidos/${id}/acciones/${accion}`, { method: 'DELETE' }),
 
 	preferenciasSonido: () => json<PreferenciaSonido[]>('/sonidos/preferencias'),
 

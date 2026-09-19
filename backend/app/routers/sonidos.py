@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_session
 from app.models import Sonido, SonidoPreferencia, Usuario
 from app.schemas import (
+    AccionSonido,
     PreferenciaSonidoOut,
     PreferenciaSonidoUpdate,
     SolicitudUrlSubida,
@@ -14,7 +15,13 @@ from app.schemas import (
     UrlSubidaOut,
 )
 from app.services.auth import get_usuario_actual
-from app.services.sonidos import CARPETA_STORAGE, SonidoError, guardar_preferencia
+from app.services.sonidos import (
+    CARPETA_STORAGE,
+    SonidoError,
+    con_accion,
+    guardar_preferencia,
+    normalizar_acciones,
+)
 from app.services.storage import StorageError, crear_url_subida
 
 router = APIRouter(prefix="/sonidos", tags=["sonidos"], dependencies=[Depends(get_usuario_actual)])
@@ -22,9 +29,9 @@ router = APIRouter(prefix="/sonidos", tags=["sonidos"], dependencies=[Depends(ge
 
 @router.get("", response_model=list[SonidoOut])
 async def listar(session: AsyncSession = Depends(get_session)):
-    # Todos, activos o no: el catálogo los muestra con su toggle; el frontend
-    # filtra por `activo` al decidir qué reproducir.
-    stmt = select(Sonido).order_by(Sonido.categoria, Sonido.id)
+    # Todos, tengan acciones marcadas o no: el catálogo los muestra con sus
+    # interruptores; el frontend filtra por `acciones` al decidir qué reproducir.
+    stmt = select(Sonido).order_by(Sonido.id)
     return (await session.execute(stmt)).scalars().all()
 
 
@@ -46,40 +53,43 @@ async def crear(payload: SonidoCreate, session: AsyncSession = Depends(get_sessi
     nombre = " ".join(payload.nombre.split())
     if not nombre:
         raise HTTPException(400, "Nombre vacío")
-    existente = await session.execute(
-        select(Sonido).where(Sonido.categoria == payload.categoria, func.lower(Sonido.nombre) == nombre.lower())
-    )
+    existente = await session.execute(select(Sonido).where(func.lower(Sonido.nombre) == nombre.lower()))
     if existente.scalar_one_or_none() is not None:
-        raise HTTPException(409, f"Ya hay un sonido de {payload.categoria} llamado '{nombre}'")
-    sonido = Sonido(categoria=payload.categoria, nombre=nombre, url=payload.url.strip())
+        raise HTTPException(409, f"Ya hay un sonido llamado '{nombre}'")
+    sonido = Sonido(nombre=nombre, url=payload.url.strip(), acciones=normalizar_acciones(payload.acciones))
     session.add(sonido)
     try:
         await session.commit()
     except IntegrityError:
         await session.rollback()
-        raise HTTPException(409, f"Ya hay un sonido de {payload.categoria} llamado '{nombre}'")
+        raise HTTPException(409, f"Ya hay un sonido llamado '{nombre}'")
     await session.refresh(sonido)
     return sonido
 
 
-async def _cambiar_activo(session: AsyncSession, sonido_id: int, activo: bool) -> Sonido:
+async def _cambiar_accion(session: AsyncSession, sonido_id: int, accion: str, marcada: bool) -> Sonido:
     sonido = await session.get(Sonido, sonido_id)
     if sonido is None:
         raise HTTPException(404, "Sonido no encontrado")
-    sonido.activo = activo
+    try:
+        sonido.acciones = con_accion(sonido.acciones, accion, marcada)
+    except SonidoError as exc:
+        raise HTTPException(400, str(exc)) from exc
     await session.commit()
     await session.refresh(sonido)
     return sonido
 
 
-@router.post("/{sonido_id}/activar", response_model=SonidoOut)
-async def activar(sonido_id: int, session: AsyncSession = Depends(get_session)):
-    return await _cambiar_activo(session, sonido_id, True)
+@router.put("/{sonido_id}/acciones/{accion}", response_model=SonidoOut)
+async def marcar_accion(sonido_id: int, accion: AccionSonido, session: AsyncSession = Depends(get_session)):
+    """Marca el sonido para que pueda sonar en esa acción (para todo el equipo)."""
+    return await _cambiar_accion(session, sonido_id, accion, True)
 
 
-@router.post("/{sonido_id}/desactivar", response_model=SonidoOut)
-async def desactivar(sonido_id: int, session: AsyncSession = Depends(get_session)):
-    return await _cambiar_activo(session, sonido_id, False)
+@router.delete("/{sonido_id}/acciones/{accion}", response_model=SonidoOut)
+async def desmarcar_accion(sonido_id: int, accion: AccionSonido, session: AsyncSession = Depends(get_session)):
+    """Lo quita de esa acción; sin ninguna marcada, el sonido no suena para nadie."""
+    return await _cambiar_accion(session, sonido_id, accion, False)
 
 
 @router.get("/preferencias", response_model=list[PreferenciaSonidoOut])

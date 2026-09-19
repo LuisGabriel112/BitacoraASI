@@ -1,6 +1,12 @@
 import { api, type EventoSonido, type PreferenciaSonido, type Sonido } from './api/client';
 import { reproducirFanfarriaMexicana } from './sonidoMexicano';
 import { PREFIJO_SINTETIZADO, resolverSonido, sonidosDeRespaldo } from './sonidos';
+import {
+	reproducirCajaRegistradora,
+	reproducirDerrota,
+	reproducirMonedas,
+	reproducirVictoria
+} from './sonidosSintetizados';
 
 // Catálogo + preferencias del usuario, cargados una vez por sesión (igual que
 // personaje.svelte.ts) y refrescados si pasan más de 5 min, para que un toggle
@@ -61,7 +67,11 @@ export function actualizarPreferenciaEnCache(preferencia: PreferenciaSonido) {
 // Sonidos sin archivo: el catálogo los referencia por esquema y aquí se
 // mapean a su generador Web Audio.
 const SINTETIZADOS: Record<string, () => void> = {
-	[`${PREFIJO_SINTETIZADO}fanfarria-mexicana`]: () => reproducirFanfarriaMexicana()
+	[`${PREFIJO_SINTETIZADO}fanfarria-mexicana`]: () => reproducirFanfarriaMexicana(),
+	[`${PREFIJO_SINTETIZADO}victoria`]: () => reproducirVictoria(),
+	[`${PREFIJO_SINTETIZADO}derrota`]: () => reproducirDerrota(),
+	[`${PREFIJO_SINTETIZADO}caja-registradora`]: () => reproducirCajaRegistradora(),
+	[`${PREFIJO_SINTETIZADO}monedas`]: () => reproducirMonedas()
 };
 
 /** Reproduce una URL del catálogo (archivo o sintetizado). Devuelve el
@@ -82,4 +92,9 @@ export async function reproducirEvento(evento: EventoSonido): Promise<void> {
 	const catalogo = estadoSonidos.cargado ? estadoSonidos.sonidos : sonidosDeRespaldo();
 	const url = resolverSonido(evento, catalogo, estadoSonidos.preferencias);
 	if (url) reproducirFuente(url);
+}
+
+/** Cierre de un minijuego: victoria o derrota según cómo le fue al usuario. */
+export function reproducirResultado(gano: boolean): Promise<void> {
+	return reproducirEvento(gano ? 'victoria' : 'derrota');
 }

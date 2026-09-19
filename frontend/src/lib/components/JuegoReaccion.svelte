@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { api } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
+	import { reproducirResultado } from '$lib/sonidos.svelte';
 
 	const CLAVE_ULTIMO = 'bitacora-reaccion-ultimo-intento';
 	const DEMORA_MIN_MS = 1000;
@@ -63,6 +64,7 @@
 		try {
 			const r = await api.reportarReaccion(intentoId, tiempoMs);
 			resultado = { acierto: r.acierto, tiempoMs };
+			reproducirResultado(r.acierto);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo reportar el intento';
 		} finally {

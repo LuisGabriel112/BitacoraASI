@@ -2,6 +2,8 @@
 	import { browser } from '$app/environment';
 	import { api } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
+	import { reproducirResultado } from '$lib/sonidos.svelte';
+	import { DURACION_RULETA_MS, reproducirRuletaCasino } from '$lib/sonidosSintetizados';
 
 	const CLAVE_ULTIMO = 'bitacora-ruleta-ultimo-intento';
 
@@ -31,12 +33,19 @@
 		return () => clearInterval(id);
 	});
 
+	const esperar = (ms: number) => new Promise<void>((listo) => setTimeout(listo, ms));
+
+	/** El servidor responde al instante; el resultado se revela cuando la
+	 *  ruleta termina de girar, para que el sonido y la espera cuenten algo. */
 	async function jugar() {
 		error = null;
+		resultado = null;
 		jugando = true;
+		reproducirRuletaCasino();
 		try {
-			const r = await api.jugarRuleta();
+			const [r] = await Promise.all([api.jugarRuleta(), esperar(DURACION_RULETA_MS)]);
 			resultado = { gano: r.gano };
+			reproducirResultado(r.gano);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Todavía en cooldown';
 		} finally {

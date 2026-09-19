@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
 	import { api, type Objeto, type TiendaEstado } from '$lib/api/client';
+	import { reproducirEvento } from '$lib/sonidos.svelte';
 
 	let catalogo = $state<Objeto[]>([]);
 	let estado = $state<TiendaEstado | null>(null);
@@ -78,6 +79,7 @@
 		error = null;
 		try {
 			estado = await api.tiendaComprar(objeto.id);
+			reproducirEvento('compra');
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo comprar el objeto';
 		} finally {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api, type JugadaRPS, type PartidaRPS } from '$lib/api/client';
-	import { miSimbolo } from '$lib/simboloJugador';
+	import { miSimbolo, sonidoDelFinal } from '$lib/simboloJugador';
+	import { reproducirResultado } from '$lib/sonidos.svelte';
 
 	const INTERVALO_MS = 1500;
 	const OPCIONES: { jugada: JugadaRPS; icono: string }[] = [
@@ -73,6 +74,20 @@
 	const rival = $derived(
 		!partida ? null : simbolo === 'X' ? (partida.jugador_o?.nombre ?? 'esperando…') : partida.jugador_x.nombre
 	);
+
+	// Igual que en Gato: el estado llega completo por polling, así que el
+	// sonido de cierre sale del cambio a "terminada", una vez por partida.
+	let sonoFinal = false;
+	$effect(() => {
+		if (partida?.estado !== 'terminada') {
+			sonoFinal = false;
+			return;
+		}
+		if (sonoFinal) return;
+		sonoFinal = true;
+		const gane = sonidoDelFinal(partida.resultado, simbolo);
+		if (gane !== null) reproducirResultado(gane);
+	});
 
 	$effect(() => () => detenerPolling());
 </script>

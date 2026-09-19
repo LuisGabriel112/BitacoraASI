@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api, type PartidaGato } from '$lib/api/client';
-	import { miSimbolo } from '$lib/simboloJugador';
+	import { miSimbolo, sonidoDelFinal } from '$lib/simboloJugador';
+	import { reproducirResultado } from '$lib/sonidos.svelte';
 
 	const INTERVALO_MS = 1500;
 
@@ -68,6 +69,20 @@
 	const rival = $derived(
 		!partida ? null : simbolo === 'X' ? (partida.jugador_o?.nombre ?? 'esperando…') : partida.jugador_x.nombre
 	);
+
+	// La partida llega completa en cada polling, no como eventos: el sonido de
+	// cierre sale de ver el cambio a "terminada" una sola vez por partida.
+	let sonoFinal = false;
+	$effect(() => {
+		if (partida?.estado !== 'terminada') {
+			sonoFinal = false;
+			return;
+		}
+		if (sonoFinal) return;
+		sonoFinal = true;
+		const gane = sonidoDelFinal(partida.ganador, simbolo);
+		if (gane !== null) reproducirResultado(gane);
+	});
 
 	$effect(() => () => detenerPolling());
 </script>

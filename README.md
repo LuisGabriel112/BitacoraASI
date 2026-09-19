@@ -62,18 +62,25 @@ de la tarjeta sin perder el registro.
 
 ## Sonidos
 
-Los avisos sonoros (guardar mesa, cerrar mesa, mensaje de error) salen del catálogo
-en la tabla `sonidos` (migraciones `0020` y `0034`), administrable desde **Modo RPG →
-Sonidos**: ahí se cargan sonidos nuevos, se escuchan y se habilitan/deshabilitan para
-todo el equipo. Cada usuario elige además qué sonido quiere para cada acción (o lo
-silencia) en `sonidos_preferencias`; sin preferencia suena uno al azar de los habilitados.
+Los avisos sonoros salen del catálogo en la tabla `sonidos` (migraciones `0020`, `0034`
+y `0036`), administrable desde **Modo RPG → Sonidos**. Cada sonido tiene cinco
+interruptores — **Error**, **Éxito** (guardar/cerrar mesa), **Compra** (tienda),
+**Victoria** y **Derrota** (minijuegos) — que dicen en qué acciones puede sonar para
+todo el equipo (`sonidos.acciones`); un sonido sin ninguna marcada no suena para nadie.
+Cada usuario elige además qué sonido quiere para cada evento (guardar mesa, cerrar
+mesa, error, compra, victoria, derrota) o lo silencia en `sonidos_preferencias`; sin
+preferencia suena uno al azar de los marcados para esa acción.
 
 - Los archivos nuevos se suben directo a Supabase Storage con el mismo flujo del chat,
   dentro de la carpeta `sonidos/` del bucket `CHAT_BUCKET` (no hace falta otro bucket).
   Sin `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` la subida avisa que el almacenamiento no
   está configurado; el resto del catálogo funciona igual.
-- Los sonidos "de fábrica" viven en `frontend/static/sonidos/`; la fanfarria mariachi es
-  sintetizada (Web Audio) y está en el catálogo con la URL `sintetizado:fanfarria-mexicana`.
+- Los sonidos "de fábrica" viven en `frontend/static/sonidos/`. Los de compra (caja
+  registradora, monedas), victoria y derrota, igual que la fanfarria mariachi, son
+  sintetizados con Web Audio (`frontend/src/lib/sonidosSintetizados.ts`) y están en el
+  catálogo con URL `sintetizado:<nombre>`.
+- La ruleta de casino de la Ruleta rusa y los vasos de Encuentra la pelota también son
+  sintetizados, pero son ambientación del minijuego: no pasan por el catálogo.
 - Si el catálogo no carga (backend caído), el frontend cae al pool fijo de
   `frontend/src/lib/notificaciones.ts` para que el aviso siga sonando.
 

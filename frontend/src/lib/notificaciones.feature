@@ -35,7 +35,7 @@ Característica: Aviso sonoro y visual al guardar registro
   Escenario: El catálogo no pudo cargarse
     Dado que el backend no respondió al pedir el catálogo de sonidos
     Cuando se guarda o falla un formulario
-    Entonces suena uno del pool fijo de respaldo de la categoría correspondiente
+    Entonces suena uno del pool fijo de respaldo de la acción correspondiente
 
   Escenario: Confeti al guardar un soporte con éxito
     Dado que envío un formulario de soporte con todos los campos completos

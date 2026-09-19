@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { api, type PreguntaTrivia } from '$lib/api/client';
 	import { segundosRestantesCooldown } from '$lib/cooldownMinijuego';
+	import { reproducirResultado } from '$lib/sonidos.svelte';
 
 	const CLAVE_ULTIMO = 'bitacora-trivia-ultimo-intento';
 
@@ -54,6 +55,7 @@
 				elegida: opcion,
 				opciones: pregunta.opciones
 			};
+			reproducirResultado(r.acierto);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'No se pudo responder';
 		} finally {

@@ -277,24 +277,27 @@ class UrlSubidaOut(BaseModel):
     url_publica: str
 
 
-CategoriaSonido = Literal["exito", "error"]
-EventoSonido = Literal["guardar_mesa", "cerrar_mesa", "error"]
+# En qué puede sonar un sonido del catálogo (interruptores por sonido) y las
+# acciones concretas del usuario que disparan un sonido (preferencia por evento).
+AccionSonido = Literal["error", "exito", "compra", "victoria", "derrota"]
+EventoSonido = Literal["guardar_mesa", "cerrar_mesa", "error", "compra", "victoria", "derrota"]
 
 
 class SonidoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    categoria: CategoriaSonido
     nombre: str
     url: str
-    activo: bool
+    acciones: list[AccionSonido]
     created_at: datetime
 
 
 class SonidoCreate(BaseModel):
-    categoria: CategoriaSonido
     nombre: str = Field(min_length=1, max_length=80)
     url: str = Field(min_length=1)
+    # Al menos una: un sonido que no suena en nada no tiene sentido subirlo
+    # (en el catálogo sí se pueden apagar todas, que equivale a deshabilitarlo).
+    acciones: list[AccionSonido] = Field(min_length=1)
 
 
 class PreferenciaSonidoOut(BaseModel):
