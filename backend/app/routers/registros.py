@@ -70,6 +70,7 @@ async def crear_registro(payload: RegistroCreate, session: AsyncSession = Depend
         modulo_id=payload.modulo_id,
         atendio_id=payload.atendio_id,
         descripcion=payload.descripcion,
+        minutos_atencion=payload.minutos_atencion,
     )
     session.add(registro)
     await session.commit()

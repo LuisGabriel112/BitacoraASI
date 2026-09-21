@@ -57,3 +57,23 @@ Característica: Validación de apariencia del personaje 3D
     Dado un registro sin color_piel/color_cuerpo/accesorio
     Cuando se valida el payload de registro
     Entonces toma los valores por defecto (piel clara, azul, sin accesorio)
+
+  Escenario: Un tiempo de atención en minutos se acepta
+    Dado el payload de alta de registro con minutos_atencion 45
+    Cuando se valida
+    Entonces minutos_atencion es 45
+
+  Escenario: El tiempo de atención es opcional
+    Dado el payload de alta de registro sin minutos_atencion
+    Cuando se valida
+    Entonces minutos_atencion es nulo
+
+  Escenario: Un tiempo de atención de cero o negativo se rechaza
+    Dado el payload de alta de registro con minutos_atencion 0
+    Cuando se valida
+    Entonces se rechaza
+
+  Escenario: Un tiempo de atención mayor a una jornada de 24 horas se rechaza
+    Dado el payload de alta de registro con minutos_atencion 1441
+    Cuando se valida
+    Entonces se rechaza

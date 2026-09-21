@@ -98,6 +98,7 @@ export type Registro = {
 	fecha: string;
 	semana: string;
 	descripcion: string;
+	minutos_atencion: number | null;
 	trello_card_id: string | null;
 	created_at: string;
 	empresa: Catalogo;
@@ -442,6 +443,7 @@ export const api = {
 		modulo_id: number;
 		atendio_id: number;
 		descripcion: string;
+		minutos_atencion: number | null;
 	}) => json<RegistroCreado>('/registros', { method: 'POST', body: JSON.stringify(payload) }),
 
 	registroPorId: (id: number) => json<Registro>(`/registros/${id}`),
@@ -456,6 +458,7 @@ export const api = {
 			modulo_id: number;
 			atendio_id: number;
 			descripcion: string;
+			minutos_atencion: number | null;
 		}>
 	) => json<Registro>(`/registros/${id}/editar`, { method: 'POST', body: JSON.stringify(payload) }),
 

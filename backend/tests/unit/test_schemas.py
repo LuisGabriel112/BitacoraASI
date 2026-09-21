@@ -1,7 +1,36 @@
+from datetime import date
+
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import AparienciaUpdate, UsuarioRegistro
+from app.schemas import AparienciaUpdate, RegistroCreate, UsuarioRegistro
+
+
+def payload_de_alta(**extras):
+    return {
+        "fecha": date(2026, 9, 21),
+        "empresa_id": 1,
+        "sistema_id": 2,
+        "medio_id": 3,
+        "modulo_id": 4,
+        "atendio_id": 5,
+        "descripcion": "Falla de impresión",
+        **extras,
+    }
+
+
+def test_minutos_de_atencion_se_aceptan():
+    assert RegistroCreate(**payload_de_alta(minutos_atencion=45)).minutos_atencion == 45
+
+
+def test_minutos_de_atencion_son_opcionales():
+    assert RegistroCreate(**payload_de_alta()).minutos_atencion is None
+
+
+@pytest.mark.parametrize("minutos", [0, -5, 1441])
+def test_minutos_de_atencion_fuera_de_rango_se_rechazan(minutos):
+    with pytest.raises(ValidationError):
+        RegistroCreate(**payload_de_alta(minutos_atencion=minutos))
 
 
 def test_color_hex_valido_se_acepta():

@@ -333,6 +333,8 @@ class RegistroCreate(BaseModel):
     modulo_id: int
     atendio_id: int
     descripcion: str
+    # Arriba de una jornada de 24 h el dato es captura errónea, no un soporte real.
+    minutos_atencion: int | None = Field(default=None, ge=1, le=1440)
 
 
 class RegistroOut(BaseModel):
@@ -341,6 +343,7 @@ class RegistroOut(BaseModel):
     fecha: date
     semana: str
     descripcion: str
+    minutos_atencion: int | None
     trello_card_id: str | None
     created_at: datetime
     empresa: CatalogoOut
@@ -358,6 +361,7 @@ class RegistroUpdate(BaseModel):
     modulo_id: int | None = None
     atendio_id: int | None = None
     descripcion: str | None = None
+    minutos_atencion: int | None = Field(default=None, ge=1, le=1440)
 
 
 class ExtraccionRegistro(BaseModel):

@@ -82,7 +82,7 @@ async def test_editar_registro_con_catalogo_invalido_da_400():
 async def test_crear_registro_da_creditos_de_tienda(monkeypatch):
     registro_creado = SimpleNamespace(
         id=1, fecha=date(2026, 8, 3), semana="SEM 32 - 2026", descripcion="No entra",
-        trello_card_id=None, created_at=datetime(2026, 8, 3, 16, 0),
+        minutos_atencion=30, trello_card_id=None, created_at=datetime(2026, 8, 3, 16, 0),
         empresa=_catalogo_item(1, "Emp"), sistema=_catalogo_item(1, "Sis"),
         medio=_catalogo_item(1, "Med"), modulo=_catalogo_item(1, "Mod"),
         atendio=_catalogo_item(1, "Ana", usuario_id=42),

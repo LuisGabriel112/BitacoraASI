@@ -11,6 +11,7 @@
 	import { RUTA_SONIDO_EE_ATZIMBA, esPrimerSoporteDelDiaDeAtzimba } from '$lib/easterEggs';
 	import { reproducirFanfarriaMexicana } from '$lib/sonidoMexicano';
 	import { api, type Registro, type RegistroCreado } from '$lib/api/client';
+	import { formatearMinutosAtencion, parsearMinutosAtencion } from '$lib/tiempoAtencion';
 	import { tick } from 'svelte';
 
 	let aviso: AvisoResultado;
@@ -43,6 +44,7 @@
 	let moduloId = $state<number | null>(null);
 	let atendioId = $state<number | null>(null);
 	let descripcion = $state('');
+	let tiempoTexto = $state('');
 	let empresaNombre = $state('');
 	let moduloNombre = $state('');
 
@@ -84,6 +86,7 @@
 		moduloId = null;
 		atendioId = null;
 		descripcion = '';
+		tiempoTexto = '';
 		empresaNombre = '';
 		moduloNombre = '';
 		resultado = null;
@@ -147,7 +150,7 @@
 		if (!moduloId) return 'Falta seleccionar módulo';
 		if (!atendioId) return 'Falta seleccionar quién atendió';
 		if (!descripcion.trim()) return 'Falta descripción';
-		return null;
+		return parsearMinutosAtencion(tiempoTexto).error;
 	}
 
 	function revisarEasterEggAtzimba(registro: Registro, logros: string[]): boolean {
@@ -173,7 +176,8 @@
 				medio_id: medioId!,
 				modulo_id: moduloId!,
 				atendio_id: atendioId!,
-				descripcion: descripcion.trim()
+				descripcion: descripcion.trim(),
+				minutos_atencion: parsearMinutosAtencion(tiempoTexto).minutos
 			});
 			cargarCapturadosHoy();
 			const fueEasterEgg = revisarEasterEggAtzimba(resultado.registro, resultado.logros);
@@ -252,7 +256,12 @@
 					{#each capturadosHoy as r}
 						<li class="item-capturado">
 							<div class="item-cabecera">
-								<span class="item-hora">{hora(r.created_at)}</span>
+								<span class="item-hora">
+									{hora(r.created_at)}
+									{#if r.minutos_atencion !== null}
+										· {formatearMinutosAtencion(r.minutos_atencion)}
+									{/if}
+								</span>
 								<ChipSistema nombre={r.sistema.nombre} />
 							</div>
 							<span class="item-empresa">{r.empresa.nombre}</span>
@@ -294,6 +303,16 @@
 					nombreSeleccionado={moduloNombre}
 				/>
 				<SelectCatalogo id="atendio" catalogo="agentes" label="Atendió" bind:selectedId={atendioId} />
+					<div class="campo">
+						<label for="tiempo">Tiempo de atención (minutos)</label>
+						<input
+							id="tiempo"
+							type="text"
+							inputmode="numeric"
+							placeholder="Opcional — ej. 45"
+							bind:value={tiempoTexto}
+						/>
+					</div>
 			</div>
 
 			<div class="campo">
