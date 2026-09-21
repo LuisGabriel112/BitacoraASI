@@ -484,7 +484,7 @@
 		display: block;
 		height: 34px;
 		width: 100%;
-		border-radius: 4px;
+		border-radius: var(--radius-sm);
 	}
 
 	.formulario {

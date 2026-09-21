@@ -536,7 +536,7 @@
 		display: block;
 		height: 12px;
 		width: 80%;
-		border-radius: 3px;
+		border-radius: var(--radius-sm);
 	}
 
 	.paginacion {
