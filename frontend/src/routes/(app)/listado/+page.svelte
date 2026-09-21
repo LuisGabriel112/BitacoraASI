@@ -6,6 +6,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Registro } from '$lib/api/client';
+	import { formatearMinutosAtencion } from '$lib/tiempoAtencion';
 
 	let buscar = $state('');
 	let empresaId = $state<number | null>(null);
@@ -145,6 +146,7 @@
 				<th>Medio</th>
 				<th>Módulo</th>
 				<th>Atendió</th>
+				<th>Tiempo</th>
 				<th>Descripción</th>
 				<th>Trello</th>
 				<th class="col-acciones">Acciones</th>
@@ -154,13 +156,13 @@
 			{#if cargando}
 				{#each Array(10) as _}
 					<tr>
-						{#each Array(10) as _}
+						{#each Array(11) as _}
 							<td><span class="skeleton skeleton-celda" aria-hidden="true"></span></td>
 						{/each}
 					</tr>
 				{/each}
 			{:else if items.length === 0}
-				<tr><td colspan="10" class="vacio">Ningún registro con estos filtros. Ajusta empresa o rango de fecha.</td></tr>
+				<tr><td colspan="11" class="vacio">Ningún registro con estos filtros. Ajusta empresa o rango de fecha.</td></tr>
 			{:else}
 				{#each items as r, i}
 					<tr tabindex="0" in:fade={{ duration: 200, delay: i * 15 }}>
@@ -171,6 +173,7 @@
 						<td>{r.medio.nombre}</td>
 						<td>{r.modulo.nombre}</td>
 						<td>{r.atendio.nombre}</td>
+						<td class="tiempo">{formatearMinutosAtencion(r.minutos_atencion)}</td>
 						<td class="descripcion">{r.descripcion}</td>
 						<td>
 						{#if r.trello_card_id}
@@ -423,6 +426,11 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.tiempo {
+		white-space: nowrap;
+		color: var(--text-muted);
 	}
 
 	.vacio {
