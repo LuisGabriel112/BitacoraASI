@@ -324,7 +324,7 @@ class Sonido(Base):
     nombre: Mapped[str] = mapped_column(Text, unique=True)
     url: Mapped[str] = mapped_column(Text)
     # Acciones en las que puede sonar (error, exito, compra, victoria, derrota);
-    # vacío = no suena para nadie. Reemplaza a categoria + activo (migración 0036).
+    # vacío = no suena para nadie. Reemplaza a categoria + activo (migración 0037).
     acciones: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

@@ -63,7 +63,7 @@ de la tarjeta sin perder el registro.
 ## Sonidos
 
 Los avisos sonoros salen del catálogo en la tabla `sonidos` (migraciones `0020`, `0034`
-y `0036`), administrable desde **Modo RPG → Sonidos**. Cada sonido tiene cinco
+y `0037`), administrable desde **Modo RPG → Sonidos**. Cada sonido tiene cinco
 interruptores — **Error**, **Éxito** (guardar/cerrar mesa), **Compra** (tienda),
 **Victoria** y **Derrota** (minijuegos) — que dicen en qué acciones puede sonar para
 todo el equipo (`sonidos.acciones`); un sonido sin ninguna marcada no suena para nadie.
