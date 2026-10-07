@@ -59,6 +59,15 @@ export function actualizarSonidoEnCache(sonido: Sonido) {
 		: [...estadoSonidos.sonidos, sonido];
 }
 
+/** Lo saca del catálogo en memoria y olvida la preferencia que lo apuntaba:
+ *  esa acción vuelve a "aleatorio", igual que hace la base (on delete set null). */
+export function quitarSonidoDelCache(id: number) {
+	estadoSonidos.sonidos = estadoSonidos.sonidos.filter((s) => s.id !== id);
+	estadoSonidos.preferencias = estadoSonidos.preferencias.map((p) =>
+		p.sonido_id === id ? { ...p, sonido_id: null } : p
+	);
+}
+
 export function actualizarPreferenciaEnCache(preferencia: PreferenciaSonido) {
 	const resto = estadoSonidos.preferencias.filter((p) => p.evento !== preferencia.evento);
 	estadoSonidos.preferencias = [...resto, preferencia];

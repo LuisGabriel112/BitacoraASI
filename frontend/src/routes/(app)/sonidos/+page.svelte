@@ -17,6 +17,7 @@
 		actualizarSonidoEnCache,
 		cargarSonidos,
 		estadoSonidos,
+		quitarSonidoDelCache,
 		reproducirEvento,
 		reproducirFuente
 	} from '$lib/sonidos.svelte';
@@ -142,6 +143,44 @@
 		}
 	}
 
+	// --- eliminar del catálogo --------------------------------------------
+	let porEliminar = $state<Sonido | null>(null);
+	let eliminando = $state(false);
+	let botonCancelar = $state<HTMLButtonElement | undefined>(undefined);
+
+	// Al abrir, el foco se queda en el botón de la fila (fuera del diálogo), así
+	// que Escape no llegaría y el lector de pantalla no anunciaría el modal.
+	$effect(() => {
+		if (porEliminar) botonCancelar?.focus();
+	});
+
+	function pedirConfirmacion(s: Sonido) {
+		errorCatalogo = null;
+		porEliminar = s;
+	}
+
+	function cancelarEliminar() {
+		if (eliminando) return;
+		porEliminar = null;
+	}
+
+	async function confirmarEliminar() {
+		if (!porEliminar) return;
+		const sonido = porEliminar;
+		eliminando = true;
+		try {
+			await api.eliminarSonido(sonido.id);
+			if (reproduciendoClave === `s${sonido.id}`) detenerVistaPrevia();
+			quitarSonidoDelCache(sonido.id);
+			porEliminar = null;
+		} catch (e) {
+			errorCatalogo = e instanceof Error ? e.message : 'No se pudo eliminar el sonido';
+			porEliminar = null;
+		} finally {
+			eliminando = false;
+		}
+	}
+
 	// --- cargar nuevo -------------------------------------------------------
 	let archivo = $state<File | null>(null);
 	let inputArchivo = $state<HTMLInputElement | undefined>(undefined);
@@ -214,6 +253,8 @@
 		if (urlLocal) URL.revokeObjectURL(urlLocal);
 	});
 </script>
+
+<svelte:window onkeydown={(e) => porEliminar && e.key === 'Escape' && cancelarEliminar()} />
 
 <Header titulo="Sonidos" subtitulo="Catálogo del equipo y lo que suena en tus acciones." />
 
@@ -376,11 +417,57 @@
 								</button>
 							{/each}
 						</div>
+						<button
+							type="button"
+							class="btn-eliminar"
+							title="Eliminar del catálogo"
+							aria-label="Eliminar {s.nombre} del catálogo"
+							onclick={() => pedirConfirmacion(s)}
+						>
+							<Icon nombre="trash-2" tamano={15} />
+						</button>
 					</li>
 				{/each}
 			</ul>
 		{/if}
 	</section>
+
+	{#if porEliminar}
+		<!-- Cerrar con teclado lo cubre Escape en <svelte:window>, no el overlay:
+		     un onkeydown aquí no se dispara porque el foco vive dentro del diálogo. -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="overlay" onclick={cancelarEliminar}>
+			<div
+				class="modal tarjeta"
+				onclick={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="titulo-eliminar"
+				tabindex="-1"
+			>
+				<h2 id="titulo-eliminar" class="font-display">¿Eliminar "{porEliminar.nombre}"?</h2>
+				<p class="ayuda-modal">
+					Se quita del catálogo para todo el equipo y no se puede deshacer. Quien lo tuviera elegido para alguna
+					acción volverá a escuchar uno al azar.
+				</p>
+				<div class="acciones-modal">
+					<button
+						type="button"
+						class="btn-cancelar"
+						bind:this={botonCancelar}
+						disabled={eliminando}
+						onclick={cancelarEliminar}
+					>
+						Cancelar
+					</button>
+					<button type="button" class="btn-peligro" disabled={eliminando} onclick={confirmarEliminar}>
+						{eliminando ? 'Eliminando…' : 'Eliminar'}
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 {/if}
 
 <style>
@@ -647,6 +734,91 @@
 	.sonido-origen {
 		font-size: 11px;
 		color: var(--text-faint);
+	}
+
+	.btn-eliminar {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		background: none;
+		border: 2px solid transparent;
+		border-radius: var(--radius);
+		color: var(--text-faint);
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+
+	.btn-eliminar:hover {
+		border-color: var(--danger);
+		color: var(--danger);
+	}
+
+	/* --- modal de confirmación --- */
+	.overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 400;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 24px;
+		background: var(--scrim);
+	}
+
+	.modal {
+		width: min(420px, 100%);
+		padding: 22px;
+		cursor: default;
+	}
+
+	.modal h2 {
+		margin: 0 0 8px;
+		font-size: 16px;
+	}
+
+	.ayuda-modal {
+		margin: 0 0 18px;
+		font-size: 13px;
+		color: var(--text-muted);
+	}
+
+	.acciones-modal {
+		display: flex;
+		justify-content: flex-end;
+		gap: 10px;
+	}
+
+	.btn-cancelar,
+	.btn-peligro {
+		border-radius: var(--radius);
+		padding: 9px 16px;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.btn-cancelar {
+		background: none;
+		border: 2px solid var(--border-strong);
+		color: var(--text);
+	}
+
+	.btn-peligro {
+		background: var(--danger);
+		border: 2px solid var(--danger);
+		color: white;
+	}
+
+	.btn-peligro:hover:not(:disabled) {
+		filter: brightness(1.1);
+	}
+
+	.btn-cancelar:disabled,
+	.btn-peligro:disabled {
+		opacity: 0.6;
+		cursor: default;
 	}
 
 	/* --- botones de acción (catálogo y formulario) --- */

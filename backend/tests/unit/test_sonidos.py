@@ -307,6 +307,31 @@ async def test_marcar_accion_de_sonido_inexistente_da_404():
 
 
 @pytest.mark.asyncio
+async def test_eliminar_borra_el_sonido_y_confirma_el_commit():
+    session = AsyncMock()
+    sonido = _sonido(4)
+    session.get.return_value = sonido
+
+    await router_sonidos.eliminar(4, session)
+
+    session.delete.assert_awaited_once_with(sonido)
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_eliminar_sonido_inexistente_da_404_sin_borrar_nada():
+    session = AsyncMock()
+    session.get.return_value = None
+
+    with pytest.raises(HTTPException) as info:
+        await router_sonidos.eliminar(99, session)
+
+    assert info.value.status_code == 404
+    session.delete.assert_not_awaited()
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_subir_url_usa_la_carpeta_de_sonidos(monkeypatch):
     llamadas = {}
 

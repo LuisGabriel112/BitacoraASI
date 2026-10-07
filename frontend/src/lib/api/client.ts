@@ -403,6 +403,11 @@ export const api = {
 	desmarcarAccionSonido: (id: number, accion: AccionSonido) =>
 		json<Sonido>(`/sonidos/${id}/acciones/${accion}`, { method: 'DELETE' }),
 
+	eliminarSonido: async (id: number) => {
+		const resp = await fetch(`${BASE}/sonidos/${id}`, { method: 'DELETE' });
+		await lanzarSiError(resp);
+	},
+
 	preferenciasSonido: () => json<PreferenciaSonido[]>('/sonidos/preferencias'),
 
 	guardarPreferenciaSonido: (payload: { evento: EventoSonido; sonido_id?: number | null; silenciado?: boolean }) =>

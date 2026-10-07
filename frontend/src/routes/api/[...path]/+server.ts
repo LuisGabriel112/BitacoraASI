@@ -34,6 +34,12 @@ async function reenviar(evento: Parameters<RequestHandler>[0]) {
 	return new Response(cuerpo, { status: respuesta.status, headers: encabezadosSalida });
 }
 
+// Un metodo que falte aqui no llega al backend: SvelteKit responde 405 antes
+// de entrar a `reenviar`. En desarrollo no se nota porque ahi el proxy lo hace
+// Vite (vite.config.ts), que reenvia todo -- asi se escapo el PUT de
+// /sonidos/{id}/acciones/{accion}, que solo fallaba en produccion.
 export const GET: RequestHandler = reenviar;
 export const POST: RequestHandler = reenviar;
+export const PUT: RequestHandler = reenviar;
+export const PATCH: RequestHandler = reenviar;
 export const DELETE: RequestHandler = reenviar;

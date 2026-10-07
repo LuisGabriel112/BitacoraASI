@@ -92,6 +92,18 @@ async def desmarcar_accion(sonido_id: int, accion: AccionSonido, session: AsyncS
     return await _cambiar_accion(session, sonido_id, accion, False)
 
 
+@router.delete("/{sonido_id}", status_code=204)
+async def eliminar(sonido_id: int, session: AsyncSession = Depends(get_session)):
+    """Saca el sonido del catálogo para todo el equipo. Las preferencias que lo
+    tuvieran elegido quedan en sonido_id=None (on delete set null, migración
+    0034), o sea que esa acción vuelve a sonar al azar en vez de romperse."""
+    sonido = await session.get(Sonido, sonido_id)
+    if sonido is None:
+        raise HTTPException(404, "Sonido no encontrado")
+    await session.delete(sonido)
+    await session.commit()
+
+
 @router.get("/preferencias", response_model=list[PreferenciaSonidoOut])
 async def mis_preferencias(
     usuario: Usuario = Depends(get_usuario_actual),
