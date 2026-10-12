@@ -384,7 +384,7 @@ async def test_ajustar_peso_de_sonido_inexistente_da_404():
 
 
 def test_el_schema_rechaza_pesos_fuera_de_rango():
-    for malo in (0, 101, -5):
+    for malo in (0, servicio.PESO_MAXIMO + 1, -5):
         with pytest.raises(ValidationError):
             PesoSonidoUpdate(peso=malo)
 

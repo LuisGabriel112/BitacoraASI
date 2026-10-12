@@ -70,10 +70,11 @@ interruptores — **Error**, **Éxito** (guardar mesa o registro), **Compra** (t
 igual para todo el equipo: no hay preferencia por usuario.
 
 Dentro de cada acción el sorteo es proporcional al **peso** de cada sonido
-(`sonidos.pesos`, un `{accion: 1..100}`): con peso 3 suena el triple de seguido que uno
+(`sonidos.pesos`, un `{accion: 1..10}`): con peso 3 suena el triple de seguido que uno
 con peso 1, y el mismo sonido puede pesar distinto en cada acción. Lo que nadie ajustó
-pesa 1, así que por defecto todos compiten parejo; la pantalla muestra el porcentaje que
-le toca a cada uno y permite filtrar el catálogo por acción.
+pesa 1, así que por defecto todos compiten parejo. El peso se ajusta con una barra que
+muestra el porcentaje moviéndose en vivo, y el catálogo se puede filtrar por acción.
+Cargar un sonido nuevo abre un modal desde el botón **Cargar sonido**.
 
 Las dos bitácoras suenan igual: guardar o editar una **mesa** (administrativa) y guardar
 o editar un **registro** (operativa) usan los sonidos de Éxito; cerrar una mesa también.

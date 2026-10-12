@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 	import { api, type AccionSonido, type Sonido } from '$lib/api/client';
 	import {
 		ACCIONES_SONIDO,
@@ -10,7 +11,7 @@
 		esSintetizado,
 		nombreSugerido,
 		pesoDe,
-		probabilidadDe,
+		probabilidadCon,
 		validarArchivoSonido
 	} from '$lib/sonidos';
 	import {
@@ -47,8 +48,19 @@
 		return filtro === 'todas' ? s.acciones : s.acciones.filter((a) => a === filtro);
 	}
 
+	// Mientras se arrastra una barra el peso todavía no llegó al servidor, así
+	// que el porcentaje se calcula con este valor en curso para que la cifra se
+	// mueva junto con el dedo.
+	let arrastrando = $state<{ id: number; accion: AccionSonido; peso: number } | null>(null);
+
+	function pesoMostrado(s: Sonido, accion: AccionSonido): number {
+		const a = arrastrando;
+		return a && a.id === s.id && a.accion === accion ? a.peso : pesoDe(s, accion);
+	}
+
 	function porcentaje(s: Sonido, accion: AccionSonido): string {
-		return `${Math.round(probabilidadDe(s, accion, sonidos) * 100)}%`;
+		const valor = probabilidadCon(s, accion, sonidos, (otro) => pesoMostrado(otro, accion));
+		return `${Math.round(valor * 100)}%`;
 	}
 
 	function origenDe(s: Sonido): string {
@@ -164,13 +176,24 @@
 		return guardandoPeso?.id === s.id && guardandoPeso.accion === accion;
 	}
 
+	function arrastrarPeso(s: Sonido, accion: AccionSonido, valor: string) {
+		arrastrando = { id: s.id, accion, peso: Number(valor) };
+	}
+
+	/** Al soltar la barra: guarda si de verdad cambió. El valor en curso se
+	 *  mantiene hasta que el catálogo responde, para que la cifra no parpadee. */
 	async function cambiarPeso(s: Sonido, accion: AccionSonido, valor: string) {
 		const peso = Number(valor);
+		arrastrando = { id: s.id, accion, peso };
 		if (!Number.isInteger(peso) || peso < PESO_MINIMO || peso > PESO_MAXIMO) {
 			errorCatalogo = `El peso debe ser un número entre ${PESO_MINIMO} y ${PESO_MAXIMO}`;
+			arrastrando = null;
 			return;
 		}
-		if (peso === pesoDe(s, accion)) return;
+		if (peso === pesoDe(s, accion)) {
+			arrastrando = null;
+			return;
+		}
 		errorCatalogo = null;
 		guardandoPeso = { id: s.id, accion };
 		try {
@@ -179,10 +202,12 @@
 			errorCatalogo = e instanceof Error ? e.message : 'No se pudo cambiar la probabilidad';
 		} finally {
 			guardandoPeso = null;
+			arrastrando = null;
 		}
 	}
 
 	// --- cargar nuevo -------------------------------------------------------
+	let abriendoCarga = $state(false);
 	let archivo = $state<File | null>(null);
 	let inputArchivo = $state<HTMLInputElement | undefined>(undefined);
 	let nombreNuevo = $state('');
@@ -242,6 +267,7 @@
 			actualizarSonidoEnCache(creado);
 			okSubida = `"${creado.nombre}" quedó en el catálogo para ${etiquetas(creado.acciones)}.`;
 			limpiarFormulario();
+			abriendoCarga = false;
 		} catch (e) {
 			errorSubida = e instanceof Error ? e.message : 'No se pudo subir el sonido';
 		} finally {
@@ -264,8 +290,12 @@
 {:else}
 	{#if errorCarga}<p class="error">{errorCarga}</p>{/if}
 
-	<section class="tarjeta subir">
-		<h2 class="font-display">Cargar sonido nuevo</h2>
+	<Modal
+		titulo="Cargar sonido nuevo"
+		abierto={abriendoCarga}
+		cerrable={!subiendo}
+		alCerrar={() => (abriendoCarga = false)}
+	>
 		<p class="ayuda">Audio corto (ogg, mp3, wav, m4a, mp4), máximo 2 MB. Queda disponible para todo el equipo.</p>
 		<form class="form-subir" onsubmit={(e) => (e.preventDefault(), subir())}>
 			<div class="fila-archivo">
@@ -316,14 +346,16 @@
 				</div>
 			</fieldset>
 			<div class="acciones-subir">
+				<button type="button" class="btn-cancelar" disabled={subiendo} onclick={() => (abriendoCarga = false)}>
+					Cancelar
+				</button>
 				<button type="submit" class="btn-primario" disabled={subiendo || !archivo}>
 					{subiendo ? 'Subiendo…' : 'Subir al catálogo'}
 				</button>
-				{#if okSubida}<span class="ok">{okSubida}</span>{/if}
 			</div>
 			{#if errorSubida}<p class="error">{errorSubida}</p>{/if}
 	</form>
-	</section>
+	</Modal>
 
 	<section class="tarjeta catalogo">
 		<div class="cabecera-catalogo">
@@ -331,21 +363,28 @@
 				Catálogo
 				<span class="conteo">{enUso} de {sonidos.length} en uso</span>
 			</h2>
-			<label class="filtro">
-				Mostrar
-				<select bind:value={filtro}>
-					<option value="todas">Todas las acciones</option>
-					{#each ACCIONES_SONIDO as a (a.accion)}
-						<option value={a.accion}>{a.etiqueta}</option>
-					{/each}
-				</select>
-			</label>
+			<div class="controles-catalogo">
+				<button type="button" class="btn-primario" onclick={() => (abriendoCarga = true)}>
+					<Icon nombre="upload" tamano={15} />
+					Cargar sonido
+				</button>
+				<label class="filtro">
+					Mostrar
+					<select bind:value={filtro}>
+						<option value="todas">Todas las acciones</option>
+						{#each ACCIONES_SONIDO as a (a.accion)}
+							<option value={a.accion}>{a.etiqueta}</option>
+						{/each}
+					</select>
+				</label>
+			</div>
 		</div>
 		<p class="ayuda">
 			Marca en qué acciones puede sonar cada sonido; aplica a todo el equipo. Un sonido sin ninguna acción marcada no
 			suena para nadie. La <strong>probabilidad</strong> reparte el sorteo dentro de cada acción: con peso 3 suena el
 			triple de seguido que uno con peso 1.
 		</p>
+		{#if okSubida}<p class="ok">{okSubida}</p>{/if}
 		{#if errorCatalogo}<p class="error">{errorCatalogo}</p>{/if}
 		{#if visibles.length === 0}
 			<p class="sin-datos">
@@ -379,13 +418,14 @@
 									<label class="etiqueta-peso" for="peso-{s.id}-{accion}">{ETIQUETA_ACCION[accion]}</label>
 									<input
 										id="peso-{s.id}-{accion}"
-										type="number"
+										type="range"
 										min={PESO_MINIMO}
 										max={PESO_MAXIMO}
 										step="1"
-										value={pesoDe(s, accion)}
+										value={pesoMostrado(s, accion)}
 										disabled={estaGuardandoPeso(s, accion)}
-										title="Peso de {s.nombre} en {ETIQUETA_ACCION[accion]}"
+										title="Peso {pesoMostrado(s, accion)} de {PESO_MAXIMO} en {ETIQUETA_ACCION[accion]}"
+										oninput={(e) => arrastrarPeso(s, accion, e.currentTarget.value)}
 										onchange={(e) => cambiarPeso(s, accion, e.currentTarget.value)}
 									/>
 									<span class="porcentaje">{porcentaje(s, accion)}</span>
@@ -426,42 +466,25 @@
 		{/if}
 	</section>
 
-	{#if porEliminar}
-		<!-- Cerrar con teclado lo cubre Escape en <svelte:window>, no el overlay:
-		     un onkeydown aquí no se dispara porque el foco vive dentro del diálogo. -->
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="overlay" onclick={cancelarEliminar}>
-			<div
-				class="modal tarjeta"
-				onclick={(e) => e.stopPropagation()}
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="titulo-eliminar"
-				tabindex="-1"
-			>
-				<h2 id="titulo-eliminar" class="font-display">¿Eliminar "{porEliminar.nombre}"?</h2>
-				<p class="ayuda-modal">
-					Se quita del catálogo para todo el equipo y no se puede deshacer. Quien lo tuviera elegido para alguna
-					acción volverá a escuchar uno al azar.
-				</p>
-				<div class="acciones-modal">
-					<button
-						type="button"
-						class="btn-cancelar"
-						bind:this={botonCancelar}
-						disabled={eliminando}
-						onclick={cancelarEliminar}
-					>
-						Cancelar
-					</button>
-					<button type="button" class="btn-peligro" disabled={eliminando} onclick={confirmarEliminar}>
-						{eliminando ? 'Eliminando…' : 'Eliminar'}
-					</button>
-				</div>
-			</div>
+	<Modal
+		titulo={`¿Eliminar "${porEliminar?.nombre ?? ''}"?`}
+		abierto={porEliminar !== null}
+		cerrable={!eliminando}
+		alCerrar={cancelarEliminar}
+	>
+		<p class="ayuda-modal">
+			Se quita del catálogo para todo el equipo y no se puede deshacer. Quien lo tuviera elegido para alguna
+			acción volverá a escuchar uno al azar.
+		</p>
+		<div class="acciones-modal">
+			<button type="button" class="btn-cancelar" disabled={eliminando} onclick={cancelarEliminar}>
+				Cancelar
+			</button>
+			<button type="button" class="btn-peligro" disabled={eliminando} onclick={confirmarEliminar}>
+				{eliminando ? 'Eliminando…' : 'Eliminar'}
+			</button>
 		</div>
-	{/if}
+	</Modal>
 {/if}
 
 <style>
@@ -687,24 +710,65 @@
 		color: var(--text-faint);
 	}
 
-	.probabilidades input[type='number'] {
-		width: 52px;
-		padding: 4px 6px;
-		background: var(--surface);
-		border: 2px solid var(--border);
-		border-radius: var(--radius);
-		color: var(--text);
-		font-size: 12px;
-		font-family: var(--font-mono);
+	/* La barra se dibuja a mano para que el riel y el tirador usen los tokens
+	   del sistema: el control nativo ignora currentColor en casi todo. */
+	.probabilidades input[type='range'] {
+		width: 84px;
+		height: 18px;
+		margin: 0;
+		background: none;
+		cursor: pointer;
+		appearance: none;
+		-webkit-appearance: none;
 	}
 
-	.probabilidades input[type='number']:focus {
-		border-color: var(--accent);
-		outline: none;
+	.probabilidades input[type='range']::-webkit-slider-runnable-track {
+		height: 4px;
+		border-radius: 999px;
+		background: var(--border-strong);
 	}
 
-	.probabilidades input[type='number']:disabled {
+	.probabilidades input[type='range']::-moz-range-track {
+		height: 4px;
+		border-radius: 999px;
+		background: var(--border-strong);
+	}
+
+	.probabilidades input[type='range']::-webkit-slider-thumb {
+		appearance: none;
+		-webkit-appearance: none;
+		width: 14px;
+		height: 14px;
+		margin-top: -5px;
+		border: none;
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	.probabilidades input[type='range']::-moz-range-thumb {
+		width: 14px;
+		height: 14px;
+		border: none;
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	.probabilidades input[type='range']:hover::-webkit-slider-thumb {
+		background: var(--accent-strong);
+	}
+
+	.probabilidades input[type='range']:hover::-moz-range-thumb {
+		background: var(--accent-strong);
+	}
+
+	.probabilidades input[type='range']:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 3px;
+	}
+
+	.probabilidades input[type='range']:disabled {
 		opacity: 0.6;
+		cursor: default;
 	}
 
 	.porcentaje {
@@ -776,28 +840,9 @@
 		color: var(--danger);
 	}
 
-	/* --- modal de confirmación --- */
-	.overlay {
-		position: fixed;
-		inset: 0;
-		z-index: 400;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 24px;
-		background: var(--scrim);
-	}
+	/* --- modales --- */
 
-	.modal {
-		width: min(420px, 100%);
-		padding: 22px;
-		cursor: default;
-	}
 
-	.modal h2 {
-		margin: 0 0 8px;
-		font-size: 16px;
-	}
 
 	.ayuda-modal {
 		margin: 0 0 18px;

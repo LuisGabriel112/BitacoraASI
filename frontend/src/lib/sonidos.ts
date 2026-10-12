@@ -93,19 +93,30 @@ export function sonidosParaEvento(evento: EventoSonido, sonidos: readonly Sonido
  *  pesa lo normal, así que todos compiten parejo hasta que alguien lo cambia. */
 export const PESO_NORMAL = 1;
 export const PESO_MINIMO = 1;
-export const PESO_MAXIMO = 100;
+export const PESO_MAXIMO = 10;
 
 export function pesoDe(sonido: Sonido, accion: AccionSonido): number {
 	return sonido.pesos?.[accion] ?? PESO_NORMAL;
 }
 
+/** Qué tanto le toca a este sonido dentro de su acción, de 0 a 1, usando la
+ *  función de peso que se le pase. Sirve para mostrar el porcentaje mientras
+ *  se arrastra la barra, antes de que el peso nuevo llegue al servidor. */
+export function probabilidadCon(
+	sonido: Sonido,
+	accion: AccionSonido,
+	sonidos: readonly Sonido[],
+	peso: (s: Sonido) => number
+): number {
+	if (!sonido.acciones.includes(accion)) return 0;
+	const total = sonidos.filter((s) => s.acciones.includes(accion)).reduce((suma, s) => suma + peso(s), 0);
+	return total === 0 ? 0 : peso(sonido) / total;
+}
+
 /** Qué tanto le toca a este sonido dentro de su acción, de 0 a 1: su peso
  *  entre la suma de los pesos de todos los que comparten esa acción. */
 export function probabilidadDe(sonido: Sonido, accion: AccionSonido, sonidos: readonly Sonido[]): number {
-	const comparten = sonidos.filter((s) => s.acciones.includes(accion));
-	const total = comparten.reduce((suma, s) => suma + pesoDe(s, accion), 0);
-	if (total === 0 || !sonido.acciones.includes(accion)) return 0;
-	return pesoDe(sonido, accion) / total;
+	return probabilidadCon(sonido, accion, sonidos, (s) => pesoDe(s, accion));
 }
 
 /** Sorteo proporcional al peso: con pesos 3 y 1, el primero sale 3 de cada 4

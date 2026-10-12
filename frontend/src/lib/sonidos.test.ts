@@ -9,7 +9,9 @@ import {
 	elegirPonderado,
 	esSintetizado,
 	nombreSugerido,
+	PESO_MAXIMO,
 	pesoDe,
+	probabilidadCon,
 	probabilidadDe,
 	resolverSonido,
 	sonidosDeRespaldo,
@@ -133,6 +135,23 @@ describe('probabilidadDe', () => {
 	});
 });
 
+describe('probabilidadCon', () => {
+	it('calcula con el peso que se le pase, no con el guardado', () => {
+		const catalogo = [sonido(1, ['exito']), sonido(2, ['exito'])];
+		// lo que se ve mientras se arrastra la barra del primero hasta 3
+		const enVivo = (s: Sonido) => (s.id === 1 ? 3 : pesoDe(s, 'exito'));
+		expect(probabilidadCon(catalogo[0], 'exito', catalogo, enVivo)).toBeCloseTo(0.75);
+		expect(probabilidadCon(catalogo[1], 'exito', catalogo, enVivo)).toBeCloseTo(0.25);
+		// el guardado sigue siendo el de antes hasta que se suelte
+		expect(probabilidadDe(catalogo[0], 'exito', catalogo)).toBeCloseTo(0.5);
+	});
+
+	it('un sonido sin esa acción sigue en 0 aunque le pasen peso', () => {
+		const catalogo = [sonido(1, ['error'])];
+		expect(probabilidadCon(catalogo[0], 'exito', catalogo, () => 5)).toBe(0);
+	});
+});
+
 describe('elegirPonderado', () => {
 	it('sin candidatos no elige nada', () => {
 		expect(elegirPonderado([], 'exito', () => 0)).toBeNull();
@@ -152,7 +171,7 @@ describe('elegirPonderado', () => {
 	});
 
 	it('un peso alto no excluye al resto', () => {
-		const candidatos = [sonido(1, ['exito'], { exito: 100 }), sonido(2, ['exito'])];
+		const candidatos = [sonido(1, ['exito'], { exito: PESO_MAXIMO }), sonido(2, ['exito'])];
 		expect(elegirPonderado(candidatos, 'exito', () => 0.999)!.id).toBe(2);
 	});
 });

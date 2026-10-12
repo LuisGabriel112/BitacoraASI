@@ -305,7 +305,8 @@ class SonidoCreate(BaseModel):
 
 
 class PesoSonidoUpdate(BaseModel):
-    peso: int = Field(ge=1, le=100)
+    # el tope coincide con PESO_MAXIMO de services/sonidos.py
+    peso: int = Field(ge=1, le=10)
 
 
 class PreferenciaSonidoOut(BaseModel):

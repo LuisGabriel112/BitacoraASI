@@ -25,10 +25,12 @@ ACCION_POR_EVENTO: dict[str, str] = {
 
 # Cuánto pesa un sonido en el sorteo de su acción si nadie lo ajustó, y los
 # límites de lo que se puede ajustar. Un peso 3 suena el triple de seguido que
-# un peso 1 dentro de la misma acción.
+# un peso 1 dentro de la misma acción. El tope es 10 porque la pantalla lo
+# ajusta con una barra: de 1 a 100 no se podría arrastrar con precisión, y 10x
+# ya es una diferencia enorme.
 PESO_NORMAL = 1
 PESO_MINIMO = 1
-PESO_MAXIMO = 100
+PESO_MAXIMO = 10
 
 CARPETA_STORAGE = "sonidos"
 
