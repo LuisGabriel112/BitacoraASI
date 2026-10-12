@@ -16,11 +16,19 @@ ACCIONES: tuple[str, ...] = ("error", "exito", "compra", "victoria", "derrota")
 ACCION_POR_EVENTO: dict[str, str] = {
     "guardar_mesa": "exito",
     "cerrar_mesa": "exito",
+    "guardar_registro": "exito",
     "error": "error",
     "compra": "compra",
     "victoria": "victoria",
     "derrota": "derrota",
 }
+
+# Cuánto pesa un sonido en el sorteo de su acción si nadie lo ajustó, y los
+# límites de lo que se puede ajustar. Un peso 3 suena el triple de seguido que
+# un peso 1 dentro de la misma acción.
+PESO_NORMAL = 1
+PESO_MINIMO = 1
+PESO_MAXIMO = 100
 
 CARPETA_STORAGE = "sonidos"
 
@@ -66,6 +74,26 @@ def con_accion(acciones: Iterable[str], accion: str, marcada: bool) -> list[str]
     else:
         conjunto.discard(accion)
     return normalizar_acciones(conjunto)
+
+
+def con_peso(pesos: dict[str, int], accion: str, peso: int) -> dict[str, int]:
+    """Pesos con `accion` ajustada. El peso normal no se guarda: así el JSON
+    solo lista lo que alguien cambió a propósito."""
+    if accion not in ACCIONES:
+        raise SonidoError(f"Acción desconocida: {accion}")
+    if not PESO_MINIMO <= peso <= PESO_MAXIMO:
+        raise SonidoError(f"El peso debe estar entre {PESO_MINIMO} y {PESO_MAXIMO}")
+    nuevos = {a: p for a, p in pesos.items() if a != accion}
+    if peso != PESO_NORMAL:
+        nuevos[accion] = peso
+    return {a: nuevos[a] for a in ACCIONES if a in nuevos}
+
+
+def sin_pesos_huerfanos(pesos: dict[str, int], acciones: Iterable[str]) -> dict[str, int]:
+    """Quita el peso de las acciones que ya no están marcadas: un peso sin su
+    acción no se usa para nada y confundiría si alguien la vuelve a marcar."""
+    marcadas = set(acciones)
+    return {a: p for a, p in pesos.items() if a in marcadas}
 
 
 async def guardar_preferencia(

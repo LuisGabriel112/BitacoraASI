@@ -72,12 +72,21 @@ export type DanioJefeEvento = {
 /** Interruptores de un sonido en el catálogo (en qué puede sonar). */
 export type AccionSonido = 'error' | 'exito' | 'compra' | 'victoria' | 'derrota';
 /** Acciones concretas del usuario con preferencia propia de sonido. */
-export type EventoSonido = 'guardar_mesa' | 'cerrar_mesa' | 'error' | 'compra' | 'victoria' | 'derrota';
+export type EventoSonido =
+	| 'guardar_mesa'
+	| 'cerrar_mesa'
+	| 'guardar_registro'
+	| 'error'
+	| 'compra'
+	| 'victoria'
+	| 'derrota';
 export type Sonido = {
 	id: number;
 	nombre: string;
 	url: string;
 	acciones: AccionSonido[];
+	/** Peso del sorteo por acción; las que no aparecen pesan 1. */
+	pesos: Partial<Record<AccionSonido, number>>;
 	created_at: string;
 };
 export type PreferenciaSonido = { evento: EventoSonido; sonido_id: number | null; silenciado: boolean };
@@ -403,11 +412,17 @@ export const api = {
 	desmarcarAccionSonido: (id: number, accion: AccionSonido) =>
 		json<Sonido>(`/sonidos/${id}/acciones/${accion}`, { method: 'DELETE' }),
 
+	ajustarPesoSonido: (id: number, accion: AccionSonido, peso: number) =>
+		json<Sonido>(`/sonidos/${id}/acciones/${accion}/peso`, { method: 'PUT', body: JSON.stringify({ peso }) }),
+
 	eliminarSonido: async (id: number) => {
 		const resp = await fetch(`${BASE}/sonidos/${id}`, { method: 'DELETE' });
 		await lanzarSiError(resp);
 	},
 
+	// La pantalla de Sonidos dejó de capturar preferencias por usuario (ahora el
+	// catálogo es igual para todos y se gradúa con `pesos`), pero el backend las
+	// sigue exponiendo y sus filas se conservan por si el panel vuelve.
 	preferenciasSonido: () => json<PreferenciaSonido[]>('/sonidos/preferencias'),
 
 	guardarPreferenciaSonido: (payload: { evento: EventoSonido; sonido_id?: number | null; silenciado?: boolean }) =>

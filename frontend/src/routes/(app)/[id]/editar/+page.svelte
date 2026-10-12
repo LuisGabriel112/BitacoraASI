@@ -5,6 +5,7 @@
 	import Toast from '$lib/components/Toast.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Registro } from '$lib/api/client';
+	import { reproducirEvento } from '$lib/sonidos.svelte';
 
 	const registroId = $derived(Number($page.params.id));
 
@@ -70,7 +71,10 @@
 		errorValidacion = validar();
 		errorGuardado = null;
 		guardadoOk = false;
-		if (errorValidacion) return;
+		if (errorValidacion) {
+			reproducirEvento('error');
+			return;
+		}
 
 		guardando = true;
 		try {
@@ -84,8 +88,10 @@
 				descripcion: descripcion.trim()
 			});
 			guardadoOk = true;
+			reproducirEvento('guardar_registro');
 		} catch (e) {
 			errorGuardado = e instanceof Error ? e.message : 'No se pudo guardar el registro';
+			reproducirEvento('error');
 		} finally {
 			guardando = false;
 		}

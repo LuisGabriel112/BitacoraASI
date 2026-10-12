@@ -8,7 +8,7 @@ from sqlalchemy.dialects import postgresql
 
 from app.models import SonidoPreferencia
 from app.routers import sonidos as router_sonidos
-from app.schemas import PreferenciaSonidoUpdate, SolicitudUrlSubida, SonidoCreate
+from app.schemas import PesoSonidoUpdate, PreferenciaSonidoUpdate, SolicitudUrlSubida, SonidoCreate
 from app.services import sonidos as servicio
 from app.services.storage import StorageError
 
@@ -17,9 +17,13 @@ def _sql(stmt) -> str:
     return str(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
 
 
-def _sonido(id: int = 1, acciones: list[str] | None = None) -> SimpleNamespace:
+def _sonido(id: int = 1, acciones: list[str] | None = None, pesos: dict[str, int] | None = None) -> SimpleNamespace:
     return SimpleNamespace(
-        id=id, nombre=f"sonido-{id}", url=f"/sonidos/{id}.ogg", acciones=["exito"] if acciones is None else acciones
+        id=id,
+        nombre=f"sonido-{id}",
+        url=f"/sonidos/{id}.ogg",
+        acciones=["exito"] if acciones is None else acciones,
+        pesos={} if pesos is None else pesos,
     )
 
 
@@ -39,6 +43,10 @@ def test_guardar_y_cerrar_mesa_suenan_a_exito_y_error_a_error():
     assert servicio.accion_de_evento("guardar_mesa") == "exito"
     assert servicio.accion_de_evento("cerrar_mesa") == "exito"
     assert servicio.accion_de_evento("error") == "error"
+
+
+def test_guardar_registro_suena_a_exito_igual_que_las_mesas():
+    assert servicio.accion_de_evento("guardar_registro") == "exito"
 
 
 def test_compra_victoria_y_derrota_suenan_con_su_propia_accion():
@@ -103,6 +111,39 @@ def test_accion_desconocida_se_rechaza_al_marcar_y_al_normalizar():
 
 def test_normalizar_ordena_y_quita_repetidos():
     assert servicio.normalizar_acciones(["derrota", "error", "derrota", "compra"]) == ["error", "compra", "derrota"]
+
+
+# --- pesos ----------------------------------------------------------------
+
+
+def test_el_peso_normal_no_se_guarda():
+    assert servicio.con_peso({}, "exito", servicio.PESO_NORMAL) == {}
+    assert servicio.con_peso({"exito": 5}, "exito", servicio.PESO_NORMAL) == {}
+
+
+def test_ajustar_el_peso_de_una_accion_no_toca_las_otras():
+    assert servicio.con_peso({"exito": 5}, "victoria", 2) == {"exito": 5, "victoria": 2}
+
+
+def test_los_pesos_quedan_en_el_orden_canonico():
+    pesos = servicio.con_peso(servicio.con_peso({}, "derrota", 2), "error", 3)
+    assert list(pesos) == ["error", "derrota"]
+
+
+def test_peso_fuera_de_rango_se_rechaza():
+    for malo in (0, -1, servicio.PESO_MAXIMO + 1):
+        with pytest.raises(servicio.SonidoError):
+            servicio.con_peso({}, "exito", malo)
+
+
+def test_peso_de_accion_desconocida_se_rechaza():
+    with pytest.raises(servicio.SonidoError):
+        servicio.con_peso({}, "bailar", 2)
+
+
+def test_los_pesos_sin_su_accion_marcada_se_descartan():
+    assert servicio.sin_pesos_huerfanos({"exito": 3, "victoria": 2}, ["exito"]) == {"exito": 3}
+    assert servicio.sin_pesos_huerfanos({"exito": 3}, []) == {}
 
 
 # --- upsert de preferencia ------------------------------------------------
@@ -304,6 +345,60 @@ async def test_marcar_accion_de_sonido_inexistente_da_404():
         await router_sonidos.marcar_accion(99, "exito", session)
 
     assert info.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_ajustar_peso_guarda_solo_lo_distinto_del_normal():
+    session = AsyncMock()
+    sonido = _sonido(4, acciones=["exito", "victoria"])
+    session.get.return_value = sonido
+
+    await router_sonidos.ajustar_peso(4, "victoria", PesoSonidoUpdate(peso=7), session)
+    assert sonido.pesos == {"victoria": 7}
+
+    await router_sonidos.ajustar_peso(4, "victoria", PesoSonidoUpdate(peso=1), session)
+    assert sonido.pesos == {}
+
+
+@pytest.mark.asyncio
+async def test_no_se_puede_pesar_una_accion_que_no_esta_marcada():
+    session = AsyncMock()
+    session.get.return_value = _sonido(4, acciones=["exito"])
+
+    with pytest.raises(HTTPException) as info:
+        await router_sonidos.ajustar_peso(4, "derrota", PesoSonidoUpdate(peso=3), session)
+
+    assert info.value.status_code == 400
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_ajustar_peso_de_sonido_inexistente_da_404():
+    session = AsyncMock()
+    session.get.return_value = None
+
+    with pytest.raises(HTTPException) as info:
+        await router_sonidos.ajustar_peso(99, "exito", PesoSonidoUpdate(peso=3), session)
+
+    assert info.value.status_code == 404
+
+
+def test_el_schema_rechaza_pesos_fuera_de_rango():
+    for malo in (0, 101, -5):
+        with pytest.raises(ValidationError):
+            PesoSonidoUpdate(peso=malo)
+
+
+@pytest.mark.asyncio
+async def test_desmarcar_una_accion_se_lleva_su_peso():
+    session = AsyncMock()
+    sonido = _sonido(4, acciones=["exito", "victoria"], pesos={"exito": 3, "victoria": 9})
+    session.get.return_value = sonido
+
+    await router_sonidos.desmarcar_accion(4, "victoria", session)
+
+    assert sonido.acciones == ["exito"]
+    assert sonido.pesos == {"exito": 3}
 
 
 @pytest.mark.asyncio

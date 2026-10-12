@@ -280,7 +280,9 @@ class UrlSubidaOut(BaseModel):
 # En qué puede sonar un sonido del catálogo (interruptores por sonido) y las
 # acciones concretas del usuario que disparan un sonido (preferencia por evento).
 AccionSonido = Literal["error", "exito", "compra", "victoria", "derrota"]
-EventoSonido = Literal["guardar_mesa", "cerrar_mesa", "error", "compra", "victoria", "derrota"]
+EventoSonido = Literal[
+    "guardar_mesa", "cerrar_mesa", "error", "compra", "victoria", "derrota", "guardar_registro"
+]
 
 
 class SonidoOut(BaseModel):
@@ -289,6 +291,8 @@ class SonidoOut(BaseModel):
     nombre: str
     url: str
     acciones: list[AccionSonido]
+    # Solo las acciones con peso distinto de 1; las demás pesan 1.
+    pesos: dict[AccionSonido, int]
     created_at: datetime
 
 
@@ -298,6 +302,10 @@ class SonidoCreate(BaseModel):
     # Al menos una: un sonido que no suena en nada no tiene sentido subirlo
     # (en el catálogo sí se pueden apagar todas, que equivale a deshabilitarlo).
     acciones: list[AccionSonido] = Field(min_length=1)
+
+
+class PesoSonidoUpdate(BaseModel):
+    peso: int = Field(ge=1, le=100)
 
 
 class PreferenciaSonidoOut(BaseModel):

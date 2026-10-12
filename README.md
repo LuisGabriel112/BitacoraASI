@@ -62,14 +62,26 @@ de la tarjeta sin perder el registro.
 
 ## Sonidos
 
-Los avisos sonoros salen del catálogo en la tabla `sonidos` (migraciones `0020`, `0034`
-y `0037`), administrable desde **Modo RPG → Sonidos**. Cada sonido tiene cinco
-interruptores — **Error**, **Éxito** (guardar/cerrar mesa), **Compra** (tienda),
-**Victoria** y **Derrota** (minijuegos) — que dicen en qué acciones puede sonar para
-todo el equipo (`sonidos.acciones`); un sonido sin ninguna marcada no suena para nadie.
-Cada usuario elige además qué sonido quiere para cada evento (guardar mesa, cerrar
-mesa, error, compra, victoria, derrota) o lo silencia en `sonidos_preferencias`; sin
-preferencia suena uno al azar de los marcados para esa acción.
+Los avisos sonoros salen del catálogo en la tabla `sonidos` (migraciones `0020`, `0034`,
+`0037` y `0038`), administrable desde **Modo RPG → Sonidos**. Cada sonido tiene cinco
+interruptores — **Error**, **Éxito** (guardar mesa o registro), **Compra** (tienda),
+**Victoria** y **Derrota** (minijuegos) — que dicen en qué acciones puede sonar
+(`sonidos.acciones`); un sonido sin ninguna marcada no suena para nadie. El catálogo es
+igual para todo el equipo: no hay preferencia por usuario.
+
+Dentro de cada acción el sorteo es proporcional al **peso** de cada sonido
+(`sonidos.pesos`, un `{accion: 1..100}`): con peso 3 suena el triple de seguido que uno
+con peso 1, y el mismo sonido puede pesar distinto en cada acción. Lo que nadie ajustó
+pesa 1, así que por defecto todos compiten parejo; la pantalla muestra el porcentaje que
+le toca a cada uno y permite filtrar el catálogo por acción.
+
+Las dos bitácoras suenan igual: guardar o editar una **mesa** (administrativa) y guardar
+o editar un **registro** (operativa) usan los sonidos de Éxito; cerrar una mesa también.
+Los errores de validación y de guardado de ambas usan los de Error.
+
+`sonidos_preferencias` (migración `0034`) ya no se captura desde la app — el panel "Mis
+sonidos" se quitó — pero la tabla, sus filas y sus endpoints se conservan por si el
+sonido por usuario regresa.
 
 - Los archivos nuevos se suben directo a Supabase Storage con el mismo flujo del chat,
   dentro de la carpeta `sonidos/` del bucket `CHAT_BUCKET` (no hace falta otro bucket).

@@ -1,20 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import type { AccionSonido, PreferenciaSonido, Sonido } from './api/client';
+import type { AccionSonido, Sonido } from './api/client';
 import { RESPALDO_POR_ACCION, SONIDOS_ERROR, SONIDOS_EXITO } from './notificaciones';
 import {
 	ACCIONES_SONIDO,
 	EVENTOS_SONIDO,
+	PESO_NORMAL,
 	accionDeEvento,
+	elegirPonderado,
 	esSintetizado,
 	nombreSugerido,
+	pesoDe,
+	probabilidadDe,
 	resolverSonido,
 	sonidosDeRespaldo,
 	sonidosParaEvento,
 	validarArchivoSonido
 } from './sonidos';
 
-function sonido(id: number, acciones: AccionSonido[]): Sonido {
-	return { id, acciones, nombre: `s${id}`, url: `/sonidos/s${id}.ogg`, created_at: '' };
+function sonido(id: number, acciones: AccionSonido[], pesos: Sonido['pesos'] = {}): Sonido {
+	return { id, acciones, pesos, nombre: `s${id}`, url: `/sonidos/s${id}.ogg`, created_at: '' };
 }
 
 const CATALOGO: Sonido[] = [
@@ -26,15 +30,15 @@ const CATALOGO: Sonido[] = [
 	sonido(6, ['compra'])
 ];
 
-function preferencia(evento: PreferenciaSonido['evento'], sonido_id: number | null, silenciado = false): PreferenciaSonido {
-	return { evento, sonido_id, silenciado };
-}
-
 describe('accionDeEvento', () => {
 	it('las dos acciones de mesa suenan a éxito y la de error a error', () => {
 		expect(accionDeEvento('guardar_mesa')).toBe('exito');
 		expect(accionDeEvento('cerrar_mesa')).toBe('exito');
 		expect(accionDeEvento('error')).toBe('error');
+	});
+
+	it('guardar registro suena a éxito, igual que las mesas', () => {
+		expect(accionDeEvento('guardar_registro')).toBe('exito');
 	});
 
 	it('compra, victoria y derrota suenan con su propia acción', () => {
@@ -43,10 +47,11 @@ describe('accionDeEvento', () => {
 		expect(accionDeEvento('derrota')).toBe('derrota');
 	});
 
-	it('el listado de eventos cubre exactamente los seis', () => {
+	it('el listado de eventos cubre exactamente los siete', () => {
 		expect(EVENTOS_SONIDO.map((e) => e.evento)).toEqual([
 			'guardar_mesa',
 			'cerrar_mesa',
+			'guardar_registro',
 			'error',
 			'compra',
 			'victoria',
@@ -82,53 +87,108 @@ describe('sonidosParaEvento', () => {
 	});
 });
 
+describe('pesoDe', () => {
+	it('lo que nadie ajustó pesa lo normal', () => {
+		expect(pesoDe(sonido(1, ['exito']), 'exito')).toBe(PESO_NORMAL);
+	});
+
+	it('devuelve el peso ajustado de esa acción, no el de otra', () => {
+		const s = sonido(1, ['exito', 'victoria'], { exito: 4 });
+		expect(pesoDe(s, 'exito')).toBe(4);
+		expect(pesoDe(s, 'victoria')).toBe(PESO_NORMAL);
+	});
+});
+
+describe('probabilidadDe', () => {
+	it('con pesos iguales se reparte parejo', () => {
+		const catalogo = [sonido(1, ['exito']), sonido(2, ['exito'])];
+		expect(probabilidadDe(catalogo[0], 'exito', catalogo)).toBeCloseTo(0.5);
+	});
+
+	it('el peso manda: 3 contra 1 da 75% y 25%', () => {
+		const catalogo = [sonido(1, ['exito'], { exito: 3 }), sonido(2, ['exito'])];
+		expect(probabilidadDe(catalogo[0], 'exito', catalogo)).toBeCloseTo(0.75);
+		expect(probabilidadDe(catalogo[1], 'exito', catalogo)).toBeCloseTo(0.25);
+	});
+
+	it('las probabilidades de una acción suman 1', () => {
+		const catalogo = [
+			sonido(1, ['exito'], { exito: 5 }),
+			sonido(2, ['exito'], { exito: 2 }),
+			sonido(3, ['exito'])
+		];
+		const suma = catalogo.reduce((t, s) => t + probabilidadDe(s, 'exito', catalogo), 0);
+		expect(suma).toBeCloseTo(1);
+	});
+
+	it('el mismo sonido puede tener probabilidad distinta en cada acción', () => {
+		const catalogo = [sonido(1, ['exito', 'victoria'], { exito: 1, victoria: 9 }), sonido(2, ['exito', 'victoria'])];
+		expect(probabilidadDe(catalogo[0], 'exito', catalogo)).toBeCloseTo(0.5);
+		expect(probabilidadDe(catalogo[0], 'victoria', catalogo)).toBeCloseTo(0.9);
+	});
+
+	it('un sonido sin esa acción marcada tiene probabilidad 0', () => {
+		const catalogo = [sonido(1, ['exito']), sonido(2, ['error'])];
+		expect(probabilidadDe(catalogo[1], 'exito', catalogo)).toBe(0);
+	});
+});
+
+describe('elegirPonderado', () => {
+	it('sin candidatos no elige nada', () => {
+		expect(elegirPonderado([], 'exito', () => 0)).toBeNull();
+	});
+
+	it('reparte el rango del azar en proporción al peso', () => {
+		const candidatos = [sonido(1, ['exito'], { exito: 3 }), sonido(2, ['exito'])];
+		// total 4: [0, 3) le toca al primero y [3, 4) al segundo
+		expect(elegirPonderado(candidatos, 'exito', () => 0)!.id).toBe(1);
+		expect(elegirPonderado(candidatos, 'exito', () => 0.74)!.id).toBe(1);
+		expect(elegirPonderado(candidatos, 'exito', () => 0.76)!.id).toBe(2);
+	});
+
+	it('nunca devuelve null por redondeo cuando el azar roza el tope', () => {
+		const candidatos = [sonido(1, ['exito']), sonido(2, ['exito'])];
+		expect(elegirPonderado(candidatos, 'exito', () => 0.999999999)).not.toBeNull();
+	});
+
+	it('un peso alto no excluye al resto', () => {
+		const candidatos = [sonido(1, ['exito'], { exito: 100 }), sonido(2, ['exito'])];
+		expect(elegirPonderado(candidatos, 'exito', () => 0.999)!.id).toBe(2);
+	});
+});
+
 describe('resolverSonido', () => {
-	it('sin preferencia elige al azar entre los marcados para la acción', () => {
-		expect(resolverSonido('guardar_mesa', CATALOGO, [], () => 0)).toBe('/sonidos/s1.ogg');
-		expect(resolverSonido('guardar_mesa', CATALOGO, [], () => 0.99)).toBe('/sonidos/s2.ogg');
+	it('elige entre los marcados para la acción del evento', () => {
+		expect(resolverSonido('guardar_mesa', CATALOGO, () => 0)).toBe('/sonidos/s1.ogg');
+		expect(resolverSonido('guardar_mesa', CATALOGO, () => 0.99)).toBe('/sonidos/s2.ogg');
 	});
 
 	it('nunca elige uno sin la acción marcada', () => {
 		for (let i = 0; i < 30; i++) {
-			const url = resolverSonido('cerrar_mesa', CATALOGO, []);
-			expect(['/sonidos/s1.ogg', '/sonidos/s2.ogg']).toContain(url);
+			expect(['/sonidos/s1.ogg', '/sonidos/s2.ogg']).toContain(resolverSonido('cerrar_mesa', CATALOGO));
 		}
 	});
 
-	it('el sonido elegido por el usuario suena siempre, sin importar el azar', () => {
-		const prefs = [preferencia('cerrar_mesa', 2)];
-		expect(resolverSonido('cerrar_mesa', CATALOGO, prefs, () => 0)).toBe('/sonidos/s2.ogg');
-		expect(resolverSonido('cerrar_mesa', CATALOGO, prefs, () => 0.99)).toBe('/sonidos/s2.ogg');
+	it('guardar registro suena con los mismos sonidos que guardar mesa', () => {
+		expect(resolverSonido('guardar_registro', CATALOGO, () => 0)).toBe(
+			resolverSonido('guardar_mesa', CATALOGO, () => 0)
+		);
 	});
 
-	it('la preferencia de una acción no afecta a las otras', () => {
-		const prefs = [preferencia('cerrar_mesa', 2)];
-		expect(resolverSonido('guardar_mesa', CATALOGO, prefs, () => 0)).toBe('/sonidos/s1.ogg');
-	});
-
-	it('un sonido elegido al que le quitaron la acción cae al aleatorio', () => {
-		const prefs = [preferencia('guardar_mesa', 3)];
-		expect(resolverSonido('guardar_mesa', CATALOGO, prefs, () => 0)).toBe('/sonidos/s1.ogg');
-	});
-
-	it('un sonido elegido marcado para otra acción se ignora y cae al aleatorio', () => {
-		const prefs = [preferencia('error', 1)];
-		expect(resolverSonido('error', CATALOGO, prefs)).toBe('/sonidos/s4.ogg');
-	});
-
-	it('silenciar una acción no reproduce nada aunque haya sonido elegido', () => {
-		expect(resolverSonido('error', CATALOGO, [preferencia('error', 4, true)])).toBeNull();
+	it('respeta el peso al sortear', () => {
+		const catalogo = [sonido(1, ['error'], { error: 9 }), sonido(2, ['error'])];
+		expect(resolverSonido('error', catalogo, () => 0.5)).toBe('/sonidos/s1.ogg');
+		expect(resolverSonido('error', catalogo, () => 0.95)).toBe('/sonidos/s2.ogg');
 	});
 
 	it('sin ningún sonido marcado para la acción no suena nada', () => {
-		const sinError = [sonido(4, []), sonido(1, ['exito'])];
-		expect(resolverSonido('error', sinError, [])).toBeNull();
+		expect(resolverSonido('error', [sonido(4, []), sonido(1, ['exito'])])).toBeNull();
 	});
 
 	it('victoria, derrota y compra resuelven con sus propios sonidos', () => {
-		expect(resolverSonido('victoria', CATALOGO, [])).toBe('/sonidos/s2.ogg');
-		expect(resolverSonido('derrota', CATALOGO, [])).toBe('/sonidos/s5.ogg');
-		expect(resolverSonido('compra', CATALOGO, [])).toBe('/sonidos/s6.ogg');
+		expect(resolverSonido('victoria', CATALOGO)).toBe('/sonidos/s2.ogg');
+		expect(resolverSonido('derrota', CATALOGO)).toBe('/sonidos/s5.ogg');
+		expect(resolverSonido('compra', CATALOGO)).toBe('/sonidos/s6.ogg');
 	});
 });
 
@@ -152,6 +212,7 @@ describe('sonidosDeRespaldo', () => {
 		expect(urlsDe('victoria')).toEqual([...RESPALDO_POR_ACCION.victoria]);
 		expect(urlsDe('derrota')).toEqual([...RESPALDO_POR_ACCION.derrota]);
 		expect(respaldo.every((s) => s.acciones.length === 1)).toBe(true);
+		expect(respaldo.every((s) => Object.keys(s.pesos).length === 0)).toBe(true);
 	});
 
 	it('los ids del respaldo no chocan entre sí ni con ids reales (positivos)', () => {
@@ -163,7 +224,7 @@ describe('sonidosDeRespaldo', () => {
 	it('el respaldo resuelve un sonido para cada evento', () => {
 		const respaldo = sonidosDeRespaldo();
 		for (const e of EVENTOS_SONIDO) {
-			expect(RESPALDO_POR_ACCION[e.accion]).toContain(resolverSonido(e.evento, respaldo, []));
+			expect(RESPALDO_POR_ACCION[e.accion]).toContain(resolverSonido(e.evento, respaldo));
 		}
 	});
 

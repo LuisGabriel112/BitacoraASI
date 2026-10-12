@@ -1,8 +1,8 @@
-import type { AccionSonido, EventoSonido, PreferenciaSonido, Sonido } from './api/client';
-import { RESPALDO_POR_ACCION, elegirSonidoAleatorio } from './notificaciones';
+import type { AccionSonido, EventoSonido, Sonido } from './api/client';
+import { RESPALDO_POR_ACCION } from './notificaciones';
 
 /** Qué suena junto a un aviso: ruta de archivo, función (sonido sintetizado),
- *  la preferencia del usuario para una acción, o null para no sonar. */
+ *  una acción del usuario que resuelve el catálogo, o null para no sonar. */
 export type FuenteSonido = string | (() => void) | { evento: EventoSonido } | null;
 
 /** Los sonidos sin archivo (Web Audio) viven en el catálogo con este esquema
@@ -13,7 +13,7 @@ export const PREFIJO_SINTETIZADO = 'sintetizado:';
  *  (mismo orden que ACCIONES en el backend, services/sonidos.py). */
 export const ACCIONES_SONIDO: { accion: AccionSonido; etiqueta: string; descripcion: string }[] = [
 	{ accion: 'error', etiqueta: 'Error', descripcion: 'Mensajes de error' },
-	{ accion: 'exito', etiqueta: 'Éxito', descripcion: 'Guardar y cerrar mesa' },
+	{ accion: 'exito', etiqueta: 'Éxito', descripcion: 'Guardar mesa o registro' },
 	{ accion: 'compra', etiqueta: 'Compra', descripcion: 'Comprar en la tienda' },
 	{ accion: 'victoria', etiqueta: 'Victoria', descripcion: 'Ganar un minijuego' },
 	{ accion: 'derrota', etiqueta: 'Derrota', descripcion: 'Perder un minijuego' }
@@ -23,8 +23,8 @@ export const ETIQUETA_ACCION: Record<AccionSonido, string> = Object.fromEntries(
 	ACCIONES_SONIDO.map((a) => [a.accion, a.etiqueta])
 ) as Record<AccionSonido, string>;
 
-/** Acciones concretas del usuario con preferencia propia y la acción del
- *  catálogo con la que suenan (mismo mapa que ACCION_POR_EVENTO en el backend). */
+/** Acciones concretas del usuario y la acción del catálogo con la que suenan
+ *  (mismo mapa que ACCION_POR_EVENTO en el backend). */
 export const EVENTOS_SONIDO: {
 	evento: EventoSonido;
 	etiqueta: string;
@@ -41,6 +41,12 @@ export const EVENTOS_SONIDO: {
 		evento: 'cerrar_mesa',
 		etiqueta: 'Cerrar mesa',
 		descripcion: 'Al cerrar una mesa con su solución.',
+		accion: 'exito'
+	},
+	{
+		evento: 'guardar_registro',
+		etiqueta: 'Guardar registro',
+		descripcion: 'Al registrar o editar un soporte en la bitácora operativa.',
 		accion: 'exito'
 	},
 	{
@@ -83,37 +89,55 @@ export function sonidosParaEvento(evento: EventoSonido, sonidos: readonly Sonido
 	return sonidos.filter((s) => s.acciones.includes(accion));
 }
 
-export function preferenciaDe(
-	evento: EventoSonido,
-	preferencias: readonly PreferenciaSonido[]
-): PreferenciaSonido | undefined {
-	return preferencias.find((p) => p.evento === evento);
+/** Cuánto pesa un sonido en el sorteo de una acción. Lo que no está ajustado
+ *  pesa lo normal, así que todos compiten parejo hasta que alguien lo cambia. */
+export const PESO_NORMAL = 1;
+export const PESO_MINIMO = 1;
+export const PESO_MAXIMO = 100;
+
+export function pesoDe(sonido: Sonido, accion: AccionSonido): number {
+	return sonido.pesos?.[accion] ?? PESO_NORMAL;
+}
+
+/** Qué tanto le toca a este sonido dentro de su acción, de 0 a 1: su peso
+ *  entre la suma de los pesos de todos los que comparten esa acción. */
+export function probabilidadDe(sonido: Sonido, accion: AccionSonido, sonidos: readonly Sonido[]): number {
+	const comparten = sonidos.filter((s) => s.acciones.includes(accion));
+	const total = comparten.reduce((suma, s) => suma + pesoDe(s, accion), 0);
+	if (total === 0 || !sonido.acciones.includes(accion)) return 0;
+	return pesoDe(sonido, accion) / total;
+}
+
+/** Sorteo proporcional al peso: con pesos 3 y 1, el primero sale 3 de cada 4
+ *  veces. Con todos los pesos iguales equivale a elegir al azar. */
+export function elegirPonderado(
+	candidatos: readonly Sonido[],
+	accion: AccionSonido,
+	aleatorio: () => number = Math.random
+): Sonido | null {
+	if (candidatos.length === 0) return null;
+	const total = candidatos.reduce((suma, s) => suma + pesoDe(s, accion), 0);
+	let tirada = aleatorio() * total;
+	for (const candidato of candidatos) {
+		tirada -= pesoDe(candidato, accion);
+		if (tirada < 0) return candidato;
+	}
+	// por redondeo del flotante la tirada puede quedarse justo en el tope
+	return candidatos[candidatos.length - 1];
 }
 
 /**
- * Decide qué URL suena para una acción. `null` significa silencio.
- * - Silenciado por el usuario → null.
- * - Sonido elegido y todavía marcado para la acción → ese.
- * - Sin preferencia, o al elegido le quitaron la acción en el catálogo →
- *   aleatorio entre los marcados; si no queda ninguno → null.
+ * Decide qué URL suena para una acción del usuario. `null` significa silencio.
+ * Sortea entre los sonidos marcados para esa acción, dándole a cada uno la
+ * probabilidad que marca su peso; sin ninguno marcado, no suena nada.
  */
 export function resolverSonido(
 	evento: EventoSonido,
 	sonidos: readonly Sonido[],
-	preferencias: readonly PreferenciaSonido[],
 	aleatorio: () => number = Math.random
 ): string | null {
-	const preferencia = preferenciaDe(evento, preferencias);
-	if (preferencia?.silenciado) return null;
-
-	const disponibles = sonidosParaEvento(evento, sonidos);
-	const elegido = preferencia?.sonido_id != null ? disponibles.find((s) => s.id === preferencia.sonido_id) : undefined;
-	if (elegido) return elegido.url;
-	if (disponibles.length === 0) return null;
-	return elegirSonidoAleatorio(
-		disponibles.map((s) => s.url),
-		aleatorio
-	);
+	const elegido = elegirPonderado(sonidosParaEvento(evento, sonidos), accionDeEvento(evento), aleatorio);
+	return elegido?.url ?? null;
 }
 
 /** Catálogo de respaldo cuando el backend no respondió: el pool fijo que la
@@ -127,6 +151,7 @@ export function sonidosDeRespaldo(): Sonido[] {
 				nombre: url.split(/[/:]/).pop() ?? url,
 				url,
 				acciones: [accion],
+				pesos: {},
 				created_at: ''
 			});
 		}

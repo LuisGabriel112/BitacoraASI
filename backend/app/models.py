@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import ARRAY, Computed, Date, DateTime, Float, ForeignKey, Integer, Text, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -326,6 +327,9 @@ class Sonido(Base):
     # Acciones en las que puede sonar (error, exito, compra, victoria, derrota);
     # vacío = no suena para nadie. Reemplaza a categoria + activo (migración 0037).
     acciones: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list, server_default="{}")
+    # Peso del sorteo por acción, {accion: 1..100} (migración 0038). Solo guarda
+    # las acciones con peso distinto del normal; el resto vale PESO_NORMAL.
+    pesos: Mapped[dict[str, int]] = mapped_column(JSONB, default=dict, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

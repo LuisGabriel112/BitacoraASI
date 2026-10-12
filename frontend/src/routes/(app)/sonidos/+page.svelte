@@ -1,24 +1,23 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
 	import Icon from '$lib/components/Icon.svelte';
-	import { api, type AccionSonido, type EventoSonido, type Sonido } from '$lib/api/client';
+	import { api, type AccionSonido, type Sonido } from '$lib/api/client';
 	import {
 		ACCIONES_SONIDO,
 		ETIQUETA_ACCION,
-		EVENTOS_SONIDO,
-		accionDeEvento,
+		PESO_MAXIMO,
+		PESO_MINIMO,
 		esSintetizado,
 		nombreSugerido,
-		preferenciaDe,
+		pesoDe,
+		probabilidadDe,
 		validarArchivoSonido
 	} from '$lib/sonidos';
 	import {
-		actualizarPreferenciaEnCache,
 		actualizarSonidoEnCache,
 		cargarSonidos,
 		estadoSonidos,
 		quitarSonidoDelCache,
-		reproducirEvento,
 		reproducirFuente
 	} from '$lib/sonidos.svelte';
 
@@ -35,6 +34,22 @@
 
 	const sonidos = $derived(estadoSonidos.sonidos);
 	const enUso = $derived(sonidos.filter((s) => s.acciones.length > 0).length);
+
+	// --- filtro por acción -------------------------------------------------
+	let filtro = $state<AccionSonido | 'todas'>('todas');
+	const visibles = $derived(
+		filtro === 'todas' ? sonidos : sonidos.filter((s) => s.acciones.includes(filtro as AccionSonido))
+	);
+
+	/** Las acciones cuya probabilidad se muestra en la fila: con el filtro
+	 *  puesto, solo esa; sin filtro, todas las que el sonido tenga marcadas. */
+	function accionesVisibles(s: Sonido): AccionSonido[] {
+		return filtro === 'todas' ? s.acciones : s.acciones.filter((a) => a === filtro);
+	}
+
+	function porcentaje(s: Sonido, accion: AccionSonido): string {
+		return `${Math.round(probabilidadDe(s, accion, sonidos) * 100)}%`;
+	}
 
 	function origenDe(s: Sonido): string {
 		if (esSintetizado(s.url)) return 'Sintetizado';
@@ -78,45 +93,6 @@
 			timerSintetizado = setTimeout(() => {
 				if (reproduciendoClave === clave) reproduciendoClave = null;
 			}, 1200);
-		}
-	}
-
-	// --- mis sonidos -------------------------------------------------------
-	let guardandoEvento = $state<EventoSonido | null>(null);
-	let errorPreferencia = $state<string | null>(null);
-
-	function valorSelect(evento: EventoSonido): string {
-		const pref = preferenciaDe(evento, estadoSonidos.preferencias);
-		if (pref?.silenciado) return 'silencio';
-		if (pref?.sonido_id != null) return String(pref.sonido_id);
-		return 'aleatorio';
-	}
-
-	/** Los marcados para la acción, más el elegido aunque lo hayan desmarcado
-	 *  (para que el select no "pierda" la elección y se vea por qué no suena). */
-	function opcionesPara(evento: EventoSonido): Sonido[] {
-		const accion = accionDeEvento(evento);
-		const elegidoId = preferenciaDe(evento, estadoSonidos.preferencias)?.sonido_id ?? null;
-		return sonidos.filter((s) => s.acciones.includes(accion) || s.id === elegidoId);
-	}
-
-	async function cambiarPreferencia(evento: EventoSonido, valor: string) {
-		errorPreferencia = null;
-		guardandoEvento = evento;
-		try {
-			const guardada = await api.guardarPreferenciaSonido(
-				valor === 'silencio'
-					? { evento, silenciado: true }
-					: valor === 'aleatorio'
-						? { evento }
-						: { evento, sonido_id: Number(valor) }
-			);
-			actualizarPreferenciaEnCache(guardada);
-			if (guardada.sonido_id != null) reproducirEvento(evento);
-		} catch (e) {
-			errorPreferencia = e instanceof Error ? e.message : 'No se pudo guardar la preferencia';
-		} finally {
-			guardandoEvento = null;
 		}
 	}
 
@@ -178,6 +154,31 @@
 			porEliminar = null;
 		} finally {
 			eliminando = false;
+		}
+	}
+
+	// --- peso de cada acción ----------------------------------------------
+	let guardandoPeso = $state<{ id: number; accion: AccionSonido } | null>(null);
+
+	function estaGuardandoPeso(s: Sonido, accion: AccionSonido): boolean {
+		return guardandoPeso?.id === s.id && guardandoPeso.accion === accion;
+	}
+
+	async function cambiarPeso(s: Sonido, accion: AccionSonido, valor: string) {
+		const peso = Number(valor);
+		if (!Number.isInteger(peso) || peso < PESO_MINIMO || peso > PESO_MAXIMO) {
+			errorCatalogo = `El peso debe ser un número entre ${PESO_MINIMO} y ${PESO_MAXIMO}`;
+			return;
+		}
+		if (peso === pesoDe(s, accion)) return;
+		errorCatalogo = null;
+		guardandoPeso = { id: s.id, accion };
+		try {
+			actualizarSonidoEnCache(await api.ajustarPesoSonido(s.id, accion, peso));
+		} catch (e) {
+			errorCatalogo = e instanceof Error ? e.message : 'No se pudo cambiar la probabilidad';
+		} finally {
+			guardandoPeso = null;
 		}
 	}
 
@@ -256,133 +257,105 @@
 
 <svelte:window onkeydown={(e) => porEliminar && e.key === 'Escape' && cancelarEliminar()} />
 
-<Header titulo="Sonidos" subtitulo="Catálogo del equipo y lo que suena en tus acciones." />
+<Header titulo="Sonidos" subtitulo="Lo que suena en cada acción, para todo el equipo." />
 
 {#if cargando}
 	<p class="cargando">Cargando sonidos…</p>
 {:else}
 	{#if errorCarga}<p class="error">{errorCarga}</p>{/if}
 
-	<div class="columnas">
-		<section class="tarjeta mis-sonidos">
-			<h2 class="font-display">Mis sonidos</h2>
-			<p class="ayuda">
-				Lo que escuchas tú en cada acción. <strong>Aleatorio</strong> toma uno al azar de los marcados para esa
-				acción en el catálogo; <strong>Sin sonido</strong> deja la acción muda.
-			</p>
-			<div class="lista-eventos">
-				{#each EVENTOS_SONIDO as e (e.evento)}
-					<div class="fila-evento">
-						<label class="evento-texto" for="pref-{e.evento}">
-							<span class="evento-etiqueta">{e.etiqueta}</span>
-							<span class="evento-descripcion">{e.descripcion}</span>
-						</label>
-						<div class="evento-controles">
-							<select
-								id="pref-{e.evento}"
-								value={valorSelect(e.evento)}
-								disabled={guardandoEvento === e.evento}
-								onchange={(ev) => cambiarPreferencia(e.evento, ev.currentTarget.value)}
-							>
-								<option value="aleatorio">Aleatorio ({ETIQUETA_ACCION[e.accion]})</option>
-								{#each opcionesPara(e.evento) as s (s.id)}
-									<option value={String(s.id)}>{s.nombre}{s.acciones.includes(e.accion) ? '' : ' (desmarcado)'}</option>
-								{/each}
-								<option value="silencio">Sin sonido</option>
-							</select>
-							<button
-								type="button"
-								class="btn-icono"
-								title="Probar cómo suena"
-								aria-label="Probar {e.etiqueta}"
-								onclick={() => reproducirEvento(e.evento)}
-							>
-								<Icon nombre={valorSelect(e.evento) === 'silencio' ? 'volume-x' : 'play'} tamano={15} />
-							</button>
-						</div>
-					</div>
-				{/each}
+	<section class="tarjeta subir">
+		<h2 class="font-display">Cargar sonido nuevo</h2>
+		<p class="ayuda">Audio corto (ogg, mp3, wav, m4a, mp4), máximo 2 MB. Queda disponible para todo el equipo.</p>
+		<form class="form-subir" onsubmit={(e) => (e.preventDefault(), subir())}>
+			<div class="fila-archivo">
+				<label class="btn-archivo">
+					<Icon nombre="upload" tamano={15} />
+					<span class="nombre-archivo">{archivo ? archivo.name : 'Elegir archivo…'}</span>
+					<input
+						bind:this={inputArchivo}
+						type="file"
+						accept="audio/*,.ogg,.mp3,.wav,.m4a,.mp4,.webm"
+						onchange={alElegirArchivo}
+						hidden
+					/>
+				</label>
+				{#if archivo}
+					<button
+						type="button"
+						class="btn-icono"
+						class:sonando={reproduciendoClave === 'local'}
+						title="Escuchar antes de subir"
+						aria-label="Escuchar el archivo elegido"
+						onclick={escucharArchivoLocal}
+					>
+						<Icon nombre="play" tamano={15} />
+					</button>
+				{/if}
 			</div>
-			{#if errorPreferencia}<p class="error">{errorPreferencia}</p>{/if}
-		</section>
-
-		<section class="tarjeta subir">
-			<h2 class="font-display">Cargar sonido nuevo</h2>
-			<p class="ayuda">Audio corto (ogg, mp3, wav, m4a, mp4), máximo 2 MB. Queda disponible para todo el equipo.</p>
-			<form class="form-subir" onsubmit={(e) => (e.preventDefault(), subir())}>
-				<div class="fila-archivo">
-					<label class="btn-archivo">
-						<Icon nombre="upload" tamano={15} />
-						<span class="nombre-archivo">{archivo ? archivo.name : 'Elegir archivo…'}</span>
-						<input
-							bind:this={inputArchivo}
-							type="file"
-							accept="audio/*,.ogg,.mp3,.wav,.m4a,.mp4,.webm"
-							onchange={alElegirArchivo}
-							hidden
-						/>
-					</label>
-					{#if archivo}
+			<label class="campo">
+				Nombre
+				<input type="text" bind:value={nombreNuevo} placeholder="p. ej. tada" maxlength="80" />
+			</label>
+			<fieldset class="campo campo-acciones">
+				<legend>Suena en</legend>
+				<div class="acciones">
+					{#each ACCIONES_SONIDO as a (a.accion)}
 						<button
 							type="button"
-							class="btn-icono"
-							class:sonando={reproduciendoClave === 'local'}
-							title="Escuchar antes de subir"
-							aria-label="Escuchar el archivo elegido"
-							onclick={escucharArchivoLocal}
+							class="btn-accion"
+							class:marcada={accionesNuevas.includes(a.accion)}
+							aria-pressed={accionesNuevas.includes(a.accion)}
+							title={a.descripcion}
+							onclick={() => alternarAccionNueva(a.accion)}
 						>
-							<Icon nombre="play" tamano={15} />
+							<span class="punto" aria-hidden="true"></span>
+							{a.etiqueta}
 						</button>
-					{/if}
+					{/each}
 				</div>
-				<label class="campo">
-					Nombre
-					<input type="text" bind:value={nombreNuevo} placeholder="p. ej. tada" maxlength="80" />
-				</label>
-				<fieldset class="campo campo-acciones">
-					<legend>Suena en</legend>
-					<div class="acciones">
-						{#each ACCIONES_SONIDO as a (a.accion)}
-							<button
-								type="button"
-								class="btn-accion"
-								class:marcada={accionesNuevas.includes(a.accion)}
-								aria-pressed={accionesNuevas.includes(a.accion)}
-								title={a.descripcion}
-								onclick={() => alternarAccionNueva(a.accion)}
-							>
-								<span class="punto" aria-hidden="true"></span>
-								{a.etiqueta}
-							</button>
-						{/each}
-					</div>
-				</fieldset>
-				<div class="acciones-subir">
-					<button type="submit" class="btn-primario" disabled={subiendo || !archivo}>
-						{subiendo ? 'Subiendo…' : 'Subir al catálogo'}
-					</button>
-					{#if okSubida}<span class="ok">{okSubida}</span>{/if}
-				</div>
-				{#if errorSubida}<p class="error">{errorSubida}</p>{/if}
-			</form>
-		</section>
-	</div>
+			</fieldset>
+			<div class="acciones-subir">
+				<button type="submit" class="btn-primario" disabled={subiendo || !archivo}>
+					{subiendo ? 'Subiendo…' : 'Subir al catálogo'}
+				</button>
+				{#if okSubida}<span class="ok">{okSubida}</span>{/if}
+			</div>
+			{#if errorSubida}<p class="error">{errorSubida}</p>{/if}
+	</form>
+	</section>
 
 	<section class="tarjeta catalogo">
-		<h2 class="font-display">
-			Catálogo
-			<span class="conteo">{enUso} de {sonidos.length} en uso</span>
-		</h2>
+		<div class="cabecera-catalogo">
+			<h2 class="font-display">
+				Catálogo
+				<span class="conteo">{enUso} de {sonidos.length} en uso</span>
+			</h2>
+			<label class="filtro">
+				Mostrar
+				<select bind:value={filtro}>
+					<option value="todas">Todas las acciones</option>
+					{#each ACCIONES_SONIDO as a (a.accion)}
+						<option value={a.accion}>{a.etiqueta}</option>
+					{/each}
+				</select>
+			</label>
+		</div>
 		<p class="ayuda">
 			Marca en qué acciones puede sonar cada sonido; aplica a todo el equipo. Un sonido sin ninguna acción marcada no
-			suena para nadie ni se puede elegir.
+			suena para nadie. La <strong>probabilidad</strong> reparte el sorteo dentro de cada acción: con peso 3 suena el
+			triple de seguido que uno con peso 1.
 		</p>
 		{#if errorCatalogo}<p class="error">{errorCatalogo}</p>{/if}
-		{#if sonidos.length === 0}
-			<p class="sin-datos">Todavía no hay sonidos en el catálogo.</p>
+		{#if visibles.length === 0}
+			<p class="sin-datos">
+				{sonidos.length === 0
+					? 'Todavía no hay sonidos en el catálogo.'
+					: `Ningún sonido está marcado para ${ETIQUETA_ACCION[filtro as AccionSonido]}.`}
+			</p>
 		{:else}
 			<ul class="lista-sonidos">
-				{#each sonidos as s (s.id)}
+				{#each visibles as s (s.id)}
 					<li class:sin-acciones={s.acciones.length === 0}>
 						<button
 							type="button"
@@ -399,6 +372,27 @@
 							<span class="sonido-origen">
 								{origenDe(s)}{s.acciones.length === 0 ? ' · sin acciones, no suena' : ''}
 							</span>
+						</div>
+						<div class="probabilidades">
+							{#each accionesVisibles(s) as accion (accion)}
+								<span class="probabilidad">
+									<label class="etiqueta-peso" for="peso-{s.id}-{accion}">{ETIQUETA_ACCION[accion]}</label>
+									<input
+										id="peso-{s.id}-{accion}"
+										type="number"
+										min={PESO_MINIMO}
+										max={PESO_MAXIMO}
+										step="1"
+										value={pesoDe(s, accion)}
+										disabled={estaGuardandoPeso(s, accion)}
+										title="Peso de {s.nombre} en {ETIQUETA_ACCION[accion]}"
+										onchange={(e) => cambiarPeso(s, accion, e.currentTarget.value)}
+									/>
+									<span class="porcentaje">{porcentaje(s, accion)}</span>
+								</span>
+							{:else}
+								<span class="sin-probabilidad">—</span>
+							{/each}
 						</div>
 						<div class="acciones" role="group" aria-label="Acciones de {s.nombre}">
 							{#each ACCIONES_SONIDO as a (a.accion)}
@@ -494,13 +488,6 @@
 		font-size: 12px;
 	}
 
-	.columnas {
-		display: grid;
-		grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-		gap: 18px;
-		margin-bottom: 28px;
-	}
-
 	.tarjeta {
 		border-radius: var(--radius-lg);
 		padding: 18px;
@@ -511,44 +498,11 @@
 		font-size: 16px;
 	}
 
-	/* --- mis sonidos --- */
-	.lista-eventos {
-		display: flex;
-		flex-direction: column;
-	}
 
-	.fila-evento {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 14px;
-		padding: 12px 0;
-		border-top: 1px solid var(--border);
-	}
 
-	.evento-texto {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-	}
 
-	.evento-etiqueta {
-		font-size: 13px;
-		font-weight: 600;
-	}
 
-	.evento-descripcion {
-		font-size: 12px;
-		color: var(--text-muted);
-	}
 
-	.evento-controles {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-shrink: 0;
-	}
 
 	select,
 	input[type='text'] {
@@ -560,17 +514,10 @@
 		font-size: 13px;
 	}
 
-	.evento-controles select {
-		min-width: 200px;
-	}
 
 	select option {
 		background: var(--bg);
 		color: var(--text);
-	}
-
-	select:disabled {
-		opacity: 0.6;
 	}
 
 	.btn-icono {
@@ -696,6 +643,80 @@
 		font-weight: 500;
 		color: var(--text-faint);
 		font-family: var(--font-mono);
+	}
+
+	.cabecera-catalogo {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 14px;
+		flex-wrap: wrap;
+	}
+
+	.filtro {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 12px;
+		color: var(--text-muted);
+	}
+
+	.filtro select {
+		min-width: 170px;
+	}
+
+	.probabilidades {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+		flex-shrink: 0;
+		min-width: 150px;
+	}
+
+	.probabilidad {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		font-size: 11px;
+		color: var(--text-muted);
+	}
+
+	.etiqueta-peso {
+		font-size: 11px;
+		color: var(--text-faint);
+	}
+
+	.probabilidades input[type='number'] {
+		width: 52px;
+		padding: 4px 6px;
+		background: var(--surface);
+		border: 2px solid var(--border);
+		border-radius: var(--radius);
+		color: var(--text);
+		font-size: 12px;
+		font-family: var(--font-mono);
+	}
+
+	.probabilidades input[type='number']:focus {
+		border-color: var(--accent);
+		outline: none;
+	}
+
+	.probabilidades input[type='number']:disabled {
+		opacity: 0.6;
+	}
+
+	.porcentaje {
+		min-width: 34px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		color: var(--text);
+	}
+
+	.sin-probabilidad {
+		color: var(--text-faint);
+		font-size: 12px;
 	}
 
 	.lista-sonidos {
@@ -871,15 +892,12 @@
 	}
 
 	@media (max-width: 900px) {
-		.columnas {
-			grid-template-columns: 1fr;
-		}
-
 		.lista-sonidos li {
 			flex-wrap: wrap;
 		}
 
-		.lista-sonidos .acciones {
+		.lista-sonidos .acciones,
+		.lista-sonidos .probabilidades {
 			width: 100%;
 			padding-left: 48px;
 		}

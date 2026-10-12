@@ -7,6 +7,7 @@ from app.database import get_session
 from app.models import Sonido, SonidoPreferencia, Usuario
 from app.schemas import (
     AccionSonido,
+    PesoSonidoUpdate,
     PreferenciaSonidoOut,
     PreferenciaSonidoUpdate,
     SolicitudUrlSubida,
@@ -19,8 +20,10 @@ from app.services.sonidos import (
     CARPETA_STORAGE,
     SonidoError,
     con_accion,
+    con_peso,
     guardar_preferencia,
     normalizar_acciones,
+    sin_pesos_huerfanos,
 )
 from app.services.storage import StorageError, crear_url_subida
 
@@ -75,6 +78,8 @@ async def _cambiar_accion(session: AsyncSession, sonido_id: int, accion: str, ma
         sonido.acciones = con_accion(sonido.acciones, accion, marcada)
     except SonidoError as exc:
         raise HTTPException(400, str(exc)) from exc
+    # desmarcar también se lleva el peso que tenía en esa acción
+    sonido.pesos = sin_pesos_huerfanos(sonido.pesos, sonido.acciones)
     await session.commit()
     await session.refresh(sonido)
     return sonido
@@ -90,6 +95,30 @@ async def marcar_accion(sonido_id: int, accion: AccionSonido, session: AsyncSess
 async def desmarcar_accion(sonido_id: int, accion: AccionSonido, session: AsyncSession = Depends(get_session)):
     """Lo quita de esa acción; sin ninguna marcada, el sonido no suena para nadie."""
     return await _cambiar_accion(session, sonido_id, accion, False)
+
+
+@router.put("/{sonido_id}/acciones/{accion}/peso", response_model=SonidoOut)
+async def ajustar_peso(
+    sonido_id: int,
+    accion: AccionSonido,
+    payload: PesoSonidoUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    """Cuánto pesa este sonido en el sorteo de esa acción (para todo el equipo).
+    Solo tiene sentido en una acción marcada: el peso de una sin marcar no se
+    usaría y se descarta al guardar."""
+    sonido = await session.get(Sonido, sonido_id)
+    if sonido is None:
+        raise HTTPException(404, "Sonido no encontrado")
+    if accion not in sonido.acciones:
+        raise HTTPException(400, f"El sonido no está marcado para la acción '{accion}'")
+    try:
+        sonido.pesos = con_peso(sonido.pesos, accion, payload.peso)
+    except SonidoError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    await session.commit()
+    await session.refresh(sonido)
+    return sonido
 
 
 @router.delete("/{sonido_id}", status_code=204)

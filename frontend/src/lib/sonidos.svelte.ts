@@ -1,4 +1,4 @@
-import { api, type EventoSonido, type PreferenciaSonido, type Sonido } from './api/client';
+import { api, type EventoSonido, type Sonido } from './api/client';
 import { reproducirFanfarriaMexicana } from './sonidoMexicano';
 import { PREFIJO_SINTETIZADO, resolverSonido, sonidosDeRespaldo } from './sonidos';
 import {
@@ -8,16 +8,15 @@ import {
 	reproducirVictoria
 } from './sonidosSintetizados';
 
-// Catálogo + preferencias del usuario, cargados una vez por sesión (igual que
-// personaje.svelte.ts) y refrescados si pasan más de 5 min, para que un toggle
-// general hecho por otra persona llegue sin recargar la pestaña.
+// Catálogo cargado una vez por sesión (igual que personaje.svelte.ts) y
+// refrescado si pasan más de 5 min, para que un cambio de acciones o de pesos
+// hecho por otra persona llegue sin recargar la pestaña.
 const TTL_MS = 5 * 60_000;
 
 export const estadoSonidos = $state<{
 	sonidos: Sonido[];
-	preferencias: PreferenciaSonido[];
 	cargado: boolean;
-}>({ sonidos: [], preferencias: [], cargado: false });
+}>({ sonidos: [], cargado: false });
 
 let promesaCarga: Promise<void> | null = null;
 let enVuelo = false;
@@ -28,10 +27,10 @@ export function cargarSonidos(forzar = false): Promise<void> {
 	if (promesaCarga && (enVuelo || (fresco && !forzar))) return promesaCarga;
 
 	enVuelo = true;
-	promesaCarga = Promise.all([api.sonidos(), api.preferenciasSonido()])
-		.then(([sonidos, preferencias]) => {
+	promesaCarga = api
+		.sonidos()
+		.then((sonidos) => {
 			estadoSonidos.sonidos = sonidos;
-			estadoSonidos.preferencias = preferencias;
 			estadoSonidos.cargado = true;
 			cargadoEn = Date.now();
 		})
@@ -46,7 +45,6 @@ export function cargarSonidos(forzar = false): Promise<void> {
 
 export function limpiarSonidos() {
 	estadoSonidos.sonidos = [];
-	estadoSonidos.preferencias = [];
 	estadoSonidos.cargado = false;
 	promesaCarga = null;
 	cargadoEn = 0;
@@ -59,18 +57,9 @@ export function actualizarSonidoEnCache(sonido: Sonido) {
 		: [...estadoSonidos.sonidos, sonido];
 }
 
-/** Lo saca del catálogo en memoria y olvida la preferencia que lo apuntaba:
- *  esa acción vuelve a "aleatorio", igual que hace la base (on delete set null). */
+/** Lo saca del catálogo en memoria, sin recargar la página. */
 export function quitarSonidoDelCache(id: number) {
 	estadoSonidos.sonidos = estadoSonidos.sonidos.filter((s) => s.id !== id);
-	estadoSonidos.preferencias = estadoSonidos.preferencias.map((p) =>
-		p.sonido_id === id ? { ...p, sonido_id: null } : p
-	);
-}
-
-export function actualizarPreferenciaEnCache(preferencia: PreferenciaSonido) {
-	const resto = estadoSonidos.preferencias.filter((p) => p.evento !== preferencia.evento);
-	estadoSonidos.preferencias = [...resto, preferencia];
 }
 
 // Sonidos sin archivo: el catálogo los referencia por esquema y aquí se
@@ -99,7 +88,7 @@ export function reproducirFuente(url: string): HTMLAudioElement | null {
 export async function reproducirEvento(evento: EventoSonido): Promise<void> {
 	await cargarSonidos();
 	const catalogo = estadoSonidos.cargado ? estadoSonidos.sonidos : sonidosDeRespaldo();
-	const url = resolverSonido(evento, catalogo, estadoSonidos.preferencias);
+	const url = resolverSonido(evento, catalogo);
 	if (url) reproducirFuente(url);
 }
 

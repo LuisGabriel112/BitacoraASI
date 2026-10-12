@@ -6,6 +6,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { api, type Registro } from '$lib/api/client';
+	import { reproducirEvento } from '$lib/sonidos.svelte';
 	import { formatearMinutosAtencion } from '$lib/tiempoAtencion';
 
 	let buscar = $state('');
@@ -37,6 +38,7 @@
 			confirmandoId = null;
 		} catch (e) {
 			errorEliminar = e instanceof Error ? e.message : 'No se pudo eliminar el registro';
+			reproducirEvento('error');
 		} finally {
 			eliminandoId = null;
 		}
