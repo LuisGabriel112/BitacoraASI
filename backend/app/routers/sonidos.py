@@ -12,18 +12,19 @@ from app.schemas import (
     PreferenciaSonidoUpdate,
     SolicitudUrlSubida,
     SonidoCreate,
+    SonidosEdicion,
     SonidoOut,
     UrlSubidaOut,
 )
 from app.services.auth import get_usuario_actual
 from app.services.sonidos import (
     CARPETA_STORAGE,
+    ACCIONES,
     SonidoError,
     con_accion,
     con_peso,
     guardar_preferencia,
     normalizar_acciones,
-    sin_pesos_huerfanos,
 )
 from app.services.storage import StorageError, crear_url_subida
 
@@ -34,8 +35,37 @@ router = APIRouter(prefix="/sonidos", tags=["sonidos"], dependencies=[Depends(ge
 async def listar(session: AsyncSession = Depends(get_session)):
     # Todos, tengan acciones marcadas o no: el catálogo los muestra con sus
     # interruptores; el frontend filtra por `acciones` al decidir qué reproducir.
-    stmt = select(Sonido).order_by(Sonido.id)
+    stmt = select(Sonido).order_by(Sonido.orden, Sonido.id)
     return (await session.execute(stmt)).scalars().all()
+
+
+@router.put("/edicion", response_model=list[SonidoOut])
+async def editar_catalogo(payload: SonidosEdicion, session: AsyncSession = Depends(get_session)):
+    sonidos = (await session.execute(select(Sonido).order_by(Sonido.id).with_for_update())).scalars().all()
+    por_id = {s.id: s for s in sonidos}
+    ids = [s.id for s in payload.sonidos]
+    nombres = [" ".join(s.nombre.split()) for s in payload.sonidos]
+    if len(ids) != len(set(ids)) or set(ids) != set(por_id):
+        raise HTTPException(409, "El catálogo cambió; recarga antes de editarlo")
+    if any(not n for n in nombres) or len({n.lower() for n in nombres}) != len(nombres):
+        raise HTTPException(400, "Los nombres deben ser únicos y no estar vacíos")
+    # Permite intercambiar nombres sin chocar con la restricción única.
+    from uuid import uuid4
+    prefijo = str(uuid4())
+    for sonido in sonidos:
+        sonido.nombre = f"{prefijo}-{sonido.id}"
+    try:
+        await session.flush()
+        for orden, (item, nombre) in enumerate(zip(payload.sonidos, nombres)):
+            por_id[item.id].nombre = nombre
+            por_id[item.id].orden = orden
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(409, "Ya existe un sonido con ese nombre")
+    for sonido in sonidos:
+        await session.refresh(sonido)
+    return [por_id[id] for id in ids]
 
 
 @router.post("/subir-url", response_model=UrlSubidaOut)
@@ -59,7 +89,8 @@ async def crear(payload: SonidoCreate, session: AsyncSession = Depends(get_sessi
     existente = await session.execute(select(Sonido).where(func.lower(Sonido.nombre) == nombre.lower()))
     if existente.scalar_one_or_none() is not None:
         raise HTTPException(409, f"Ya hay un sonido llamado '{nombre}'")
-    sonido = Sonido(nombre=nombre, url=payload.url.strip(), acciones=normalizar_acciones(payload.acciones))
+    ultimo_orden = (await session.execute(select(func.max(Sonido.orden)))).scalar_one_or_none() or 0
+    sonido = Sonido(nombre=nombre, url=payload.url.strip(), acciones=normalizar_acciones(payload.acciones), orden=ultimo_orden + 1)
     session.add(sonido)
     try:
         await session.commit()
@@ -79,7 +110,7 @@ async def _cambiar_accion(session: AsyncSession, sonido_id: int, accion: str, ma
     except SonidoError as exc:
         raise HTTPException(400, str(exc)) from exc
     # desmarcar también se lleva el peso que tenía en esa acción
-    sonido.pesos = sin_pesos_huerfanos(sonido.pesos, sonido.acciones)
+    # El peso compartido se conserva aunque se apaguen todas las acciones.
     await session.commit()
     await session.refresh(sonido)
     return sonido
@@ -95,6 +126,21 @@ async def marcar_accion(sonido_id: int, accion: AccionSonido, session: AsyncSess
 async def desmarcar_accion(sonido_id: int, accion: AccionSonido, session: AsyncSession = Depends(get_session)):
     """Lo quita de esa acción; sin ninguna marcada, el sonido no suena para nadie."""
     return await _cambiar_accion(session, sonido_id, accion, False)
+
+
+@router.put("/{sonido_id}/peso", response_model=SonidoOut)
+async def ajustar_peso_compartido(
+    sonido_id: int,
+    payload: PesoSonidoUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    sonido = await session.get(Sonido, sonido_id)
+    if sonido is None:
+        raise HTTPException(404, "Sonido no encontrado")
+    sonido.pesos = {accion: payload.peso for accion in ACCIONES}
+    await session.commit()
+    await session.refresh(sonido)
+    return sonido
 
 
 @router.put("/{sonido_id}/acciones/{accion}/peso", response_model=SonidoOut)

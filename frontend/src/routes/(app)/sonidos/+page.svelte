@@ -7,11 +7,9 @@
 		ACCIONES_SONIDO,
 		ETIQUETA_ACCION,
 		PESO_MAXIMO,
-		PESO_MINIMO,
 		esSintetizado,
 		nombreSugerido,
-		pesoDe,
-		probabilidadCon,
+		pesoCompartido,
 		validarArchivoSonido
 	} from '$lib/sonidos';
 	import {
@@ -36,31 +34,75 @@
 	const sonidos = $derived(estadoSonidos.sonidos);
 	const enUso = $derived(sonidos.filter((s) => s.acciones.length > 0).length);
 
+	let editando = $state(false);
+	let guardandoEdicion = $state(false);
+	let borrador = $state<Sonido[]>([]);
+	function iniciarEdicion() {
+		borrador = sonidos.map((s) => ({ ...s }));
+		errorCatalogo = null;
+		editando = true;
+	}
+	let sonidoArrastrado = $state<number | null>(null);
+	let destinoArrastre = $state<number | null>(null);
+	function moverSonido(id: number, destino: number) {
+		const indice = borrador.findIndex((s) => s.id === id);
+		if (indice < 0 || destino < 0 || destino >= borrador.length || indice === destino) return;
+		const nuevo = [...borrador];
+		const [sonido] = nuevo.splice(indice, 1);
+		nuevo.splice(destino, 0, sonido);
+		borrador = nuevo;
+	}
+	function arrastrarSonido(e: PointerEvent) {
+		if (sonidoArrastrado === null) return;
+		const fila = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-sonido-id]');
+		if (fila) destinoArrastre = Number(fila.dataset.sonidoId);
+	}
+	function terminarArrastre(confirmar = false) {
+		if (confirmar && sonidoArrastrado !== null && destinoArrastre !== null) {
+			moverSonido(sonidoArrastrado, borrador.findIndex((s) => s.id === destinoArrastre));
+		}
+		sonidoArrastrado = null;
+		destinoArrastre = null;
+	}
+	async function guardarEdicion() {
+		errorCatalogo = null;
+		const nombres = borrador.map((s) => s.nombre.trim().replace(/\s+/g, ' '));
+		if (nombres.some((n) => !n) || new Set(nombres.map((n) => n.toLowerCase())).size !== nombres.length) {
+			errorCatalogo = 'Los nombres deben ser únicos y no estar vacíos.';
+			return;
+		}
+		guardandoEdicion = true;
+		try {
+			estadoSonidos.sonidos = await api.editarCatalogoSonidos(borrador.map((s, i) => ({ id: s.id, nombre: nombres[i] })));
+			editando = false;
+		} catch (e) {
+			errorCatalogo = e instanceof Error ? e.message : 'No se pudo guardar el catálogo';
+		} finally { guardandoEdicion = false; }
+	}
+
 	// --- filtro por acción -------------------------------------------------
 	let filtro = $state<AccionSonido | 'todas'>('todas');
 	const visibles = $derived(
-		filtro === 'todas' ? sonidos : sonidos.filter((s) => s.acciones.includes(filtro as AccionSonido))
+		editando ? borrador : filtro === 'todas' ? sonidos : sonidos.filter((s) => s.acciones.includes(filtro as AccionSonido))
 	);
 
 	/** Las acciones cuya probabilidad se muestra en la fila: con el filtro
-	 *  puesto, solo esa; sin filtro, todas las que el sonido tenga marcadas. */
-	function accionesVisibles(s: Sonido): AccionSonido[] {
-		return filtro === 'todas' ? s.acciones : s.acciones.filter((a) => a === filtro);
+	 *  puesto, solo esa; sin filtro, todas, incluidas las apagadas. */
+	function accionesVisibles(): AccionSonido[] {
+		return filtro === 'todas' ? ACCIONES_SONIDO.map((a) => a.accion) : [filtro];
 	}
 
-	// Mientras se arrastra una barra el peso todavía no llegó al servidor, así
-	// que el porcentaje se calcula con este valor en curso para que la cifra se
-	// mueva junto con el dedo.
-	let arrastrando = $state<{ id: number; accion: AccionSonido; peso: number } | null>(null);
-
-	function pesoMostrado(s: Sonido, accion: AccionSonido): number {
-		const a = arrastrando;
-		return a && a.id === s.id && a.accion === accion ? a.peso : pesoDe(s, accion);
+	let mostrandoValores = $state(false);
+	const teclasSlider = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'];
+	let arrastrando = $state<{ id: number; peso: number } | null>(null);
+	function pesoMostrado(s: Sonido): number {
+		return arrastrando?.id === s.id ? arrastrando.peso : pesoCompartido(s);
 	}
-
 	function porcentaje(s: Sonido, accion: AccionSonido): string {
-		const valor = probabilidadCon(s, accion, sonidos, (otro) => pesoMostrado(otro, accion));
-		return `${Math.round(valor * 100)}%`;
+		if (!s.acciones.includes(accion)) return '0%';
+		const total = sonidos.filter((otro) => otro.acciones.includes(accion))
+			.reduce((suma, otro) => suma + pesoMostrado(otro), 0);
+		return `${Math.round(total === 0 ? 0 : pesoMostrado(s) / total * 100)}%`;
 	}
 
 	function origenDe(s: Sonido): string {
@@ -108,28 +150,7 @@
 		}
 	}
 
-	// --- marcar / desmarcar acciones en el catálogo -----------------------
-	let cambiando = $state<{ id: number; accion: AccionSonido } | null>(null);
 	let errorCatalogo = $state<string | null>(null);
-
-	function estaCambiando(s: Sonido, accion: AccionSonido): boolean {
-		return cambiando?.id === s.id && cambiando.accion === accion;
-	}
-
-	async function alternarAccion(s: Sonido, accion: AccionSonido) {
-		errorCatalogo = null;
-		cambiando = { id: s.id, accion };
-		try {
-			const actualizado = s.acciones.includes(accion)
-				? await api.desmarcarAccionSonido(s.id, accion)
-				: await api.marcarAccionSonido(s.id, accion);
-			actualizarSonidoEnCache(actualizado);
-		} catch (e) {
-			errorCatalogo = e instanceof Error ? e.message : 'No se pudo cambiar el sonido';
-		} finally {
-			cambiando = null;
-		}
-	}
 
 	// --- eliminar del catálogo --------------------------------------------
 	let porEliminar = $state<Sonido | null>(null);
@@ -169,37 +190,31 @@
 		}
 	}
 
-	// --- peso de cada acción ----------------------------------------------
-	let guardandoPeso = $state<{ id: number; accion: AccionSonido } | null>(null);
+	let guardandoPeso = $state<number | null>(null);
+	let cambiandoAccion = $state<number | null>(null);
 
-	function estaGuardandoPeso(s: Sonido, accion: AccionSonido): boolean {
-		return guardandoPeso?.id === s.id && guardandoPeso.accion === accion;
-	}
-
-	function arrastrarPeso(s: Sonido, accion: AccionSonido, valor: string) {
-		arrastrando = { id: s.id, accion, peso: Number(valor) };
-	}
-
-	/** Al soltar la barra: guarda si de verdad cambió. El valor en curso se
-	 *  mantiene hasta que el catálogo responde, para que la cifra no parpadee. */
-	async function cambiarPeso(s: Sonido, accion: AccionSonido, valor: string) {
-		const peso = Number(valor);
-		arrastrando = { id: s.id, accion, peso };
-		if (!Number.isInteger(peso) || peso < PESO_MINIMO || peso > PESO_MAXIMO) {
-			errorCatalogo = `El peso debe ser un número entre ${PESO_MINIMO} y ${PESO_MAXIMO}`;
-			arrastrando = null;
-			return;
-		}
-		if (peso === pesoDe(s, accion)) {
-			arrastrando = null;
-			return;
-		}
+	async function alternarAccion(s: Sonido, accion: AccionSonido) {
+		cambiandoAccion = s.id;
 		errorCatalogo = null;
-		guardandoPeso = { id: s.id, accion };
 		try {
-			actualizarSonidoEnCache(await api.ajustarPesoSonido(s.id, accion, peso));
+			actualizarSonidoEnCache(s.acciones.includes(accion)
+				? await api.desmarcarAccionSonido(s.id, accion)
+				: await api.marcarAccionSonido(s.id, accion));
 		} catch (e) {
-			errorCatalogo = e instanceof Error ? e.message : 'No se pudo cambiar la probabilidad';
+			errorCatalogo = e instanceof Error ? e.message : 'No se pudo cambiar la acción';
+		} finally { cambiandoAccion = null; }
+	}
+
+	async function cambiarPeso(s: Sonido, valor: string) {
+		const peso = Number(valor);
+		if (!Number.isInteger(peso) || peso < 1 || peso > PESO_MAXIMO) return;
+		arrastrando = { id: s.id, peso };
+		guardandoPeso = s.id;
+		errorCatalogo = null;
+		try {
+			actualizarSonidoEnCache(await api.ajustarPesoCompartidoSonido(s.id, peso));
+		} catch (e) {
+			errorCatalogo = e instanceof Error ? e.message : 'No se pudo guardar la probabilidad';
 		} finally {
 			guardandoPeso = null;
 			arrastrando = null;
@@ -281,7 +296,13 @@
 	});
 </script>
 
-<svelte:window onkeydown={(e) => porEliminar && e.key === 'Escape' && cancelarEliminar()} />
+<svelte:window
+	onkeydown={(e) => porEliminar && e.key === 'Escape' && cancelarEliminar()}
+	onpointermove={arrastrarSonido}
+	onpointerup={(e) => { mostrandoValores = false; arrastrarSonido(e); terminarArrastre(true); }}
+	onpointercancel={() => { mostrandoValores = false; terminarArrastre(); }}
+	onblur={() => { mostrandoValores = false; terminarArrastre(); }}
+/>
 
 <Header titulo="Sonidos" subtitulo="Lo que suena en cada acción, para todo el equipo." />
 
@@ -364,13 +385,19 @@
 				<span class="conteo">{enUso} de {sonidos.length} en uso</span>
 			</h2>
 			<div class="controles-catalogo">
-				<button type="button" class="btn-primario" onclick={() => (abriendoCarga = true)}>
+				{#if editando}
+					<button type="button" class="btn-primario" disabled={guardandoEdicion} onclick={guardarEdicion}>{guardandoEdicion ? 'Guardando…' : 'Guardar cambios'}</button>
+					<button type="button" class="btn-cancelar" disabled={guardandoEdicion} onclick={() => (editando = false)}>Cancelar</button>
+				{:else}
+					<button type="button" class="btn-cancelar" onclick={iniciarEdicion}>Editar catálogo</button>
+				{/if}
+				<button type="button" class="btn-primario" disabled={editando} onclick={() => (abriendoCarga = true)}>
 					<Icon nombre="upload" tamano={15} />
 					Cargar sonido
 				</button>
 				<label class="filtro">
 					Mostrar
-					<select bind:value={filtro}>
+					<select bind:value={filtro} disabled={editando}>
 						<option value="todas">Todas las acciones</option>
 						{#each ACCIONES_SONIDO as a (a.accion)}
 							<option value={a.accion}>{a.etiqueta}</option>
@@ -380,9 +407,8 @@
 			</div>
 		</div>
 		<p class="ayuda">
-			Marca en qué acciones puede sonar cada sonido; aplica a todo el equipo. Un sonido sin ninguna acción marcada no
-			suena para nadie. La <strong>probabilidad</strong> reparte el sorteo dentro de cada acción: con peso 3 suena el
-			triple de seguido que uno con peso 1.
+			Enciende las acciones en las que debe sonar. El slider de <strong>probabilidad</strong>, de 1 a 10,
+			se comparte entre todas sus acciones. Mantén presionado un slider para ver todos los pesos y porcentajes.
 		</p>
 		{#if okSubida}<p class="ok">{okSubida}</p>{/if}
 		{#if errorCatalogo}<p class="error">{errorCatalogo}</p>{/if}
@@ -395,7 +421,7 @@
 		{:else}
 			<ul class="lista-sonidos">
 				{#each visibles as s (s.id)}
-					<li class:sin-acciones={s.acciones.length === 0}>
+					<li data-sonido-id={s.id} class:arrastrando-fila={sonidoArrastrado === s.id} class:destino-arrastre={destinoArrastre === s.id && sonidoArrastrado !== s.id} class:sin-acciones={s.acciones.length === 0}>
 						<button
 							type="button"
 							class="btn-icono"
@@ -407,53 +433,47 @@
 							<Icon nombre="play" tamano={15} />
 						</button>
 						<div class="sonido-texto">
-							<span class="sonido-nombre">{s.nombre}</span>
+							{#if editando}
+								<input class="nombre-edicion" type="text" aria-label="Nombre del sonido" bind:value={s.nombre} maxlength="80" disabled={guardandoEdicion} />
+								<button type="button" class="agarre-orden" aria-label="Arrastrar {s.nombre} para reordenar" title="Arrastra para reordenar; usa las flechas del teclado para mover"
+									disabled={guardandoEdicion}
+									onpointerdown={(e) => { if (e.button !== 0) return; sonidoArrastrado = s.id; destinoArrastre = s.id; e.currentTarget.setPointerCapture(e.pointerId); }}
+									onlostpointercapture={() => terminarArrastre()}
+									onkeydown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); moverSonido(s.id, borrador.findIndex((otro) => otro.id === s.id) + (e.key === 'ArrowUp' ? -1 : 1)); } }}>
+									<span aria-hidden="true">⠿</span> Arrastrar
+								</button>
+							{:else}<span class="sonido-nombre">{s.nombre}</span>{/if}
 							<span class="sonido-origen">
 								{origenDe(s)}{s.acciones.length === 0 ? ' · sin acciones, no suena' : ''}
 							</span>
 						</div>
 						<div class="probabilidades">
-							{#each accionesVisibles(s) as accion (accion)}
-								<span class="probabilidad">
-									<label class="etiqueta-peso" for="peso-{s.id}-{accion}">{ETIQUETA_ACCION[accion]}</label>
-									<input
-										id="peso-{s.id}-{accion}"
-										type="range"
-										min={PESO_MINIMO}
-										max={PESO_MAXIMO}
-										step="1"
-										value={pesoMostrado(s, accion)}
-										disabled={estaGuardandoPeso(s, accion)}
-										title="Peso {pesoMostrado(s, accion)} de {PESO_MAXIMO} en {ETIQUETA_ACCION[accion]}"
-										oninput={(e) => arrastrarPeso(s, accion, e.currentTarget.value)}
-										onchange={(e) => cambiarPeso(s, accion, e.currentTarget.value)}
-									/>
-									<span class="porcentaje">{porcentaje(s, accion)}</span>
-								</span>
-							{:else}
-								<span class="sin-probabilidad">—</span>
-							{/each}
-						</div>
-						<div class="acciones" role="group" aria-label="Acciones de {s.nombre}">
-							{#each ACCIONES_SONIDO as a (a.accion)}
-								{@const marcada = s.acciones.includes(a.accion)}
-								<button
-									type="button"
-									class="btn-accion"
-									class:marcada
-									aria-pressed={marcada}
-									disabled={estaCambiando(s, a.accion)}
-									title="{a.etiqueta} · {a.descripcion}"
-									onclick={() => alternarAccion(s, a.accion)}
-								>
-									<span class="punto" aria-hidden="true"></span>
-									{a.etiqueta}
-								</button>
-							{/each}
+							<label class="peso-compartido" for="peso-{s.id}">
+								<span>Probabilidad <strong class="valor-slider" class:oculto={!mostrandoValores} aria-hidden={!mostrandoValores}>{pesoMostrado(s)}/10</strong></span>
+								<input id="peso-{s.id}" type="range" min="1" max={PESO_MAXIMO} step="1"
+									value={pesoMostrado(s)} disabled={editando || guardandoPeso !== null || cambiandoAccion !== null}
+									onpointerdown={() => (mostrandoValores = true)}
+									onkeydown={(e) => { if (teclasSlider.includes(e.key)) mostrandoValores = true; }}
+									onkeyup={(e) => { if (teclasSlider.includes(e.key)) mostrandoValores = false; }}
+									onblur={() => (mostrandoValores = false)}
+									oninput={(e) => (arrastrando = { id: s.id, peso: Number(e.currentTarget.value) })}
+									onchange={(e) => cambiarPeso(s, e.currentTarget.value)} />
+							</label>
+							<div class="acciones acciones-catalogo">
+								{#each accionesVisibles() as accion (accion)}
+									<button type="button" class="btn-accion" class:marcada={s.acciones.includes(accion)}
+										aria-pressed={s.acciones.includes(accion)} disabled={editando || guardandoPeso !== null || cambiandoAccion !== null}
+										title={s.acciones.includes(accion) ? 'Apagar' : 'Encender'} onclick={() => alternarAccion(s, accion)}>
+										<span class="punto" aria-hidden="true"></span>
+										{ETIQUETA_ACCION[accion]} <span class="porcentaje" class:oculto={!mostrandoValores} aria-hidden={!mostrandoValores}>{porcentaje(s, accion)}</span>
+									</button>
+								{/each}
+							</div>
 						</div>
 						<button
 							type="button"
 							class="btn-eliminar"
+							disabled={editando}
 							title="Eliminar del catálogo"
 							aria-label="Eliminar {s.nombre} del catálogo"
 							onclick={() => pedirConfirmacion(s)}
@@ -488,6 +508,14 @@
 {/if}
 
 <style>
+	.nombre-edicion { box-sizing: border-box; width: 100%; min-width: 0; }
+	.agarre-orden { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; height: 30px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text-muted); cursor: grab; touch-action: none; user-select: none; }
+	.agarre-orden:active { cursor: grabbing; }
+	.agarre-orden:disabled { opacity: 0.4; cursor: default; }
+	.destino-arrastre { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
+	.arrastrando-fila { background: var(--accent-soft); outline: 1px solid var(--accent); }
+	.btn-eliminar:disabled { opacity: 0.4; cursor: default; }
+
 	.cargando,
 	.sin-datos {
 		color: var(--text-muted);
@@ -670,10 +698,18 @@
 
 	.cabecera-catalogo {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		justify-content: space-between;
-		gap: 14px;
+		margin-bottom: 20px;
+		gap: 20px;
 		flex-wrap: wrap;
+	}
+
+	.controles-catalogo {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 16px 24px;
 	}
 
 	.filtro {
@@ -690,30 +726,64 @@
 
 	.probabilidades {
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		align-items: center;
-		gap: 10px;
-		flex-shrink: 0;
-		min-width: 150px;
+		min-width: 0;
+		gap: 28px;
+		padding: 4px;
 	}
 
-	.probabilidad {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
+	.peso-compartido {
+		display: grid;
+		gap: 6px;
+		flex: 0 0 120px;
 		font-size: 11px;
 		color: var(--text-muted);
 	}
+	.peso-compartido span { display: flex; justify-content: space-between; gap: 8px; }
+	.acciones-catalogo { flex-wrap: nowrap; }
+	.acciones-catalogo .btn-accion {
+		box-sizing: border-box;
+		width: 132px;
+		height: 36px;
+		justify-content: center;
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
 
-	.etiqueta-peso {
-		font-size: 11px;
-		color: var(--text-faint);
+	@container (max-width: 1100px) {
+		.probabilidades {
+			display: grid;
+			grid-template-columns: minmax(80px, 120px) minmax(0, 1fr);
+			align-items: start;
+			gap: 20px;
+		}
+		.acciones-catalogo {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			min-width: 0;
+		}
+		.acciones-catalogo .btn-accion {
+			width: 100%;
+			min-width: 0;
+		}
+	}
+
+	@container (max-width: 440px) {
+		.probabilidades {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.peso-compartido { max-width: 180px; }
+		.acciones-catalogo {
+			grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+		}
 	}
 
 	/* La barra se dibuja a mano para que el riel y el tirador usen los tokens
 	   del sistema: el control nativo ignora currentColor en casi todo. */
 	.probabilidades input[type='range'] {
-		width: 84px;
+		width: 100%;
+		min-width: 0;
 		height: 18px;
 		margin: 0;
 		background: none;
@@ -771,16 +841,15 @@
 		cursor: default;
 	}
 
+	.oculto {
+		visibility: hidden;
+	}
+
 	.porcentaje {
 		min-width: 34px;
 		font-family: var(--font-mono);
 		font-size: 11px;
 		color: var(--text);
-	}
-
-	.sin-probabilidad {
-		color: var(--text-faint);
-		font-size: 12px;
 	}
 
 	.lista-sonidos {
@@ -790,7 +859,9 @@
 	}
 
 	.lista-sonidos li {
-		display: flex;
+		container-type: inline-size;
+		display: grid;
+		grid-template-columns: 36px minmax(80px, 130px) minmax(0, 1fr) 32px;
 		align-items: center;
 		gap: 12px;
 		padding: 10px 0;
@@ -804,8 +875,7 @@
 	.sonido-texto {
 		display: flex;
 		flex-direction: column;
-		flex: 1;
-		min-width: 160px;
+		min-width: 0;
 	}
 
 	.sonido-nombre {
@@ -817,6 +887,7 @@
 	}
 
 	.sonido-origen {
+		overflow-wrap: anywhere;
 		font-size: 11px;
 		color: var(--text-faint);
 	}
@@ -936,15 +1007,19 @@
 		cursor: default;
 	}
 
-	@media (max-width: 900px) {
+	@media (max-width: 700px) {
 		.lista-sonidos li {
-			flex-wrap: wrap;
+			grid-template-columns: 36px minmax(0, 1fr) 32px;
 		}
 
-		.lista-sonidos .acciones,
 		.lista-sonidos .probabilidades {
-			width: 100%;
-			padding-left: 48px;
+			grid-column: 1 / -1;
+			grid-row: 2;
+		}
+
+		.lista-sonidos .btn-eliminar {
+			grid-column: 3;
+			grid-row: 1;
 		}
 	}
 </style>

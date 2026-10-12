@@ -95,8 +95,12 @@ export const PESO_NORMAL = 1;
 export const PESO_MINIMO = 1;
 export const PESO_MAXIMO = 10;
 
+export function pesoCompartido(sonido: Sonido): number {
+	return Math.max(PESO_NORMAL, ...Object.values(sonido.pesos ?? {}));
+}
+
 export function pesoDe(sonido: Sonido, accion: AccionSonido): number {
-	return sonido.pesos?.[accion] ?? PESO_NORMAL;
+	return pesoCompartido(sonido);
 }
 
 /** Qué tanto le toca a este sonido dentro de su acción, de 0 a 1, usando la

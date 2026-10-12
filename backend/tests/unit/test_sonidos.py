@@ -8,7 +8,7 @@ from sqlalchemy.dialects import postgresql
 
 from app.models import SonidoPreferencia
 from app.routers import sonidos as router_sonidos
-from app.schemas import PesoSonidoUpdate, PreferenciaSonidoUpdate, SolicitudUrlSubida, SonidoCreate
+from app.schemas import SonidosEdicion, SonidoEdicionItem, PesoSonidoUpdate, PreferenciaSonidoUpdate, SolicitudUrlSubida, SonidoCreate
 from app.services import sonidos as servicio
 from app.services.storage import StorageError
 
@@ -260,7 +260,7 @@ def test_preferencia_acepta_los_eventos_nuevos():
 
 
 @pytest.mark.asyncio
-async def test_listar_trae_todos_ordenados_por_id_sin_filtrar():
+async def test_listar_trae_todos_en_orden_del_catalogo_sin_filtrar():
     session = AsyncMock()
     resultado = MagicMock()
     resultado.scalars.return_value.all.return_value = [_sonido(1), _sonido(2, acciones=[])]
@@ -270,7 +270,7 @@ async def test_listar_trae_todos_ordenados_por_id_sin_filtrar():
 
     assert [s.id for s in lista] == [1, 2]
     sql = _sql(session.execute.call_args[0][0])
-    assert "ORDER BY sonidos.id" in sql
+    assert "ORDER BY sonidos.orden, sonidos.id" in sql
     assert "WHERE" not in sql
 
 
@@ -390,7 +390,7 @@ def test_el_schema_rechaza_pesos_fuera_de_rango():
 
 
 @pytest.mark.asyncio
-async def test_desmarcar_una_accion_se_lleva_su_peso():
+async def test_desmarcar_una_accion_conserva_el_peso_compartido():
     session = AsyncMock()
     sonido = _sonido(4, acciones=["exito", "victoria"], pesos={"exito": 3, "victoria": 9})
     session.get.return_value = sonido
@@ -398,7 +398,7 @@ async def test_desmarcar_una_accion_se_lleva_su_peso():
     await router_sonidos.desmarcar_accion(4, "victoria", session)
 
     assert sonido.acciones == ["exito"]
-    assert sonido.pesos == {"exito": 3}
+    assert sonido.pesos == {"exito": 3, "victoria": 9}
 
 
 @pytest.mark.asyncio
@@ -484,3 +484,45 @@ async def test_mis_preferencias_filtra_por_el_usuario_de_la_sesion():
     await router_sonidos.mis_preferencias(SimpleNamespace(id=7), session)
 
     assert "sonidos_preferencias.usuario_id = 7" in _sql(session.execute.call_args[0][0])
+
+
+@pytest.mark.asyncio
+async def test_peso_compartido_se_guarda_para_todas_las_acciones_aun_apagadas():
+    session = AsyncMock()
+    sonido = _sonido(4, acciones=[], pesos={})
+    session.get.return_value = sonido
+
+    await router_sonidos.ajustar_peso_compartido(4, PesoSonidoUpdate(peso=7), session)
+
+    assert sonido.acciones == []
+    assert sonido.pesos == {accion: 7 for accion in servicio.ACCIONES}
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_editar_catalogo_guarda_nombres_y_orden():
+    session = AsyncMock()
+    uno, dos = _sonido(1), _sonido(2)
+    resultado = MagicMock()
+    resultado.scalars.return_value.all.return_value = [uno, dos]
+    session.execute.return_value = resultado
+    payload = SonidosEdicion(sonidos=[SonidoEdicionItem(id=2, nombre="  Nuevo   nombre "), SonidoEdicionItem(id=1, nombre="Primero")])
+    salida = await router_sonidos.editar_catalogo(payload, session)
+    assert [s.id for s in salida] == [2, 1]
+    assert dos.nombre == "Nuevo nombre"
+    assert dos.orden == 0
+    assert uno.orden == 1
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_editar_catalogo_rechaza_nombres_repetidos():
+    session = AsyncMock()
+    resultado = MagicMock()
+    resultado.scalars.return_value.all.return_value = [_sonido(1), _sonido(2)]
+    session.execute.return_value = resultado
+    payload = SonidosEdicion(sonidos=[SonidoEdicionItem(id=1, nombre="Igual"), SonidoEdicionItem(id=2, nombre="igual")])
+    with pytest.raises(HTTPException) as info:
+        await router_sonidos.editar_catalogo(payload, session)
+    assert info.value.status_code == 400
+    session.commit.assert_not_awaited()

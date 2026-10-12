@@ -94,10 +94,18 @@ describe('pesoDe', () => {
 		expect(pesoDe(sonido(1, ['exito']), 'exito')).toBe(PESO_NORMAL);
 	});
 
-	it('devuelve el peso ajustado de esa acción, no el de otra', () => {
+	it('comparte el peso ajustado entre todas las acciones', () => {
 		const s = sonido(1, ['exito', 'victoria'], { exito: 4 });
 		expect(pesoDe(s, 'exito')).toBe(4);
-		expect(pesoDe(s, 'victoria')).toBe(PESO_NORMAL);
+		expect(pesoDe(s, 'victoria')).toBe(4);
+	});
+});
+
+describe('peso compartido existente', () => {
+	it('usa el mayor peso anterior incluso con todas las acciones apagadas', () => {
+		const s = sonido(1, [], { exito: 3, victoria: 7 });
+		expect(pesoDe(s, 'error')).toBe(7);
+		expect(pesoDe(s, 'victoria')).toBe(7);
 	});
 });
 
@@ -124,7 +132,7 @@ describe('probabilidadDe', () => {
 	});
 
 	it('el mismo sonido puede tener probabilidad distinta en cada acción', () => {
-		const catalogo = [sonido(1, ['exito', 'victoria'], { exito: 1, victoria: 9 }), sonido(2, ['exito', 'victoria'])];
+		const catalogo = [sonido(1, ['exito', 'victoria'], { exito: 9, victoria: 9 }), sonido(2, ['exito'], { exito: 9 }), sonido(3, ['victoria'])];
 		expect(probabilidadDe(catalogo[0], 'exito', catalogo)).toBeCloseTo(0.5);
 		expect(probabilidadDe(catalogo[0], 'victoria', catalogo)).toBeCloseTo(0.9);
 	});

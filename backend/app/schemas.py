@@ -296,6 +296,15 @@ class SonidoOut(BaseModel):
     created_at: datetime
 
 
+class SonidoEdicionItem(BaseModel):
+    id: int
+    nombre: str = Field(min_length=1, max_length=80)
+
+
+class SonidosEdicion(BaseModel):
+    sonidos: list[SonidoEdicionItem]
+
+
 class SonidoCreate(BaseModel):
     nombre: str = Field(min_length=1, max_length=80)
     url: str = Field(min_length=1)

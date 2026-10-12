@@ -412,6 +412,12 @@ export const api = {
 	desmarcarAccionSonido: (id: number, accion: AccionSonido) =>
 		json<Sonido>(`/sonidos/${id}/acciones/${accion}`, { method: 'DELETE' }),
 
+	editarCatalogoSonidos: (sonidos: { id: number; nombre: string }[]) =>
+		json<Sonido[]>('/sonidos/edicion', { method: 'PUT', body: JSON.stringify({ sonidos }) }),
+
+	ajustarPesoCompartidoSonido: (id: number, peso: number) =>
+		json<Sonido>(`/sonidos/${id}/peso`, { method: 'PUT', body: JSON.stringify({ peso }) }),
+
 	ajustarPesoSonido: (id: number, accion: AccionSonido, peso: number) =>
 		json<Sonido>(`/sonidos/${id}/acciones/${accion}/peso`, { method: 'PUT', body: JSON.stringify({ peso }) }),
 
